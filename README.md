@@ -156,29 +156,28 @@ The validated model is also available as `request.validated_data`.
 
 Use `Depend` to inject request-scoped dependencies into handlers.
 
+A dependency is called like a handler: its first positional parameter is the
+context (`HttpContext`, or `WebSocketContext` on a socket route).
+
 ```python
-from sillo import Depend, SilloApp
+from sillo import Depend, HttpContext, SilloApp
 
 app = SilloApp()
 
 
-async def get_current_user():
+async def get_current_user(ctx: HttpContext):
     return {"id": "user_1", "name": "Ada"}
 
 
 @app.get("/me")
-async def me(request, response, user=Depend(get_current_user)):
-    return response.json(user)
+async def me(ctx: HttpContext, user=Depend(get_current_user)):
+    return user
 ```
 
-When a dependency needs the active context (the `HttpContext`, or the
-`WebSocketContext` on a socket route):
+A dependency that reads the request does so straight off that first parameter:
 
 ```python
-from sillo import Depend
-
-
-def auth_header(ctx=Depend(get_context=True)):
+def auth_header(ctx: HttpContext):
     return ctx.headers.get("Authorization")
 ```
 

@@ -21,13 +21,11 @@ def client(app):
 def test_nested_query_dependency(app, client):
     """Test Query extractor works in nested dependency."""
 
-    def get_pagination(page: int = Query(1), limit: int = Query(10)):
+    def get_pagination(_, page: int = Query(1), limit: int = Query(10)):
         return {"page": page, "limit": limit}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, pagination: dict = Depend(get_pagination)
-    ):
+    async def handler(ctx: HttpContext, pagination: dict = Depend(get_pagination)):
         return pagination
 
     response = client.get("/test")
@@ -40,13 +38,11 @@ def test_nested_query_dependency(app, client):
 def test_nested_query_override(app, client):
     """Test Query in nested dependency uses provided values."""
 
-    def get_pagination(page: int = Query(1), limit: int = Query(10)):
+    def get_pagination(_, page: int = Query(1), limit: int = Query(10)):
         return {"page": page, "limit": limit}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, pagination: dict = Depend(get_pagination)
-    ):
+    async def handler(ctx: HttpContext, pagination: dict = Depend(get_pagination)):
         return pagination
 
     response = client.get("/test?page=3&limit=25")
@@ -59,13 +55,11 @@ def test_nested_query_override(app, client):
 def test_nested_header_dependency(app, client):
     """Test Header extractor works in nested dependency."""
 
-    def get_auth(authorization: str = Header()):
+    def get_auth(_, authorization: str = Header()):
         return {"token": authorization}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, auth: dict = Depend(get_auth)
-    ):
+    async def handler(ctx: HttpContext, auth: dict = Depend(get_auth)):
         return auth
 
     response = client.get("/test", headers={"Authorization": "Bearer secret"})
@@ -76,13 +70,11 @@ def test_nested_header_dependency(app, client):
 def test_nested_header_no_value(app, client):
     """Test Header in nested dependency returns None when not provided."""
 
-    def get_auth(authorization: str = Header()):
+    def get_auth(_, authorization: str = Header()):
         return {"token": authorization}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, auth: dict = Depend(get_auth)
-    ):
+    async def handler(ctx: HttpContext, auth: dict = Depend(get_auth)):
         return auth
 
     response = client.get("/test")
@@ -93,13 +85,11 @@ def test_nested_header_no_value(app, client):
 def test_nested_cookie_dependency(app, client):
     """Test Cookie extractor works in nested dependency."""
 
-    def get_prefs(theme: str = Cookie("dark")):
+    def get_prefs(_, theme: str = Cookie("dark")):
         return {"theme": theme}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, prefs: dict = Depend(get_prefs)
-    ):
+    async def handler(ctx: HttpContext, prefs: dict = Depend(get_prefs)):
         return prefs
 
     response = client.get("/test", cookies={"theme": "purple"})
@@ -110,13 +100,11 @@ def test_nested_cookie_dependency(app, client):
 def test_nested_cookie_default(app, client):
     """Test Cookie in nested dependency uses default."""
 
-    def get_prefs(theme: str = Cookie("dark")):
+    def get_prefs(_, theme: str = Cookie("dark")):
         return {"theme": theme}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, prefs: dict = Depend(get_prefs)
-    ):
+    async def handler(ctx: HttpContext, prefs: dict = Depend(get_prefs)):
         return prefs
 
     response = client.get("/test")
@@ -127,16 +115,14 @@ def test_nested_cookie_default(app, client):
 def test_deeply_nested_query(app, client):
     """Test Query in deeply nested dependency."""
 
-    def get_page(page: int = Query(1)):
+    def get_page(_, page: int = Query(1)):
         return page
 
-    def get_pagination(page: int = Depend(get_page), limit: int = Query(10)):
+    def get_pagination(_, page: int = Depend(get_page), limit: int = Query(10)):
         return {"page": page, "limit": limit}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, pagination: dict = Depend(get_pagination)
-    ):
+    async def handler(ctx: HttpContext, pagination: dict = Depend(get_pagination)):
         return pagination
 
     response = client.get("/test?page=5&limit=20")
@@ -149,7 +135,8 @@ def test_deeply_nested_query(app, client):
 def test_mixed_params_in_dependency(app, client):
     """Test mixed Query, Header, Cookie in same dependency."""
 
-    def get_context(
+    def collect_all(
+        _,
         page: int = Query(1),
         authorization: str = Header(),
         theme: str = Cookie("dark"),
@@ -157,9 +144,7 @@ def test_mixed_params_in_dependency(app, client):
         return {"page": page, "auth": authorization, "theme": theme}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, resolved: dict = Depend(get_context)
-    ):
+    async def handler(ctx: HttpContext, resolved: dict = Depend(collect_all)):
         return resolved
 
     response = client.get(
@@ -177,7 +162,7 @@ def test_mixed_params_in_dependency(app, client):
 def test_handler_and_nested_both_have_query(app, client):
     """Test Query works in both handler and nested dependency."""
 
-    def get_pagination(limit: int = Query(10)):
+    def get_pagination(_, limit: int = Query(10)):
         return {"limit": limit}
 
     @app.get("/test")
@@ -198,16 +183,14 @@ def test_handler_and_nested_both_have_query(app, client):
 def test_nested_dep_with_own_dep_and_query(app, client):
     """Test nested dependency with its own dependency and Query param."""
 
-    def get_db():
+    def get_db(_):
         return {"db": "sqlite"}
 
-    def get_config(db: dict = Depend(get_db), page: int = Query(1)):
+    def get_config(_, db: dict = Depend(get_db), page: int = Query(1)):
         return {**db, "page": page}
 
     @app.get("/test")
-    async def handler(
-        ctx: HttpContext, config: dict = Depend(get_config)
-    ):
+    async def handler(ctx: HttpContext, config: dict = Depend(get_config)):
         return config
 
     response = client.get("/test?page=7")

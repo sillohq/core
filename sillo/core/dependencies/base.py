@@ -24,64 +24,52 @@ if TYPE_CHECKING:
 
 class Depend:
     """
-    Declares a dependency injection marker for route handler parameters.
+    Declares a dependency-injection marker for a handler or dependency parameter.
 
-    Used as a default value in handler function signatures to signal that
-    the parameter should be resolved through the dependency injection system
-    rather than extracted directly from the request. Wraps a callable that
-    produces the injected value and supports optional raw request injection.
+    Used as a parameter default to signal that the value should be produced by
+    calling ``dependency`` rather than extracted from the request.
 
-    This is the primary user-facing API for declaring dependencies in sillo's
-    DI system. Dependencies can be nested — a ``Depend``-wrapped callable may
-    itself declare further ``Depend`` parameters, forming a dependency graph
-    that is resolved at request time.
+    A dependency callable is invoked exactly like a route handler: its **first
+    positional parameter receives the active context** — an ``HttpContext`` on
+    an HTTP route, a ``WebSocketContext`` on a WebSocket route — and any further
+    parameters may themselves be ``Depend`` or extractor markers, forming a
+    graph that is resolved at request time. A dependency that does not need the
+    context still declares the first parameter (name it ``_`` by convention).
 
     Attributes:
-        dependency: The callable whose return value will be injected. If
-            ``None`` and ``get_context`` is ``True``, the active context is
-            injected instead — an ``HttpContext`` on an HTTP route, a
-            ``WebSocketContext`` on a WebSocket route.
-        get_context: When ``True`` and ``dependency`` is ``None``, the
-            framework injects the active context object directly into the
-            parameter.
+        dependency: The callable whose return value will be injected. ``None``
+            is permitted only for a bare router-level ``Depend()`` placeholder,
+            which the solver skips.
     """
 
-    def __init__(
-        self, dependency: Callable[..., Any] | None = None, *, get_context: bool = False
-    ) -> None:
+    def __init__(self, dependency: Callable[..., Any] | None = None) -> None:
         """
-        Initialize a Depend instance with a dependency callable and context flag.
+        Initialize a Depend marker around a dependency callable.
 
         Args:
-            dependency: An optional callable that produces the value to be
-                injected into the handler parameter. Can be a regular function,
-                an async function, a generator, or an async generator. When
-                ``None``, the ``get_context`` flag must be ``True`` to inject
-                the active context object.
-            get_context: A keyword-only boolean flag indicating whether the
-                active context object should be injected directly. Defaults
-                to ``False``. Only effective when ``dependency`` is ``None``.
-                The injected value is an ``HttpContext`` on an HTTP route and
-                a ``WebSocketContext`` on a WebSocket route.
+            dependency: The callable that produces the value to inject. May be
+                a regular function, an async function, a generator, or an async
+                generator. Its first positional parameter is the context. Pass
+                ``None`` only for a bare router-level placeholder.
 
         Returns:
             None. This constructor initializes the ``Depend`` marker instance.
 
         Example::
 
-            async def get_db():
+            async def get_db(ctx):
                 return await Database.connect()
 
             @app.get("/items")
             async def list_items(ctx, db=Depend(get_db)):
                 return json(await db.query("SELECT * FROM items"))
 
-            @app.get("/me")
-            async def get_me(ctx, injected=Depend(get_context=True)):
-                return json({"user": injected.user})
+            # A dependency that only needs the context reads it off its first
+            # parameter — no marker:
+            def current_user(ctx):
+                return ctx.state.user
         """
         self.dependency = dependency
-        self.get_context = get_context
 
     def __class_getitem__(cls, item: Any):
         """
@@ -149,10 +137,6 @@ class Dependant:
             in the resolved values dictionary. ``None`` for the root node.
         dependencies: A list of child ``Dependant`` nodes representing direct
             sub-dependencies declared via ``Depend()`` defaults.
-        context_param_names: Parameter names that should receive the active
-            context object directly (declared via ``Depend(get_context=True)``).
-            The value is an ``HttpContext`` on an HTTP route and a
-            ``WebSocketContext`` on a WebSocket route.
         param_extractors: A list of solved parameter extractor dependencies
             (e.g., ``Query``, ``Header``, ``Cookie``) that pull values from
             specific parts of the incoming request.
@@ -183,7 +167,6 @@ class Dependant:
     call: Callable[..., Any] | None = None
     name: str | None = None
     dependencies: list[Dependant] = field(default_factory=list)
-    context_param_names: list[str] = field(default_factory=list)
     param_extractors: list[SolvedParamDependency] = field(default_factory=list)
     validator: CompiledValidator | None = None
     is_coroutine: bool = False
@@ -238,7 +221,7 @@ def get_dependant(
 
     Example::
 
-        async def get_db():
+        async def get_db(ctx):
             return await Database.connect()
 
         dependant = get_dependant(get_db, name="db")
@@ -247,24 +230,23 @@ def get_dependant(
     """
     sig = signature(call)
     deps: list[Dependant] = []
-    context_params: list[str] = []
     markers: list[tuple[str, ParameterExtractor]] = []
     cache_key_parts: list[str] = []
 
-    for param_name, param in sig.parameters.items():
+    # The first positional parameter is the context slot — it is passed
+    # positionally at call time, exactly as a route handler receives `ctx`, so
+    # it is never a sub-dependency or an extractor. Everything after it is.
+    for param_name, param in list(sig.parameters.items())[1:]:
         default = param.default
 
         if isinstance(default, Depend):
-            if default.get_context and default.dependency is None:
-                context_params.append(param_name)
-            else:
-                sub = get_dependant(
-                    default.dependency,
-                    param_name,
-                    strict_validation=strict_validation,
-                )
-                deps.append(sub)
-                cache_key_parts.append(param_name)
+            sub = get_dependant(
+                default.dependency,
+                param_name,
+                strict_validation=strict_validation,
+            )
+            deps.append(sub)
+            cache_key_parts.append(param_name)
 
         elif isinstance(default, ParameterExtractor):
             markers.append((param_name, default))
@@ -288,7 +270,6 @@ def get_dependant(
         call=call,
         name=name,
         dependencies=deps,
-        context_param_names=context_params,
         param_extractors=extractors,
         validator=validator if validator.is_active else None,
         is_coroutine=inspect.iscoroutinefunction(call),
@@ -354,29 +335,28 @@ def _collect_kwargs(
     """
     Collect keyword arguments for executing a dependency node.
 
-    Gathers all the arguments needed to call a ``Dependant`` node's callable
-    by combining resolved sub-dependency values, parameter extractor results,
-    and raw request references from the already-computed values dictionary.
+    Gathers the keyword arguments needed to call a ``Dependant`` node's
+    callable by combining resolved sub-dependency values, parameter extractor
+    results, and validated parameters. The context is not among them — it is
+    passed positionally as the callable's first argument by
+    ``_execute_dependency``.
 
     Args:
         node: The ``Dependant`` node whose arguments are being collected.
-            Its ``dependencies``, ``param_extractors``, and
-            ``context_param_names`` fields determine which values are gathered.
+            Its ``dependencies`` and ``param_extractors`` fields determine
+            which values are gathered.
         values: A dictionary of already-resolved dependency results, keyed
             by dependency name. Sub-dependency values are looked up here.
         ctx: The active context object (``HttpContext`` or ``WebSocketContext``),
-            or ``None`` if not available. Used to satisfy parameter extractors
-            and context parameters.
+            or ``None`` if not available. Passed to parameter extractors.
         validated: Values produced by the Pydantic validators, keyed by the
             id of the ``Dependant`` they belong to. Resolved ahead of this
             call because body and form parsing are asynchronous, whereas this
             function is deliberately synchronous.
 
     Returns:
-        A dictionary of keyword arguments ready to be unpacked into the
-        node's callable. Keys are parameter names and values are the
-        resolved dependency results, extracted parameters, or request
-        references as appropriate.
+        A dictionary of keyword arguments to unpack into the node's callable
+        after its positional context argument.
     """
     kwargs: dict[str, Any] = {
         dep.name: values[dep.name] for dep in node.dependencies if dep.name
@@ -387,8 +367,6 @@ def _collect_kwargs(
         node_values = validated.get(id(node))
         if node_values:
             kwargs.update(node_values)
-    for rp in node.context_param_names:
-        kwargs[rp] = ctx
     return kwargs
 
 
@@ -481,9 +459,9 @@ async def solve_dependencies(
             be resolved. The plan was built during route registration by
             ``get_dependant``.
         ctx: The active context object (``HttpContext`` or
-            ``WebSocketContext``) to pass to parameter extractors and
-            ``Depend(get_context=True)`` dependencies. May be ``None`` for
-            non-request contexts.
+            ``WebSocketContext``). Passed to parameter extractors and as the
+            first positional argument of every dependency callable. May be
+            ``None`` for non-request contexts.
         dependency_cache: An optional dictionary for caching resolved
             dependency values across the resolution. If ``None``, a fresh
             empty cache is created. Keys are ``(callable, param_names)``
@@ -527,7 +505,7 @@ async def solve_dependencies(
         if step.is_root:
             return kwargs
 
-        result = await _execute_dependency(sub, kwargs, cleanups)
+        result = await _execute_dependency(sub, ctx, kwargs, cleanups)
 
         if sub.use_cache and sub.cache_key:
             cache[sub.cache_key] = result
@@ -540,16 +518,18 @@ async def solve_dependencies(
 
 async def _execute_dependency(
     dependant: Dependant,
+    ctx: HttpContext | None,
     kwargs: dict[str, Any],
     cleanup_callbacks: list[Callable[[], Any]],
 ) -> Any:
     """
     Execute a single dependency node and return its produced value.
 
-    Dispatches the execution based on the dependant's introspection flags,
-    handling four callable types: async generators (yields one value then
-    registers an ``aclose`` cleanup), sync generators (yields one value
-    then registers a ``close`` cleanup), async functions (awaited), and
+    The callable is invoked like a route handler: ``ctx`` is passed as the
+    first positional argument, then ``kwargs``. Dispatches on the dependant's
+    introspection flags across four callable types: async generators (yield
+    one value then register an ``aclose`` cleanup), sync generators (yield one
+    value then register a ``close`` cleanup), async functions (awaited), and
     regular functions (called directly).
 
     Args:
@@ -557,9 +537,12 @@ async def _execute_dependency(
             ``call`` attribute. The execution strategy is determined by the
             ``is_async_generator``, ``is_generator``, and ``is_coroutine``
             flags on this node.
-        kwargs: The keyword arguments dictionary to pass to the callable.
-            These are collected by ``_collect_kwargs`` from resolved
-            sub-dependencies and parameter extractors.
+        ctx: The active context (``HttpContext`` or ``WebSocketContext``),
+            passed as the callable's first positional argument. May be ``None``
+            when a dependency is solved outside a request.
+        kwargs: The keyword arguments to pass after ``ctx``. Collected by
+            ``_collect_kwargs`` from resolved sub-dependencies and parameter
+            extractors.
         cleanup_callbacks: A mutable list to which generator teardown
             callbacks are appended. For generator-based dependencies, a
             lambda capturing the generator object is added so that the
@@ -580,18 +563,18 @@ async def _execute_dependency(
         raise RuntimeError("Dependant node has no callable to execute")
 
     if dependant.is_async_generator:
-        agen = func(**kwargs)
+        agen = func(ctx, **kwargs)
         value = await agen.__anext__()
         cleanup_callbacks.append(lambda agen=agen: agen.aclose())
         return value
 
     if dependant.is_generator:
-        gen = func(**kwargs)
+        gen = func(ctx, **kwargs)
         value = next(gen)
         cleanup_callbacks.append(lambda gen=gen: gen.close())
         return value
 
     if dependant.is_coroutine:
-        return await func(**kwargs)
+        return await func(ctx, **kwargs)
 
-    return func(**kwargs)
+    return func(ctx, **kwargs)

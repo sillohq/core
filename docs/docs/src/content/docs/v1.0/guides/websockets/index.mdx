@@ -146,13 +146,15 @@ await websocket.send_json({"room": websocket.path_params["room_id"]})   # fine
 
 A WebSocket handler's signature is analysed the same way an HTTP handler's is,
 so it can declare `Depend(...)` parameters. The whole tree is resolved once,
-before the handler runs — nothing is re-solved per message.
+when the socket connects — nothing is re-solved per message. Like every
+dependency, a WebSocket dependency is called with the context as its first
+positional argument.
 
 ```python title="a dependency on a socket"
 from sillo import Depend, WebSocketContext
 
 
-async def get_room_service():
+async def get_room_service(_):
     return RoomService()
 
 
@@ -171,7 +173,7 @@ connection handler returns, so a resource opened for the socket is released
 when the socket closes.
 
 ```python title="a resource scoped to the connection"
-async def get_conn():
+async def get_conn(_):
     conn = await pool.acquire()
     try:
         yield conn
@@ -179,15 +181,15 @@ async def get_conn():
         await pool.release(conn)
 ```
 
-To reach the connection object itself from inside a dependency, use
-`Depend(get_context=True)`. On a WebSocket route it injects the live
-`WebSocketContext`; on an HTTP route the same marker injects the `HttpContext`.
+To reach the connection itself from inside a dependency, take it as the first
+parameter — it is the live `WebSocketContext`, the same object the handler
+receives.
 
 ```python title="the connection, inside a dependency"
 from sillo import Depend, WebSocketContext
 
 
-def client_ip(ctx: WebSocketContext = Depend(get_context=True)) -> str:
+def client_ip(ctx: WebSocketContext) -> str:
     return ctx.client.host if ctx.client else "unknown"
 
 

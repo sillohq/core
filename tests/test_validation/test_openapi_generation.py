@@ -118,7 +118,7 @@ def test_dependency_params_are_documented(app, client):
     """Parameters declared on a dependency belong in the route's docs."""
     from sillo.core.dependencies import Depend
 
-    def pager(page=Query(1, type=int, ge=1)):
+    def pager(_, page=Query(1, type=int, ge=1)):
         return page
 
     @app.get("/items")

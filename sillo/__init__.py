@@ -13,8 +13,8 @@ Key Features:
 - Dependency injection with pre-flattened execution plan (zero recursion at runtime)
 - Pydantic validation on every input and output — no type annotations needed
 - Middleware system: CORS, CSRF, sessions, auth, rate limiting, compression
-- Depend(get_context=True) to inject the active context (HttpContext or
-  WebSocketContext) into any dependency
+- Depend(fn): a dependency is called like a handler — its first parameter is
+  the active context (HttpContext, or WebSocketContext on a socket route)
 - GraphQL through the sillo-graphql package, importable as sillo.graphql
 - WebSocket support with type safety
 - Flexible routing with path parameters and type conversion
@@ -68,15 +68,16 @@ Common Patterns:
 2. Dependency Injection:
     from sillo import Depend
 
-    async def get_db():
+    # A dependency is called like a handler: first parameter is the context.
+    async def get_db(ctx):
         return Database()
 
     @app.get("/items")
     async def list_items(ctx, db=Depend(get_db)):
         return json(await db.query("SELECT * FROM items"))
 
-    # Inject the active context into any dependency:
-    def get_auth(ctx=Depend(get_context=True)):
+    # Read the request straight off that first parameter:
+    def get_auth(ctx):
         return ctx.headers.get("Authorization")
 
 3. Middleware — one context and call_next. Return a response to stop the chain:

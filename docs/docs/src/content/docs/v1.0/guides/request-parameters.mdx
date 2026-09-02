@@ -232,7 +232,7 @@ Parameter extractors work seamlessly in nested dependencies, no need for
 ```python
 from sillo import HttpContext
 
-def get_pagination(page: int = Query(1), limit: int = Query(10)):
+def get_pagination(_, page: int = Query(1), limit: int = Query(10)):
     return {"page": page, "limit": limit}
 
 @app.get("/items")
@@ -251,7 +251,7 @@ async def get_items(
 ```python
 from sillo import HttpContext
 
-def get_auth(authorization: str = Header()):
+def get_auth(_, authorization: str = Header()):
     if not authorization:
         raise ValueError("No authorization")
     return {"token": authorization}
@@ -266,7 +266,7 @@ async def profile(ctx: HttpContext, auth: dict = Depend(get_auth)):
 ```python
 from sillo import HttpContext
 
-def get_preferences(theme: str = Cookie("dark"), lang: str = Cookie("en")):
+def get_preferences(_, theme: str = Cookie("dark"), lang: str = Cookie("en")):
     return {"theme": theme, "language": lang}
 
 @app.get("/settings")
@@ -279,7 +279,8 @@ async def settings(ctx: HttpContext, prefs: dict = Depend(get_preferences)):
 ```python
 from sillo import HttpContext
 
-def get_context(
+def collect_all(
+    _,
     page: int = Query(1),
     authorization: str = Header(),
     theme: str = Cookie("dark")
@@ -287,8 +288,8 @@ def get_context(
     return {"page": page, "auth": authorization, "theme": theme}
 
 @app.get("/dashboard")
-async def dashboard(ctx: HttpContext, ctx: dict = Depend(get_context)):
-    return ctx
+async def dashboard(ctx: HttpContext, gathered: dict = Depend(collect_all)):
+    return gathered
 ```
 
 ---
@@ -303,6 +304,7 @@ sillo provides two ways to access request data in dependencies:
 from sillo import HttpContext, Query, Header, Cookie, Depend
 
 def get_user_data(
+    _,
     page: int = Query(1),
     authorization: str = Header()
 ):
@@ -321,22 +323,21 @@ async def get_data(ctx: HttpContext, data: dict = Depend(get_user_data)):
 
 ###  Reading the context directly
 
-`Depend(get_context=True)` injects the active context into a dependency —
-an `HttpContext` on an HTTP route, a `WebSocketContext` on a WebSocket route —
-leaving the extraction to you:
+A dependency's first positional parameter is the active context — an
+`HttpContext` on an HTTP route, a `WebSocketContext` on a WebSocket route.
+Take it and do the extraction yourself:
 
 ```python
 from sillo import Depend
 
-def get_user_data(ctx: HttpContext = Depend(get_context=True)):
+def get_user_data(ctx: HttpContext):
     page = ctx.query_params.get("page", "1")
     authorization = ctx.headers.get("Authorization")
     return {"page": page, "token": authorization}
 ```
 
-A plain `ctx` parameter is **not** injected into a dependency — only
-handlers get the context that way. Without `Depend(get_context=True)` it is
-just an unfilled argument.
+Every dependency is called with the context first, just like a handler. One
+that does not need it names the parameter `_`.
 
 **Disadvantages:**
 - Manual type conversion required

@@ -29,13 +29,11 @@ Usage::
 
 from __future__ import annotations
 
-from sillo.core.dependencies import Depend
-
 
 def _make_provider(key: str):
     """Create a DI provider function that pulls *key* from app.state."""
 
-    async def provider(ctx=Depend(get_context=True)):
+    async def provider(ctx):
         """Provider"""
         app = ctx.base_app  # ty: ignore[unresolved-attribute]
         return app.state.get(key) if hasattr(app, "state") else None

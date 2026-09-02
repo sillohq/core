@@ -38,7 +38,7 @@ flowchart LR
     E -->|"stored on Dependant"| F
 ```
 
-The entire flow lives in `core/sillo/core/dependencies/base.py` (597 lines).
+The entire flow lives in `core/sillo/core/dependencies/base.py` (580 lines).
 
 ---
 
@@ -49,24 +49,21 @@ tells the framework "resolve this value through the DI system instead of
 extracting it from the request."
 
 ```python
-# core/sillo/core/dependencies/base.py:25-101
+# core/sillo/core/dependencies/base.py:25-85
 class Depend:
-    def __init__(
-        self,
-        dependency: Callable[..., Any] | None = None,
-        *,
-        get_context: bool = False,
-    ) -> None:
+    def __init__(self, dependency: Callable[..., Any] | None = None) -> None:
         self.dependency = dependency
-        self.get_context = get_context
 ```
+
+A dependency callable is invoked like a route handler: its **first positional
+parameter receives the context** (`HttpContext` on an HTTP route,
+`WebSocketContext` on a WebSocket route). There is no marker for the context.
 
 ### 11.2.1  Fields
 
 | Field          | Type                      | Purpose                                                    |
 |----------------|---------------------------|------------------------------------------------------------|
-| `dependency`   | `Callable \| None`        | The callable whose return value is injected. `None` + `get_context=True` injects the active context. |
-| `get_context`  | `bool`                    | When `True` and `dependency` is `None`, inject the active context object — an `HttpContext` on an HTTP route, a `WebSocketContext` on a WebSocket route. |
+| `dependency`   | `Callable \| None`        | The callable whose return value is injected. `None` is a bare router-level placeholder the solver skips. |
 
 ### 11.2.2  Generic Subscript Support
 
@@ -81,27 +78,26 @@ This allows `Depend[SomeType]` in type annotations without runtime effect.
 ### 11.2.3  Usage Patterns
 
 ```python
-# Pattern 1: Inject a dependency callable
+# Pattern 1: Inject a dependency callable (first param is the context)
 from sillo import HttpContext
 
-async def get_db():
+async def get_db(ctx: HttpContext):
     return await Database.connect()
 
 @app.get("/items")
 async def list_items(ctx: HttpContext, db=Depend(get_db)):
     ...
 
-# Pattern 2: Inject the active context object
-@app.get("/me")
-async def get_me(ctx: HttpContext, injected=Depend(get_context=True)):
-    ...
+# Pattern 2: A dependency that ignores the context still declares it
+def get_settings(_):
+    return load_settings()
 
 # Pattern 3: Nested dependencies
-async def get_user(db=Depend(get_db)):
+async def get_user(ctx: HttpContext, db=Depend(get_db)):
     return await db.get_user()
 
 @app.get("/profile")
-async def profile(user=Depend(get_user)):
+async def profile(ctx: HttpContext, user=Depend(get_user)):
     ...
 ```
 
@@ -130,13 +126,12 @@ participates in DI (the handler itself, each sub-dependency, and each
 sub-dependency's sub-dependencies) becomes a `Dependant`.
 
 ```python
-# base.py:126-191
+# base.py:126-185
 @dataclass(slots=True)
 class Dependant:
     call: Callable[..., Any] | None = None
     name: str | None = None
     dependencies: list[Dependant] = field(default_factory=list)
-    context_param_names: list[str] = field(default_factory=list)
     param_extractors: list[SolvedParamDependency] = field(default_factory=list)
     validator: CompiledValidator | None = None
     is_coroutine: bool = False
@@ -156,7 +151,6 @@ class Dependant:
 | `call`               | `Callable \| None`                           | The wrapped callable. `None` for the root node that only collects kwargs. |
 | `name`               | `str \| None`                                | Parameter name under which this dependency's result is stored. `None` for root. |
 | `dependencies`       | `list[Dependant]`                            | Child `Dependant` nodes: direct sub-dependencies declared via `Depend()`. |
-| `context_param_names`| `list[str]`                                  | Parameter names that receive the active context — `HttpContext` or `WebSocketContext` (from `Depend(get_context=True)`). |
 | `param_extractors`   | `list[SolvedParamDependency]`                | Legacy-mode parameter markers (Query, Header, Cookie) that extract from the request. |
 | `validator`          | `CompiledValidator \| None`                  | Pydantic models compiled for this callable's validated parameters. `None` when none declared. |
 | `is_coroutine`       | `bool`                                       | `True` if `call` is `async def`. |
@@ -202,10 +196,9 @@ This function runs **once per route at registration**. It:
 ```mermaid
 flowchart TD
     A["get_dependant(call)"] --> B["signature(call)"]
-    B --> C{"For each parameter:"}
-    C -->|"isinstance(default, Depend)"| D{"get_context?"}
-    D -->|"Yes, no dependency"| E["Append to context_params"]
-    D -->|"No"| F["get_dependant(dependency, param_name)<br/>recursive call"]
+    B --> S["Skip the first parameter<br/>(the context slot)"]
+    S --> C{"For each remaining parameter:"}
+    C -->|"isinstance(default, Depend)"| F["get_dependant(dependency, param_name)<br/>recursive call"]
     C -->|"isinstance(default, ParameterExtractor)"| G["Append to markers list"]
     C -->|"other"| H["Skip"]
     F --> I["Append child Dependant to deps"]
@@ -219,28 +212,26 @@ flowchart TD
 ### 11.5.1  Signature Walk
 
 ```python
-# base.py:243-265
+# base.py:231-253
 sig = signature(call)
 deps: list[Dependant] = []
-context_params: list[str] = []
 markers: list[tuple[str, ParameterExtractor]] = []
 cache_key_parts: list[str] = []
 
-for param_name, param in sig.parameters.items():
+# The first positional parameter is the context slot — passed positionally
+# at call time, like a route handler's `ctx`. Everything after it is DI.
+for param_name, param in list(sig.parameters.items())[1:]:
     default = param.default
     if isinstance(default, Depend):
-        if default.get_context and default.dependency is None:
-            context_params.append(param_name)
-        else:
-            sub = get_dependant(default.dependency, param_name, ...)
-            deps.append(sub)
-            cache_key_parts.append(param_name)
+        sub = get_dependant(default.dependency, param_name, ...)
+        deps.append(sub)
+        cache_key_parts.append(param_name)
     elif isinstance(default, ParameterExtractor):
         markers.append((param_name, default))
 ```
 
-Each parameter falls into exactly one bucket:
-- **Depend with get_context** → active context injection (`HttpContext` / `WebSocketContext`)
+The first parameter is reserved for the context. Each remaining parameter
+falls into exactly one bucket:
 - **Depend with dependency** → recursive tree building
 - **ParameterExtractor** → parameter extraction (Query/Header/Cookie/Path/Form/File)
 - **Other** → ignored (framework-external parameters)
@@ -391,7 +382,7 @@ sequenceDiagram
             alt is_root
                 S-->>S: Return kwargs (handler args)
             else Not root
-                S->>E: _execute_dependency(node, kwargs, cleanups)
+                S->>E: _execute_dependency(node, ctx, kwargs, cleanups)
                 E-->>S: result
                 S->>C: Store in cache
                 S->>S: values[name] = result
@@ -442,8 +433,8 @@ for step in dependant._execution_plan:
     if step.is_root:
         return kwargs
 
-    # Execute and store
-    result = await _execute_dependency(sub, kwargs, cleanups)
+    # Execute and store (ctx is passed positionally, first)
+    result = await _execute_dependency(sub, ctx, kwargs, cleanups)
     if sub.use_cache and sub.cache_key:
         cache[sub.cache_key] = result
     if sub.name:
@@ -483,28 +474,27 @@ def _collect_kwargs(
 ) -> dict[str, Any]:
 ```
 
-Gathers all keyword arguments needed to call a dependency node from four
-sources:
+Gathers the keyword arguments needed to call a dependency node. The context
+is **not** among them — `_execute_dependency` passes it positionally as the
+callable's first argument. The keyword sources:
 
 ```mermaid
 flowchart LR
-    subgraph Sources["Argument Sources"]
+    subgraph Sources["Keyword-argument sources"]
         A["Sub-dependencies<br/>values[dep.name]"]
-        B["Parameter Extractors<br/>extractor.extract(request)"]
+        B["Parameter Extractors<br/>extractor.extract(ctx)"]
         C["Validated Params<br/>validated[id(node)]"]
-        D["Active context<br/>Depend(get_context=True)"]
     end
 
     A --> Kwargs["kwargs dict"]
     B --> Kwargs
     C --> Kwargs
-    D --> Kwargs
 ```
 
 ### 11.8.1  Implementation
 
 ```python
-# base.py:375-386
+# base.py:362-373
 kwargs: dict[str, Any] = {
     dep.name: values[dep.name] for dep in node.dependencies if dep.name
 }
@@ -514,8 +504,6 @@ if validated:
     node_values = validated.get(id(node))
     if node_values:
         kwargs.update(node_values)
-for rp in node.context_param_names:
-    kwargs[rp] = ctx
 return kwargs
 ```
 
@@ -523,24 +511,28 @@ return kwargs
 
 1. **Sub-dependencies** are looked up by `name` in the `values` dict, which
    was populated by earlier steps in the execution plan.
-2. **Parameter extractors** call `extract(request)` directly: this is the
+2. **Parameter extractors** call `extract(ctx)` directly: this is the
    legacy synchronous extraction path.
 3. **Validated params** are pre-computed by `resolve_validated_params()` and
    keyed by `id(node)`: the same identity used in `_validator_plan`.
-4. **Raw request** injection is the simplest case: just assign the request.
+4. **The context** is not a kwarg — it is the callable's first positional
+   argument, applied in `_execute_dependency`.
 
 ---
 
 ## 11.9  Dependency Execution: `_execute_dependency()`
 
 ```python
-# base.py:533-589
+# base.py:519-576
 async def _execute_dependency(
     dependant: Dependant,
+    ctx: HttpContext | None,
     kwargs: dict[str, Any],
     cleanup_callbacks: list[Callable[[], Any]],
 ) -> Any:
 ```
+
+`ctx` is passed as the callable's first positional argument, then `kwargs`.
 
 ### 11.9.1  Dispatch Table
 
@@ -549,13 +541,13 @@ order:
 
 ```mermaid
 flowchart TD
-    A["_execute_dependency(dep, kwargs, cleanups)"] --> B{"is_async_generator?"}
-    B -->|"Yes"| C["agen = func(**kwargs)<br/>value = await agen.__anext__()<br/>cleanups.append(agen.aclose)"]
+    A["_execute_dependency(dep, ctx, kwargs, cleanups)"] --> B{"is_async_generator?"}
+    B -->|"Yes"| C["agen = func(ctx, **kwargs)<br/>value = await agen.__anext__()<br/>cleanups.append(agen.aclose)"]
     B -->|"No"| D{"is_generator?"}
-    D -->|"Yes"| E["gen = func(**kwargs)<br/>value = next(gen)<br/>cleanups.append(gen.close)"]
+    D -->|"Yes"| E["gen = func(ctx, **kwargs)<br/>value = next(gen)<br/>cleanups.append(gen.close)"]
     D -->|"No"| F{"is_coroutine?"}
-    F -->|"Yes"| G["return await func(**kwargs)"]
-    F -->|"No"| H["return func(**kwargs)"]
+    F -->|"Yes"| G["return await func(ctx, **kwargs)"]
+    F -->|"No"| H["return func(ctx, **kwargs)"]
 ```
 
 ### 11.9.2  Code Paths
@@ -563,7 +555,7 @@ flowchart TD
 **Async Generator** (lines 574-578):
 ```python
 if dependant.is_async_generator:
-    agen = func(**kwargs)
+    agen = func(ctx, **kwargs)
     value = await agen.__anext__()
     cleanup_callbacks.append(lambda agen=agen: agen.aclose())
     return value
@@ -572,25 +564,25 @@ Calls `__anext__()` once to get the yielded value, then registers an `aclose()`
 cleanup. The default parameter `agen=agen` in the lambda captures the specific
 generator instance.
 
-**Sync Generator** (lines 580-583):
+**Sync Generator**:
 ```python
 if dependant.is_generator:
-    gen = func(**kwargs)
+    gen = func(ctx, **kwargs)
     value = next(gen)
     cleanup_callbacks.append(lambda gen=gen: gen.close())
     return value
 ```
 Same pattern as async generators but synchronous.
 
-**Async Function** (lines 586-587):
+**Async Function**:
 ```python
 if dependant.is_coroutine:
-    return await func(**kwargs)
+    return await func(ctx, **kwargs)
 ```
 
-**Regular Function** (lines 589):
+**Regular Function**:
 ```python
-return func(**kwargs)
+return func(ctx, **kwargs)
 ```
 
 ---
@@ -602,7 +594,7 @@ resource management: database connections, file handles, transaction scopes:
 
 ```python
 # Example: generator-based dependency
-async def get_db():
+async def get_db(ctx):
     conn = await Database.connect()
     try:
         yield conn  # <-- first yielded value is injected
@@ -642,8 +634,8 @@ sequenceDiagram
     participant DI as DI Solver
     participant G as Generator Dep
 
-    H->>DI: solve_dependencies(dep, request, cleanups=[])
-    DI->>G: func(**kwargs)
+    H->>DI: solve_dependencies(dep, ctx, cleanups=[])
+    DI->>G: func(ctx, **kwargs)
     G-->>DI: yield value
     DI->>DI: cleanups.append(g.close)
     DI-->>H: resolved kwargs
@@ -733,18 +725,18 @@ classes to register, no containers to configure, and no decorators beyond
 Async generators are the idiomatic way to manage request-scoped resources:
 
 ```python
-async def get_db_session():
+async def get_db_session(_):
     session = async_session()
     try:
         yield session
     finally:
         await session.close()
 
-async def get_current_user(session=Depend(get_db_session)):
+async def get_current_user(ctx, session=Depend(get_db_session)):
     return await session.get(User, current_user_id)
 
 @app.get("/me")
-async def me(user=Depend(get_current_user)):
+async def me(ctx, user=Depend(get_current_user)):
     return {"name": user.name}
 ```
 
@@ -761,8 +753,8 @@ graph TD
     end
 
     subgraph Dependencies
-        U["get_current_user(session)"]
-        DB["get_db_session()"]
+        U["get_current_user(ctx, session)"]
+        DB["get_db_session(ctx)"]
     end
 
     subgraph Extraction
@@ -787,19 +779,19 @@ its value is in the `values` dict.
 
 ### 11.12.4  Context Injection
 
-`Depend(get_context=True)` is a special case. It bypasses the callable
-execution entirely and directly assigns the active context object — an
-`HttpContext` on an HTTP route, a `WebSocketContext` on a WebSocket route
-(the `WebsocketRoute` runs the same solver, passing the socket as `ctx`):
+There is no marker for the context. Every dependency callable is invoked with
+it as the first positional argument — an `HttpContext` on an HTTP route, a
+`WebSocketContext` on a WebSocket route (the `WebsocketRoute` runs the same
+solver, passing the socket as `ctx`). `get_dependant` skips the first parameter
+when analysing a signature, and `_execute_dependency` supplies it:
 
 ```python
-# In get_dependant():
-if default.get_context and default.dependency is None:
-    context_params.append(param_name)
+# In get_dependant(): the first parameter is the context slot, not DI
+for param_name, param in list(sig.parameters.items())[1:]:
+    ...
 
-# In _collect_kwargs():
-for rp in node.context_param_names:
-    kwargs[rp] = ctx
+# In _execute_dependency(): ctx first, then the collected kwargs
+return await func(ctx, **kwargs)
 ```
 
 ---

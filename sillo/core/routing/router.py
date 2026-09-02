@@ -619,7 +619,9 @@ class Route(BaseRoute):
                 rd, ctx, dependency_cache, cleanup_callbacks
             )
             if rd.call is not None:
-                result = await _execute_dependency(rd, sub_values, cleanup_callbacks)
+                result = await _execute_dependency(
+                    rd, ctx, sub_values, cleanup_callbacks
+                )
                 if rd.use_cache and rd.cache_key:
                     dependency_cache[rd.cache_key] = result
 

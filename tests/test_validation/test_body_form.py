@@ -35,7 +35,7 @@ def test_request_model_also_on_request(app, client):
 def test_request_model_composes_with_depend(app, client):
     """A Depend no longer blocks body injection the way positional binding did."""
 
-    def get_db():
+    def get_db(_):
         return "db"
 
     @app.post("/users", request_model=UserCreate)
@@ -75,7 +75,7 @@ def test_request_model_composes_with_path_params(app, client):
 def test_request_model_with_everything(app, client):
     """Body, path marker, query marker, and a dependency in one handler."""
 
-    def get_db():
+    def get_db(_):
         return "db"
 
     @app.post("/teams/{team_id}/users", request_model=UserCreate)
@@ -86,9 +86,7 @@ def test_request_model_with_everything(app, client):
         page=Query(1, type=int, ge=1),
         db=Depend(get_db),
     ):
-        return json(
-            {"name": user.name, "team": team_id, "page": page, "db": db}
-        )
+        return json({"name": user.name, "team": team_id, "page": page, "db": db})
 
     resp = client.post("/teams/7/users?page=3", json={"name": "Al", "age": 1})
     assert resp.json() == {"name": "Al", "team": 7, "page": 3, "db": "db"}
@@ -176,9 +174,7 @@ def test_multipart_file_upload(app, client):
     @app.post("/upload")
     async def handler(ctx, title=Form(type=str), avatar=File(...)):
         content = await avatar.read()
-        return json(
-            {"title": title, "filename": avatar.filename, "size": len(content)}
-        )
+        return json({"title": title, "filename": avatar.filename, "size": len(content)})
 
     resp = client.post(
         "/upload", data={"title": "pic"}, files={"avatar": ("a.txt", b"hello")}
@@ -207,7 +203,7 @@ def test_optional_file_defaults_to_none(app, client):
 def test_markers_work_inside_dependencies(app, client):
     """Validated markers must resolve in sub-dependencies, not only handlers."""
 
-    def pagination(page=Query(1, type=int, ge=1), size=Query(10, type=int, le=50)):
+    def pagination(_, page=Query(1, type=int, ge=1), size=Query(10, type=int, le=50)):
         return {"page": page, "size": size}
 
     @app.get("/items")

@@ -365,10 +365,11 @@ ASGI-level.  Sillo's is request/response-level with explicit pre/post phases.
 
 **Module:** `sillo.core.dependencies.base`
 
-User-facing DI marker.  Declares a dependency on another callable.
+User-facing DI marker.  Declares a dependency on another callable. The
+dependency is invoked like a handler: its first positional parameter is the
+context (`HttpContext` or `WebSocketContext`).
 
-**Attributes:** `dependency` (the callable), `get_context` (bool, inject the
-active context — `HttpContext` or `WebSocketContext` — instead of resolving).
+**Attributes:** `dependency` (the callable).
 
 **Usage:**
 ```python
@@ -378,7 +379,7 @@ async def get_db(ctx: HttpContext) -> Database:
     ...
 
 @app.get("/items")
-async def list_items(db: Database = Depend(get_db)):
+async def list_items(ctx: HttpContext, db: Database = Depend(get_db)):
     ...
 ```
 
@@ -396,7 +397,7 @@ uses `Depend` instead of `Depends`.
 Internal dataclass representing a resolved dependency tree node.
 
 **Attributes:** `call` (the callable), `name`, `dependencies` (child
-`Dependant` nodes), `request_param_names`, `param_extractors`, `validator`
+`Dependant` nodes), `param_extractors`, `validator`
 (compiled Pydantic validator), `is_coroutine`, `is_generator`,
 `is_async_generator`, `cache_key`, `use_cache`, `_execution_plan`,
 `_validator_plan`, `_needs_form`.

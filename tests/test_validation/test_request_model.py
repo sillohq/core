@@ -23,7 +23,9 @@ def test_request_model_validated_data_on_request():
         return json(user.model_dump(), status_code=201)
 
     client = TestClient(app)
-    resp = client.post("/users", json={"name": "Alice", "email": "alice@test.com", "age": 30})
+    resp = client.post(
+        "/users", json={"name": "Alice", "email": "alice@test.com", "age": 30}
+    )
 
     assert resp.status_code == 201
     data = resp.json()
@@ -41,7 +43,9 @@ def test_request_model_injected_as_third_param():
         return json({"name": data.name, "age": data.age}, status_code=201)
 
     client = TestClient(app)
-    resp = client.post("/users", json={"name": "Bob", "email": "bob@test.com", "age": 25})
+    resp = client.post(
+        "/users", json={"name": "Bob", "email": "bob@test.com", "age": 25}
+    )
 
     assert resp.status_code == 201
     data = resp.json()
@@ -73,7 +77,7 @@ def test_request_model_with_di_does_not_clash():
 
     app = SilloApp()
 
-    def get_db():
+    def get_db(_):
         return "db_connected"
 
     @app.post("/users", request_model=UserCreate)
@@ -82,7 +86,9 @@ def test_request_model_with_di_does_not_clash():
         return json({"name": user.name, "db": db})
 
     client = TestClient(app)
-    resp = client.post("/users", json={"name": "Carl", "email": "carl@test.com", "age": 40})
+    resp = client.post(
+        "/users", json={"name": "Carl", "email": "carl@test.com", "age": 40}
+    )
 
     assert resp.status_code == 200
     data = resp.json()

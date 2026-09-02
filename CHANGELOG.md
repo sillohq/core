@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Renamed `Depend(get_request=True)` to `Depend(get_context=True)`.** The marker injects the active context, which on a WebSocket route is a `WebSocketContext`, not an `HttpContext` — the old name described only one of the two. The internal `Dependant.request_param_names` field is likewise now `context_param_names`. No alias is kept; `get_request=` raises `TypeError`.
+- **A dependency now receives the context as its first positional argument**, exactly like a route handler — an `HttpContext` on an HTTP route, a `WebSocketContext` on a WebSocket route. The `Depend(get_request=True)` / `Depend(get_context=True)` marker is **removed**; write the context as the dependency's first parameter instead (name it `_` if unused). A dependency that declared no parameters (`def get_flag(): ...`) must now take the leading parameter (`def get_flag(_): ...`). Internally, `Depend` no longer accepts a keyword argument, and `Dependant.request_param_names` is gone.
 
 ## [0.3.1] - 2026-08-27
 

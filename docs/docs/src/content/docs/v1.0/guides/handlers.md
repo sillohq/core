@@ -360,13 +360,14 @@ async def me(ctx: HttpContext, user: dict = Depend(get_current_user)):
     return user
 ```
 
+A dependency is called like a handler: its first parameter is the context.
 Dependencies can be nested, cached per request, and clean up after themselves
-via async generators. The full system (`get_context=True`, sub-dependencies,
+via async generators. The full system (the context parameter, sub-dependencies,
 caching, generator teardown) is documented in [Dependency
 Injection](/v1.0/guides/dependency-injection/).
 
 <aside type="caution" title="No `Context()` and no `scope=` on Depend">
-Two patterns you may see in older examples are not part of sillo's API: `Context().request` for injecting the request, and `Depend(fn, scope="request")`. Take a plain `ctx` parameter in the dependency, or use `Depend(get_context=True)`, instead. `Depend` accepts only `dependency` and `get_context`.
+Two patterns you may see in older examples are not part of sillo's API: `Context().request` for injecting the request, and `Depend(fn, scope="request")`. A dependency takes the context as its first parameter — there is no marker for it. `Depend` accepts only `dependency`.
 </aside>
 
 ##  A complete handler

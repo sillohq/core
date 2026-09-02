@@ -1,8 +1,9 @@
 """Dependency injection on WebSocket routes.
 
 WebSocket handlers are analysed the same way HTTP handlers are, so they may
-declare ``Depend(...)`` parameters. ``Depend(get_context=True)`` injects the
-live ``WebSocketContext``.
+declare ``Depend(...)`` parameters. A dependency callable receives the live
+``WebSocketContext`` as its first positional argument, exactly as the handler
+does.
 """
 
 from typing import Callable
@@ -17,7 +18,7 @@ def test_ws_depend_callable(test_client_factory: Callable[[SilloApp], TestClient
     """A plain Depend(callable) resolves and binds on a WebSocket route."""
     app = SilloApp()
 
-    def get_greeting() -> str:
+    def get_greeting(_) -> str:
         return "hi"
 
     @app.ws_route("/ws/dep")
@@ -37,7 +38,7 @@ def test_ws_depend_async_callable(
     """An async Depend(callable) is awaited before the handler runs."""
     app = SilloApp()
 
-    async def get_token() -> str:
+    async def get_token(_) -> str:
         return "tok-42"
 
     @app.ws_route("/ws/async-dep")
@@ -51,22 +52,25 @@ def test_ws_depend_async_callable(
             assert ws.receive_text() == "tok-42"
 
 
-def test_ws_get_context_injects_websocket_context(
+def test_ws_dependency_first_param_is_websocket_context(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Depend(get_context=True) injects the live WebSocketContext itself."""
+    """A dependency's first parameter is the live WebSocketContext itself."""
     app = SilloApp()
 
+    seen = {}
+
+    def capture(ctx):
+        seen["ctx"] = ctx
+        return isinstance(ctx, WebSocketContext)
+
     @app.ws_route("/ws/ctx")
-    async def endpoint(
-        ws: WebSocketContext,
-        injected: WebSocketContext = Depend(get_context=True),
-    ):
+    async def endpoint(ws: WebSocketContext, is_ws_ctx: bool = Depend(capture)):
         await ws.accept()
         await ws.send_json(
             {
-                "same_object": injected is ws,
-                "is_ws_context": isinstance(injected, WebSocketContext),
+                "same_object": seen["ctx"] is ws,
+                "is_ws_context": is_ws_ctx,
             }
         )
         await ws.close()
@@ -78,13 +82,13 @@ def test_ws_get_context_injects_websocket_context(
             assert data["is_ws_context"] is True
 
 
-def test_ws_get_context_in_subdependency(
+def test_ws_dependency_reads_off_its_context(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """A sub-dependency can pull the WebSocketContext via get_context=True."""
+    """A sub-dependency reads request data off its WebSocketContext parameter."""
     app = SilloApp()
 
-    def read_protocol(ctx: WebSocketContext = Depend(get_context=True)) -> str:
+    def read_protocol(ctx: WebSocketContext) -> str:
         return ctx.headers.get("sec-websocket-protocol", "none")
 
     @app.ws_route("/ws/subdep")
@@ -104,7 +108,7 @@ def test_ws_depend_with_path_param(
     """Path parameters and Depend markers coexist on the same handler."""
     app = SilloApp()
 
-    def get_prefix() -> str:
+    def get_prefix(_) -> str:
         return "room"
 
     @app.ws_route("/ws/room/{room_id}")
@@ -128,10 +132,10 @@ def test_ws_nested_dependencies(
     """The full dependency tree is resolved deepest-first for a socket."""
     app = SilloApp()
 
-    def get_config() -> dict:
+    def get_config(_) -> dict:
         return {"env": "test"}
 
-    def get_service(config: dict = Depend(get_config)) -> str:
+    def get_service(_, config: dict = Depend(get_config)) -> str:
         return f"service[{config['env']}]"
 
     @app.ws_route("/ws/nested")
@@ -153,7 +157,7 @@ def test_ws_generator_dependency_is_torn_down(
 
     app = SilloApp()
 
-    def get_resource():
+    def get_resource(_):
         events.append("open")
         try:
             yield "resource"

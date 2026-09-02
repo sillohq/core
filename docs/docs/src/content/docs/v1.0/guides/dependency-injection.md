@@ -37,7 +37,7 @@ from sillo import SilloApp, HttpContext, Depend
 app = SilloApp()
 
 
-def get_greeting() -> str:
+def get_greeting(_) -> str:
     return "Hello"
 
 
@@ -46,7 +46,7 @@ async def greet(ctx: HttpContext, greeting: str = Depend(get_greeting)):
     return {"message": greeting}
 ```
 
-`Depend(get_greeting)` tells sillo: *before calling `greet`, call `get_greeting()`, and bind its return value to the `greeting` parameter.* The dependency takes no arguments here, so it's just a zero-arg factory.
+`Depend(get_greeting)` tells sillo: *before calling `greet`, call `get_greeting(ctx)`, and bind its return value to the `greeting` parameter.* Like every dependency, `get_greeting` is called with the context as its first argument; this one doesn't need it, so the parameter is named `_`.
 
 <aside type="tip" title="Dependencies are plain callables">
 `get_greeting` is an ordinary function. That's the whole point. You can
@@ -65,7 +65,7 @@ extractors a handler uses:
 from sillo import HttpContext, Query, Depend
 
 
-def paginate(page: int = Query(1), size: int = Query(20)):
+def paginate(_, page: int = Query(1), size: int = Query(20)):
     offset = (page - 1) * size
     return {"offset": offset, "limit": size, "page": page}
 
@@ -75,24 +75,26 @@ async def items(ctx: HttpContext, p: dict = Depend(paginate)):
     return {"pagination": p, "rows": []}
 ```
 
-Here `paginate` declares `page` and `size` as `Query` extractors. When sillo solves the `p` dependency, it first solves those two extractors from the incoming request, then calls `paginate(offset=..., limit=..., page=...)`, then binds the result to `p`.
+Here `paginate` takes the context as its first parameter (unused, so `_`) and declares `page` and `size` as `Query` extractors. When sillo solves the `p` dependency, it first solves those two extractors from the incoming request, then calls `paginate(ctx, page=..., size=...)`, then binds the result to `p`.
 
 This is the key mental model: **a dependency's own parameters are solved
 recursively before the dependency itself runs.** There is no special
 "dependency API". Dependencies are solved by the exact same engine as the
 route.
 
-##  Injecting the active context
+##  The context is a dependency's first argument
 
-Sometimes a dependency needs the whole context object, to read a header that
-has no extractor, to touch `ctx.state`, or to read the client IP. Use
-`Depend(get_context=True)`:
+A dependency is called exactly like a route handler: its **first positional
+parameter is the context** — an `HttpContext` on an HTTP route, a
+`WebSocketContext` on a WebSocket route. There is no marker for it. Read a
+header that has no extractor, touch `ctx.state`, or get the client IP straight
+off that parameter:
 
 ```python
 from sillo import HttpContext, Depend
 
 
-def get_client_ip(ctx: HttpContext = Depend(get_context=True)):
+def get_client_ip(ctx: HttpContext):
     return ctx.get_client_ip()
 
 
@@ -101,20 +103,16 @@ async def ping(ctx: HttpContext, ip: str = Depend(get_client_ip)):
     return {"client_ip": ip}
 ```
 
-`get_context=True` is special: it doesn't call a function. It injects the live
-context object directly — an `HttpContext` on an HTTP route, a
-`WebSocketContext` on a WebSocket route. You can also write a normal dependency
-that takes `ctx` as a parameter and sillo will inject it:
+A dependency that does not need the context still declares the first parameter.
+Name it `_` to say so:
 
 ```python
-from sillo import HttpContext
-
-def get_client_ip(ctx: HttpContext):
-    return ctx.get_client_ip()
+def get_settings(_):
+    return load_settings()
 ```
 
-Both forms work; `get_context=True` is the shorthand when a dependency *only*
-needs the context.
+Everything after that first parameter is resolved by the DI system — further
+`Depend(...)` markers and `Query`/`Header`/`Cookie` extractors, in any mix.
 
 ##  Nested dependencies
 
@@ -126,7 +124,7 @@ from sillo import SilloApp, HttpContext, Depend
 app = SilloApp()
 
 
-def get_db():
+def get_db(_):
     # imagine this returns a connection / session factory
     return {"conn": "db-connection"}
 
@@ -148,7 +146,7 @@ async def data(
 Resolution order for `GET /data`:
 
 1. `get_current_tenant` needs the context (injected) and `db` (a dependency).
-2. sillo solves `db` first → calls `get_db()` → `{"conn": ...}`.
+2. sillo solves `db` first → calls `get_db(ctx)` → `{"conn": ...}`.
 3. sillo calls `get_current_tenant(ctx, db={"conn": ...})` → result bound to `tenant`.
 4. The handler runs with `tenant` populated.
 
@@ -158,21 +156,21 @@ You never write this ordering yourself. Declare the graph; sillo topsorts and ex
 
 If two dependencies both depend on `get_db`, you usually don't want to open two connections for one request. sillo caches dependency results **per request** by default.
 
-The cache key is the dependency callable plus the names of any request-derived extractors it consumed. So `get_db()` (no request input) is cached once and reused by every other dependency that asks for it in the same request. But a dependency like `get_current_tenant(ctx, db=...)` keyed on the `X-Tenant` header would be re-run if the header value differed.
+The cache key is the dependency callable plus the names of any request-derived extractors it consumed. So `get_db(_)` (no request input) is cached once and reused by every other dependency that asks for it in the same request. But a dependency like `get_current_tenant(ctx, db=...)` keyed on the `X-Tenant` header would be re-run if the header value differed.
 
 ```python
 from sillo import HttpContext
 
-def get_db():
+def get_db(_):
     print("OPENING CONNECTION")   # printed once per ctx
     return object()
 
 
-def needs_db_a(db=Depend(get_db)):
+def needs_db_a(_, db=Depend(get_db)):
     return db
 
 
-def needs_db_b(db=Depend(get_db)):
+def needs_db_b(_, db=Depend(get_db)):
     return db
 
 
@@ -196,7 +194,7 @@ from contextlib import asynccontextmanager
 from sillo import HttpContext, Depend
 
 
-async def db_transaction():
+async def db_transaction(_):
     txn = {"id": "txn-1", "open": True}
     print("BEGIN")
     try:
@@ -246,7 +244,7 @@ def get_actor(ctx: HttpContext):
 @app.post("/orders", request_model=CreateOrder)
 async def create_order(
     ctx: HttpContext,
-    order: CreateOrder = Depend(lambda: ctx.validated_data),
+    order: CreateOrder = Depend(lambda c: c.validated_data),
     actor: str = Depend(get_actor),
     dry_run: bool = Query(False),
 ):
@@ -293,7 +291,7 @@ app = SilloApp()
 
 
 # --- resource-owning dependency (generator => auto cleanup) ---
-async def db_session():
+async def db_session(_):
     session = {"id": "sess-1"}
     print("session open")
     try:
@@ -324,7 +322,7 @@ async def create_note(
     ctx: HttpContext,
     session: dict = Depend(db_session),
     user: dict = Depend(auth_user),
-    note: NoteIn = Depend(lambda: ctx.validated_data),
+    note: NoteIn = Depend(lambda c: c.validated_data),
     echo: bool = Query(False),
 ):
     return {
@@ -402,6 +400,9 @@ assert resp.status_code == 200
   smell. Flatten when a dependency only exists to pass values through.
 - **Doing I/O in a non-generator dependency**: if you open a connection and
   `return` it, nothing closes it. Use `yield` so the teardown runs.
+- **Forgetting the context parameter.** Every dependency is called with the
+  context first, so `def get_flag(): ...` raises `TypeError` at request time.
+  Give it a leading parameter — `def get_flag(_): ...`.
 
 ##  On WebSocket routes
 
@@ -409,7 +410,7 @@ Everything on this page applies to a `@app.ws_route(...)` handler as well. Its
 signature is analysed the same way, so it can declare `Depend(...)` parameters,
 nest them, and use `yield` dependencies — the teardown runs when the connection
 handler returns. The tree is resolved once, when the socket connects, not per
-message. `Depend(get_context=True)` injects the `WebSocketContext`. See
+message. A dependency's first parameter is the `WebSocketContext`. See
 [WebSockets → Dependency injection](/v1.0/guides/websockets/#dependency-injection).
 
 ##  Works with

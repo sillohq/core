@@ -23,7 +23,7 @@ def test_basic_dependency_injection(
     """Test basic dependency injection with a simple function"""
     app = SilloApp()
 
-    def get_user_id():
+    def get_user_id(_):
         return "user_123"
 
     @app.get("/user")
@@ -42,7 +42,7 @@ def test_async_dependency_injection(
     """Test async dependency injection"""
     app = SilloApp()
 
-    async def async_get_user_id():
+    async def async_get_user_id(_):
         return "async_user_456"
 
     @app.get("/async-user")
@@ -64,10 +64,10 @@ def test_nested_dependencies(test_client_factory: Callable[[SilloApp], TestClien
     """Test nested dependencies where one dependency depends on another"""
     app = SilloApp()
 
-    def get_user_id():
+    def get_user_id(_):
         return "user_123"
 
-    def get_user_context(user_id: str = Depend(get_user_id)):
+    def get_user_context(_, user_id: str = Depend(get_user_id)):
         return {"user_id": user_id, "context": "test_context"}
 
     @app.get("/nested-user")
@@ -90,10 +90,10 @@ def test_async_nested_dependencies(
     """Test nested dependencies with async functions"""
     app = SilloApp()
 
-    async def async_get_user_id():
+    async def async_get_user_id(_):
         return "async_user_789"
 
-    def get_user_context(user_id: str = Depend(async_get_user_id)):
+    def get_user_context(_, user_id: str = Depend(async_get_user_id)):
         return {"user_id": user_id, "context": "async_context"}
 
     @app.get("/async-nested-user")
@@ -119,13 +119,13 @@ def test_deeply_nested_dependencies(
     """Test deeply nested dependencies (3+ levels)"""
     app = SilloApp()
 
-    def get_base_value():
+    def get_base_value(_):
         return "base_value"
 
-    def get_middle_value(base: str = Depend(get_base_value)):
+    def get_middle_value(_, base: str = Depend(get_base_value)):
         return {"base": base, "middle": "middle_value"}
 
-    def get_user_context(middle: dict = Depend(get_middle_value)):
+    def get_user_context(_, middle: dict = Depend(get_middle_value)):
         return {"user_id": "deep_user", "context": middle, "level": "deep"}
 
     @app.get("/deep-nested")
@@ -151,13 +151,13 @@ def test_async_deeply_nested_dependencies(
     """Test deeply nested dependencies with mixed sync/async functions"""
     app = SilloApp()
 
-    async def async_get_base_value():
+    async def async_get_base_value(_):
         return "async_base"
 
-    def get_middle_value(base: str = Depend(async_get_base_value)):
+    def get_middle_value(_, base: str = Depend(async_get_base_value)):
         return {"base": base, "middle": "sync_middle"}
 
-    async def async_get_user_context(middle: dict = Depend(get_middle_value)):
+    async def async_get_user_context(_, middle: dict = Depend(get_middle_value)):
         return {"user_id": "async_deep_user", "context": middle, "level": "async_deep"}
 
     @app.get("/async-deep-nested")
@@ -188,7 +188,7 @@ def test_dependency_with_query_extractor(
 
     app = SilloApp()
 
-    def get_filtered_user(limit: str = Query(default="10")):
+    def get_filtered_user(_, limit: str = Query(default="10")):
         return {"user_id": "query_user", "limit": limit}
 
     @app.get("/query-user")
@@ -214,11 +214,11 @@ def test_dependency_with_mixed_extractor_and_dependencies(
 
     app = SilloApp()
 
-    def get_user_id():
+    def get_user_id(_):
         return "mixed_user_123"
 
     def get_user_with_extractor(
-        limit: str = Query(default="20"), user_id: str = Depend(get_user_id)
+        _, limit: str = Query(default="20"), user_id: str = Depend(get_user_id)
     ):
         return {
             "user_id": user_id,
@@ -246,7 +246,7 @@ def test_dependency_with_mixed_extractor_and_dependencies(
 def test_app_level_dependencies(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test dependencies defined at the app level"""
 
-    def get_app_config():
+    def get_app_config(_):
         return {"app_name": "test_app", "version": "1.0"}
 
     app = SilloApp(dependencies=[Depend(get_app_config)])
@@ -269,7 +269,7 @@ def test_app_level_async_dependencies(
 ):
     """Test async dependencies at the app level"""
 
-    async def async_get_app_config():
+    async def async_get_app_config(_):
         return {"app_name": "async_app", "version": "2.0", "async": True}
 
     app = SilloApp(dependencies=[Depend(async_get_app_config)])
@@ -299,7 +299,7 @@ def test_router_level_dependencies(
     """Test dependencies defined at the router level"""
     app = SilloApp()
 
-    def get_router_config():
+    def get_router_config(_):
         return {"router_name": "test_router", "prefix": "/api"}
 
     router = Router(prefix="/api", dependencies=[Depend(get_router_config)])
@@ -324,13 +324,14 @@ def test_router_level_dependencies_with_app_dependencies(
 ):
     """Test router-level dependencies combined with app-level dependencies"""
 
-    def get_app_config():
+    def get_app_config(_):
         return {"app_name": "main_app"}
 
-    def get_router_config():
+    def get_router_config(_):
         return {"router_name": "api_router"}
 
     def get_combined_config(
+        _,
         app_config: dict = Depend(get_app_config),
         router_config: dict = Depend(get_router_config),
     ):
@@ -365,13 +366,14 @@ def test_nested_router_dependencies(
     """Test dependencies in nested routers"""
     app = SilloApp()
 
-    def get_api_config():
+    def get_api_config(_):
         return {"api_version": "v1"}
 
-    def get_users_config():
+    def get_users_config(_):
         return {"users_module": "active"}
 
     def get_combined_nested_config(
+        _,
         api_config: dict = Depend(get_api_config),
         users_config: dict = Depend(get_users_config),
     ):
@@ -408,22 +410,23 @@ def test_deeply_nested_router_dependencies(
     """Test dependencies in deeply nested routers (3+ levels)"""
     app = SilloApp()
 
-    def get_app_config():
+    def get_app_config(_):
         return {"app": "main"}
 
-    def get_api_config():
+    def get_api_config(_):
         return {"api": "v1"}
 
-    def get_v1_config():
+    def get_v1_config(_):
         return {"version": "1.0"}
 
-    def get_users_config():
+    def get_users_config(_):
         return {"users": "module"}
 
-    def get_profiles_config():
+    def get_profiles_config(_):
         return {"profiles": "submodule"}
 
     def get_combined_deep_config(
+        _,
         app_config: dict = Depend(get_app_config),
         api_config: dict = Depend(get_api_config),
         v1_config: dict = Depend(get_v1_config),
@@ -489,23 +492,24 @@ def test_mixed_app_router_nested_dependencies(
     """Test complex scenario with app, router, and nested dependencies"""
     app = SilloApp()
 
-    def get_database_connection():
+    def get_database_connection(_):
         return {"db": "connected", "pool": "active"}
 
-    def get_user_service(db: dict = Depend(get_database_connection)):
+    def get_user_service(_, db: dict = Depend(get_database_connection)):
         return {"service": "user_service", "db": db}
 
-    def get_auth_service():
+    def get_auth_service(_):
         return {"auth": "enabled", "method": "jwt"}
 
     def get_api_config(
+        _,
         db: dict = Depend(get_database_connection),
         user_service: dict = Depend(get_user_service),
     ):
         return {"api": "v1", "db": db, "user_service": user_service}
 
     def get_user_handler_config(
-        auth: dict = Depend(get_auth_service), api: dict = Depend(get_api_config)
+        _, auth: dict = Depend(get_auth_service), api: dict = Depend(get_api_config)
     ):
         return {"handler": "user_handler", "auth": auth, "api": api}
 
@@ -545,7 +549,7 @@ def test_generator_dependencies(test_client_factory: Callable[[SilloApp], TestCl
     """Test generator-based dependencies"""
     app = SilloApp()
 
-    def get_database_connection():
+    def get_database_connection(_):
         db_pool = {"connections": []}
         try:
             # Simulate resource allocation
@@ -575,7 +579,7 @@ def test_async_generator_dependencies(
     """Test async generator-based dependencies"""
     app = SilloApp()
 
-    async def async_get_database_connection():
+    async def async_get_database_connection(_):
         db_pool = {"connections": []}
         try:
             # Simulate async resource allocation
@@ -607,7 +611,7 @@ def test_generator_dependency_cleanup(
     app = SilloApp()
     cleanup_state = {"closed": False}
 
-    def get_resource():
+    def get_resource(_):
         resource = {"conn": "open"}
         try:
             yield resource
@@ -632,13 +636,13 @@ def test_nested_yield_dependencies(
     app = SilloApp()
     flags = {"inner_closed": False, "outer_closed": False}
 
-    def outer_dep():
+    def outer_dep(_):
         try:
             yield {"outer": True}
         finally:
             flags["outer_closed"] = True
 
-    def inner_dep(outer=Depend(outer_dep)):
+    def inner_dep(_, outer=Depend(outer_dep)):
         try:
             yield {"inner": True, "outer": outer}
         finally:
@@ -665,7 +669,7 @@ def test_async_yield_dependencies_cleanup(
     app = SilloApp()
     state = {"closed": False}
 
-    async def async_dep():
+    async def async_dep(_):
         try:
             yield {"resource": "async_ready"}
         finally:
@@ -689,21 +693,21 @@ def test_deep_yield_dependency_chain(
     app = SilloApp()
     order = []
 
-    def dep_a():
+    def dep_a(_):
         order.append("setup_a")
         try:
             yield "A"
         finally:
             order.append("cleanup_a")
 
-    async def dep_b(a=Depend(dep_a)):
+    async def dep_b(_, a=Depend(dep_a)):
         order.append("setup_b")
         try:
             yield f"B({a})"
         finally:
             order.append("cleanup_b")
 
-    def dep_c(b=Depend(dep_b)):
+    def dep_c(_, b=Depend(dep_b)):
         order.append("setup_c")
         try:
             yield f"C({b})"
@@ -730,39 +734,42 @@ def test_deep_yield_dependency_chain(
         ]
 
 
-# ========== Depend(get_context=True) Tests ==========
+# ========== Context as a dependency's first parameter ==========
 
 
-def test_depend_get_context_in_handler(
+def test_dependency_first_param_is_the_context(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Depend(get_context=True) in handler injects the raw HttpContext."""
+    """A dependency's first positional parameter is the live HttpContext."""
     app = SilloApp()
 
-    @app.get("/context-injected")
-    async def handler(
-        ctx: HttpContext,
-        injected: HttpContext = Depend(get_context=True),
-    ):
-        # Same object, reached two ways — that is what this asserts.
-        assert injected is ctx
-        return json({"path": injected.url.path, "method": injected.method})
+    seen = {}
+
+    def get_path(ctx: HttpContext):
+        seen["ctx"] = ctx
+        return ctx.url.path
+
+    @app.get("/context-first")
+    async def handler(ctx: HttpContext, path: str = Depend(get_path)):
+        # The dependency saw the same context object the handler did.
+        assert seen["ctx"] is ctx
+        return json({"path": path, "method": ctx.method})
 
     with test_client_factory(app) as client:
-        resp = client.get("/context-injected")
+        resp = client.get("/context-first")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["path"] == "/context-injected"
+        assert data["path"] == "/context-first"
         assert data["method"] == "GET"
 
 
-def test_depend_get_context_in_subdependency(
+def test_dependency_reads_headers_off_the_context(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Depend(get_context=True) in a sub-dependency receives HttpContext."""
+    """A dependency reads request data straight off its context parameter."""
     app = SilloApp()
 
-    def get_auth_info(ctx: HttpContext = Depend(get_context=True)):
+    def get_auth_info(ctx: HttpContext):
         return {"token": ctx.headers.get("authorization", "none")}
 
     @app.get("/auth-info")
@@ -778,17 +785,17 @@ def test_depend_get_context_in_subdependency(
         assert resp.json()["auth"]["token"] == "Bearer abc123"
 
 
-def test_depend_get_context_with_other_deps(
+def test_dependency_context_plus_sub_dependencies(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Depend(get_context=True) combined with other Depend deps."""
+    """The context parameter coexists with further Depend markers."""
     app = SilloApp()
 
-    def get_user_id():
+    def get_user_id(_):
         return "user_42"
 
     def get_full_context(
-        ctx: HttpContext = Depend(get_context=True),
+        ctx: HttpContext,
         user_id: str = Depend(get_user_id),
     ):
         return {
@@ -813,27 +820,25 @@ def test_depend_get_context_with_other_deps(
         assert data["method"] == "POST"
 
 
-def test_depend_get_context_and_normal_dep_in_handler(
+def test_context_dependency_and_plain_dependency_in_one_handler(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Mix Depend(get_context=True) and Depend(callable) in same handler."""
+    """One dependency uses its context, another ignores it — same handler."""
     app = SilloApp()
 
-    def get_db():
+    def get_db(_):
         return "db_connected"
+
+    def get_path(ctx: HttpContext):
+        return ctx.url.path
 
     @app.get("/mixed-handler")
     async def handler(
         ctx: HttpContext,
-        injected: HttpContext = Depend(get_context=True),
+        path: str = Depend(get_path),
         db: str = Depend(get_db),
     ):
-        return json(
-            {
-                "path": injected.url.path,
-                "db": db,
-            }
-        )
+        return json({"path": path, "db": db})
 
     with test_client_factory(app) as client:
         resp = client.get("/mixed-handler")

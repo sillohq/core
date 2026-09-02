@@ -156,8 +156,8 @@ class WebsocketRoute(BaseRoute):
         asynchronous validation checks are performed on the handler.
 
         The handler's signature is analysed the same way an HTTP route's is,
-        so it may declare ``Depend(...)`` parameters. ``Depend(get_context=True)``
-        injects the live ``WebSocketContext``.
+        so it may declare ``Depend(...)`` parameters. Each dependency callable
+        receives the live ``WebSocketContext`` as its first positional argument.
 
         Args:
             path: URL path pattern for the WebSocket endpoint. Supports
