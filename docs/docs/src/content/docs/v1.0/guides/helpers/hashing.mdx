@@ -114,7 +114,7 @@ async def login(ctx: HttpContext):
 
     if not user or not valid:
         return json({"error": "Invalid credentials"}, status_code=401)
-    return json({"token": issue_token(user)})
+    return {"token": issue_token(user)}
 ```
 
 `_DUMMY_HASH` is a bcrypt hash of any throwaway string, computed once at import. Without it, a request for an unknown email returns in a millisecond while a request for a known email takes 250ms, and an attacker times the difference to enumerate your users.
@@ -205,7 +205,7 @@ async def upload(ctx: HttpContext):
     existing = await Blob.get_or_none(digest=fingerprint)
     if existing:
         # Byte-identical file already stored; link rather than duplicate.
-        return json({"id": existing.id, "deduplicated": True})
+        return {"id": existing.id, "deduplicated": True}
 
     blob = await Blob.create(digest=fingerprint, size=len(data))
     return json({"id": blob.id, "deduplicated": False}, status_code=201)
@@ -251,7 +251,7 @@ async def stripe_webhook(ctx: HttpContext):
 
     event = await ctx.json
     await handle_event(event)
-    return json({"received": True})
+    return {"received": True}
 ```
 
 Two details in that example are not optional. Sign the **raw body**, not the
@@ -303,12 +303,12 @@ Push it to a thread:
 
 ```python
 from anyio import to_thread
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post("/verify")
 async def verify(ctx: HttpContext):
     digest = await to_thread.run_sync(hash_file, "/data/upload.bin")
-    return json({"sha256": digest})
+    return {"sha256": digest}
 ```
 
 For anything large or frequent, move it out of the request path entirely with [Background Tasks](/v1.0/guides/work/background/).

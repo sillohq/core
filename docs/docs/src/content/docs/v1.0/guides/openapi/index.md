@@ -13,7 +13,7 @@ sillo provides comprehensive, automatic API documentation powered by the OpenAPI
 By default, sillo generates complete OpenAPI documentation for all your routes:
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 
 app = SilloApp(
     title="My API",
@@ -24,7 +24,7 @@ app = SilloApp(
 @app.get("/users/{user_id}")
 async def get_user(ctx: HttpContext, user_id: int):
     """Retrieve a user by their ID."""
-    return json({"id": user_id, "name": "John Doe"})
+    return {"id": user_id, "name": "John Doe"}
 ```
 
 This automatically creates:
@@ -76,15 +76,15 @@ Every route automatically generates documentation including:
 - Default status codes and descriptions
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/health")
 async def health_check(ctx: HttpContext):
     """Check if the API is running and responsive."""
-    return json({
+    return {
         "status": "healthy", 
         "timestamp": "2024-01-01T12:00:00Z"
-    })
+    }
 ```
 
 The docstring becomes the endpoint description, and sillo automatically documents the response structure.

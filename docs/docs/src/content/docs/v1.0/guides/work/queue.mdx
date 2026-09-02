@@ -590,16 +590,16 @@ class SendEmail(Job):
 Expose these via a metrics endpoint:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/admin/queue-metrics")
 async def metrics(ctx: HttpContext):
     conn = ctx.app.state["queue_connection"]
-    return json({
+    return {
         "critical_depth": await conn.size("critical"),
         "default_depth": await conn.size("default"),
         "reports_depth": await conn.size("reports"),
-    })
+    }
 ```
 
 ---
@@ -1077,15 +1077,15 @@ minute is healthy, and one with three jobs that have been stuck for an hour is
 not.
 
 ```python title="a queue health endpoint"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/admin/queues")
 async def queue_health(ctx: HttpContext):
     connection = ctx.app.state["queue_connection"]
-    return json({
+    return {
         name: await connection.size(name)
         for name in ("critical", "default", "reports")
-    })
+    }
 ```
 
 Alert on **oldest job age** rather than count, and on failure rate as a

@@ -172,7 +172,7 @@ async def protected_route(ctx: HttpContext):
     if not user:
         return json({"error": "Invalid token"}).status(401).delete_cookie("auth_token")
     
-    return json({"message": f"Welcome {user}"})
+    return {"message": f"Welcome {user}"}
 
 @app.get("/logout")
 async def logout(ctx: HttpContext):

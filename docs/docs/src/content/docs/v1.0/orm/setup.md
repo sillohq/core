@@ -111,7 +111,7 @@ from sillo import HttpContext, json
 @app.get("/health")
 async def health(ctx: HttpContext):
     ok = await app.state["record"].health()
-    return json({"database": ok}, status=200 if ok else 503)
+    return json({"database": ok}, status_code=200 if ok else 503)
 ```
 
 ## Building one by hand

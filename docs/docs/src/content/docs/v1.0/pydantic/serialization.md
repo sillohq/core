@@ -76,7 +76,7 @@ Only the fields the caller actually provided. This is what makes a PATCH
 endpoint correct:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class PostUpdate(BaseModel):
     title: str | None = None
@@ -88,7 +88,7 @@ class PostUpdate(BaseModel):
 async def update_post(ctx: HttpContext, payload, id=Path(type=int)):
     post = await Post.get(id=id)
     await post.update_from_dict(payload.model_dump(exclude_unset=True))
-    return json(post.to_dict())
+    return post.to_dict()
 ```
 
 Without it, a client sending only `{"title": "New"}` also writes
@@ -236,12 +236,12 @@ Where a round trip matters (caching a model, queueing one as a job payload) use
 ## In a Sillo handler
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/posts/{id:int}", response_model=PostOut)
 async def get_post(ctx: HttpContext, id=Path(type=int)):
     post = await Post.get(id=id)
-    return json(PostOut.model_validate(post).model_dump(mode="json"))
+    return PostOut.model_validate(post).model_dump(mode="json")
 ```
 
 With `response_model=` declared, Sillo validates and shapes the return value

@@ -271,7 +271,7 @@ simplest bridge is a direct call:
 from sillo.websockets import ChannelBox
 
 
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post("/orders/{order_id}/ship")
 async def ship_order(ctx: HttpContext):
@@ -282,7 +282,7 @@ async def ship_order(ctx: HttpContext):
         f"order:{order.id}",
         {"type": "order.shipped", "data": {"id": order.id, "at": order.shipped_at}},
     )
-    return json({"ok": True})
+    return {"ok": True}
 ```
 
 That couples the order endpoint to the WebSocket layer. For anything
@@ -356,7 +356,7 @@ default manager, unbounded and prone to being wiped wholesale.
 The pattern that works is a sequence number plus a catch-up query.
 
 ```python title="messages carry a monotonic cursor"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post("/rooms/{room_id}/messages")
 async def post_message(ctx: HttpContext):
@@ -367,7 +367,7 @@ async def post_message(ctx: HttpContext):
         f"room:{message.room_id}",
         {"type": "chat.message", "seq": message.id, "data": {"text": message.text}},
     )
-    return json({"id": message.id})
+    return {"id": message.id}
 ```
 
 ```python title="the client asks for what it missed"

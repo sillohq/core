@@ -784,83 +784,83 @@ app.use(AuthenticationMiddleware(
 #### Public route (no auth):
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/health")
 async def health(ctx: HttpContext):
-    return json({"status": "ok"})
+    return {"status": "ok"}
 ```
 
 #### Authenticated route (any scheme):
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/profile", auth=useAuth())
 async def profile(ctx: HttpContext):
-    return json({"user": ctx.user.display_name})
+    return {"user": ctx.user.display_name}
 ```
 
 #### JWT-only route:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/api/data", auth=useAuth(schemes=["bearerAuth"]))
 async def api_data(ctx: HttpContext):
-    return json({"data": "..."})
+    return {"data": "..."}
 ```
 
 #### Permission-gated route:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post("/admin/users", auth=useAuth(permissions=["manage_users"]))
 async def manage_users(ctx: HttpContext):
-    return json({"status": "ok"})
+    return {"status": "ok"}
 ```
 
 #### Optional authentication:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/feed", auth=useAuth(required=False))
 async def feed(ctx: HttpContext):
     if ctx.user.is_authenticated:
-        return json({"feed": "personalized"})
-    return json({"feed": "public"})
+        return {"feed": "personalized"}
+    return {"feed": "public"}
 ```
 
 #### Custom backend override:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post("/webhook", auth=useAuth(backends=[SignedTimestampBackend(secret="...")]))
 async def webhook(ctx: HttpContext):
-    return json({"received": True})
+    return {"received": True}
 ```
 
 #### Multiple schemes (any of):
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/resource", auth=useAuth(schemes=["bearerAuth", "sessionCookie"]))
 async def resource(ctx: HttpContext):
-    return json({"data": "..."})
+    return {"data": "..."}
 ```
 
 #### Multiple schemes (all of):
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.delete("/critical", auth=useAuth(schemes=["bearerAuth", "apiKeyHeader"], all_of=True))
 async def critical(ctx: HttpContext):
-    return json({"deleted": True})
+    return {"deleted": True}
 ```
 
 ### Subclassing useAuth

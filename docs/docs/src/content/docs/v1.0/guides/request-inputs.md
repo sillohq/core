@@ -96,7 +96,7 @@ async def upload_file(ctx: HttpContext):
 
     content = await document.read()           # bytes
     filename = document.filename
-    return json({"saved": filename, "bytes": len(content)})
+    return {"saved": filename, "bytes": len(content)}
 ```
 
 `UploadedFile` exposes `filename`, `content_type`, and an async `read()`
@@ -142,7 +142,7 @@ async def create_user(ctx: HttpContext):
     except ValidationError as e:
         return json({"error": e.errors()}, status_code=422)
 
-    return json({"user": user.model_dump()})
+    return {"user": user.model_dump()}
 ```
 
 sillo also ships the `request_model` hook on routes for automatic validation.

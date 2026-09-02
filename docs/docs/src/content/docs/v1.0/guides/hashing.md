@@ -210,7 +210,7 @@ async def login(ctx: HttpContext, username: str, password: str):
             user.set_password(password)
             await user.save()
         
-        return json({"token": generate_jwt_token(user)})
+        return {"token": generate_jwt_token(user)}
     
     return json({"error": "Invalid credentials"}, status_code=401)
 ```
@@ -402,7 +402,7 @@ Analyze password strength and provide feedback.
 
 ```python
 from sillo.hashing import password_strength
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 result = password_strength("MySecurePass123!@#")
 print(result)
@@ -424,7 +424,7 @@ print(result)
 @app.post("/check-password-strength")
 async def check_strength(ctx: HttpContext, password: str = Query(...)):
     result = password_strength(password)
-    return json(result)
+    return result
 ```
 
 #### `constant_time_compare(val1: str, val2: str) -> bool`
@@ -715,7 +715,7 @@ async def login(
     
     # Generate JWT token
     token = generate_jwt_token(user)
-    return json({"token": token})
+    return {"token": token}
 ```
 
 ### Change Password
@@ -759,7 +759,7 @@ async def change_password(
     user.set_password(new_password)
     await user.save()
     
-    return json({"message": "Password updated"})
+    return {"message": "Password updated"}
 ```
 
 ### Password Reset
@@ -775,7 +775,7 @@ async def request_reset(ctx: HttpContext, email: str = Query(...)):
     user = await User.get_or_none(email=email)
     if not user:
         # Don't reveal if user exists
-        return json({"message": "If email exists, reset link sent"})
+        return {"message": "If email exists, reset link sent"}
     
     # Generate reset token (JWT or other)
     reset_token = generate_reset_token(user)
@@ -786,7 +786,7 @@ async def request_reset(ctx: HttpContext, email: str = Query(...)):
     # Send email with reset link
     await send_password_reset_email(user.email, reset_token)
     
-    return json({"message": "Reset link sent to email"})
+    return {"message": "Reset link sent to email"}
 
 @app.post("/reset-password")
 async def reset_password(
@@ -817,7 +817,7 @@ async def reset_password(
     # Invalidate token
     await cache.delete(f"reset:{token}")
     
-    return json({"message": "Password reset successfully"})
+    return {"message": "Password reset successfully"}
 ```
 
 ### Admin User Creation

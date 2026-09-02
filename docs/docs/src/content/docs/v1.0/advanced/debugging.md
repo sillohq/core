@@ -592,7 +592,7 @@ sends the one without the cookie.
 from sillo import json
 
 json({"ok": True}).set_cookie("session", "abc")
-return json({"ok": True})
+return {"ok": True}
 
 # RIGHT: one response, built and returned
 return json({"ok": True}).set_cookie("session", "abc")

@@ -24,7 +24,7 @@ Response models provide essential benefits for API development:
 Define response schemas using Pydantic's `BaseModel`:
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
@@ -60,7 +60,7 @@ async def get_user(ctx: HttpContext, user_id: int):
     
     # Return validated response
     user = UserResponse(**user_data)
-    return json(user.dict())
+    return user.dict()
 ```
 
 ##  Multiple Response Models
@@ -107,7 +107,7 @@ async def get_user_with_errors(ctx: HttpContext, user_id: int):
                 code=400,
                 details={"user_id": user_id, "reason": "Must be positive"}
             )
-            return json(error.dict(), status=400)
+            return json(error.dict(), status_code=400)
         
         if user_id == 999:
             error = ErrorResponse(
@@ -115,7 +115,7 @@ async def get_user_with_errors(ctx: HttpContext, user_id: int):
                 code=404,
                 details={"user_id": user_id}
             )
-            return json(error.dict(), status=404)
+            return json(error.dict(), status_code=404)
         
         # Return successful response
         user = UserResponse(
@@ -124,7 +124,7 @@ async def get_user_with_errors(ctx: HttpContext, user_id: int):
             email="john@example.com",
             is_active=True
         )
-        return json(user.dict())
+        return user.dict()
         
     except Exception as e:
         error = ErrorResponse(
@@ -132,7 +132,7 @@ async def get_user_with_errors(ctx: HttpContext, user_id: int):
             code=500,
             details={"exception": str(e)}
         )
-        return json(error.dict(), status=500)
+        return json(error.dict(), status_code=500)
 ```
 
 ##  Collection Responses
@@ -140,7 +140,7 @@ async def get_user_with_errors(ctx: HttpContext, user_id: int):
 Handle lists and paginated responses:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class UserListItem(BaseModel):
     id: int
@@ -188,7 +188,7 @@ async def list_users(ctx: HttpContext):
         has_prev=page > 1
     )
     
-    return json(response_data.dict())
+    return response_data.dict()
 
 # Simple list response
 @app.get(
@@ -201,7 +201,7 @@ async def get_active_users(ctx: HttpContext):
         UserListItem(id=1, username="alice", email="alice@example.com", is_active=True),
         UserListItem(id=2, username="bob", email="bob@example.com", is_active=True)
     ]
-    return json([user.dict() for user in users])
+    return [user.dict() for user in users]
 ```
 
 ##  Advanced Response Patterns
@@ -325,7 +325,7 @@ async def get_user_wrapped(ctx: HttpContext, user_id: int):
             request_id=ctx.headers.get('X-Request-ID')
         )
         
-        return json(wrapped_response.dict())
+        return wrapped_response.dict()
         
     except Exception as e:
         error_response = ApiErrorResponse(
@@ -334,7 +334,7 @@ async def get_user_wrapped(ctx: HttpContext, user_id: int):
             details={"exception": str(e)},
             request_id=ctx.headers.get('X-Request-ID')
         )
-        return json(error_response.dict(), status=500)
+        return json(error_response.dict(), status_code=500)
 ```
 
 ##  Response Customization
@@ -346,7 +346,7 @@ Handle special data types and formats:
 ```python
 from decimal import Decimal
 from enum import Enum
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class UserStatus(str, Enum):
     ACTIVE = "active"
@@ -382,7 +382,7 @@ async def get_account(ctx: HttpContext, account_id: int):
         status=UserStatus.ACTIVE,
         created_at=datetime.now()
     )
-    return json(account.dict())
+    return account.dict()
 ```
 
 ###  Response Headers
@@ -390,7 +390,7 @@ async def get_account(ctx: HttpContext, account_id: int):
 Document custom response headers:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get(
     "/users/{user_id}/download",
@@ -428,7 +428,7 @@ async def export_user_data(ctx: HttpContext, user_id: int):
     response.headers['X-Export-Format'] = 'json'
     response.headers['X-Record-Count'] = '1'
     
-    return json(user_data.dict())
+    return user_data.dict()
 ```
 
 ##  Best Practices

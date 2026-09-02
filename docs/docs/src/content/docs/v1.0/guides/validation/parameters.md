@@ -432,7 +432,7 @@ async def products(ctx: HttpContext, sort: str = Query("created", type=str)):
     column = SORTABLE.get(sort)
     if column is None:
         return json({"error": "unknown sort field"}, status_code=422)
-    return json(await Product.all().order_by(column))
+    return await Product.all().order_by(column)
 ```
 
 A `pattern=` constraint that permits `[a-z_]+` still permits `password`,

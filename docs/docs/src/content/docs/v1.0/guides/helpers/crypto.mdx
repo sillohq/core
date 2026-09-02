@@ -309,7 +309,7 @@ async def unsubscribe(ctx: HttpContext):
 
     _, _, user_id = value.partition(":")
     await User.filter(id=int(user_id)).update(subscribed=False)
-    return json({"unsubscribed": True})
+    return {"unsubscribed": True}
 ```
 
 The user can read their own ID in the token, which is fine. It is their ID.

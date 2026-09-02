@@ -23,7 +23,7 @@ Customizing your OpenAPI configuration provides several benefits:
 Set fundamental API information directly in the `SilloApp` constructor:
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 
 app = SilloApp(
     title="E-Commerce API",
@@ -45,11 +45,11 @@ app = SilloApp(
 @app.get("/health")
 async def health_check(ctx: HttpContext):
     """API health check endpoint."""
-    return json({
+    return {
         "status": "healthy",
         "version": "2.1.0",
         "timestamp": "2024-01-01T12:00:00Z"
-    })
+    }
 ```
 
 ##  Advanced Configuration
@@ -125,7 +125,7 @@ Organize your API endpoints with comprehensive tagging:
 
 ```python
 # Define comprehensive tags for API organization
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 api_tags = [
     Tag(
@@ -177,7 +177,7 @@ app.openapi_config.openapi_spec.tags = api_tags
     description="Authenticate user and return access token"
 )
 async def login(ctx: HttpContext):
-    return json({"access_token": "jwt_token_here"})
+    return {"access_token": "jwt_token_here"}
 
 @app.get(
     "/products",
@@ -186,7 +186,7 @@ async def login(ctx: HttpContext):
     description="Retrieve paginated list of products with filtering options"
 )
 async def list_products(ctx: HttpContext):
-    return json({"products": [], "total": 0})
+    return {"products": [], "total": 0}
 ```
 
 ##  Security Schemes Configuration
@@ -453,7 +453,7 @@ Add custom extensions for specific tooling or documentation needs:
 
 ```python
 # Add custom extensions to the OpenAPI spec
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.openapi_config.openapi_spec.info.extensions = {
     "x-api-id": "ecommerce-api-v2",
@@ -484,7 +484,7 @@ app.openapi_config.openapi_spec.info.extensions = {
     }
 )
 async def get_product(ctx: HttpContext, product_id: int):
-    return json({"id": product_id, "name": "Product Name"})
+    return {"id": product_id, "name": "Product Name"}
 ```
 
 ###  Conditional Documentation
@@ -492,7 +492,7 @@ async def get_product(ctx: HttpContext, product_id: int):
 Show different documentation based on user roles or API versions:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 def create_api_for_role(role: str):
     """Create API instance with role-specific documentation"""
@@ -506,7 +506,7 @@ def create_api_for_role(role: str):
         
         @app.get("/admin/users", tags=["Admin"])
         async def admin_list_users(ctx: HttpContext):
-            return json({"users": []})
+            return {"users": []}
             
     elif role == "partner":
         app = SilloApp(
@@ -517,7 +517,7 @@ def create_api_for_role(role: str):
         
         @app.get("/partner/orders", tags=["Orders"])
         async def partner_orders(ctx: HttpContext):
-            return json({"orders": []})
+            return {"orders": []}
             
     else:  # public
         app = SilloApp(
@@ -528,7 +528,7 @@ def create_api_for_role(role: str):
         
         @app.get("/products", tags=["Products"])
         async def public_products(ctx: HttpContext):
-            return json({"products": []})
+            return {"products": []}
     
     return app
 
@@ -544,7 +544,7 @@ Track documentation usage and effectiveness:
 
 ```python
 # Add analytics tracking to documentation
-from sillo import HttpContext, json, html
+from sillo import HttpContext, html
 
 @app.get("/docs-analytics")
 async def docs_analytics(ctx: HttpContext):
@@ -556,7 +556,7 @@ async def docs_analytics(ctx: HttpContext):
     # Track metrics (implement your analytics logic)
     await track_docs_access(user_agent, referrer)
     
-    return json({"tracked": True})
+    return {"tracked": True}
 
 # Custom documentation with analytics
 custom_docs_html = f"""

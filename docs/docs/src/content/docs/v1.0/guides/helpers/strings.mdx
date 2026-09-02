@@ -130,7 +130,7 @@ The common use is serializing a Python model to a JavaScript-facing API:
 
 ```python title="snake_case models, camelCase JSON"
 from sillo.helpers.strings import snake_to_camel
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 def camelize(data: dict) -> dict:
     """Convert every top-level key to camelCase for the JSON response."""
@@ -139,7 +139,7 @@ def camelize(data: dict) -> dict:
 @app.get("/users/{id}")
 async def get_user(ctx: HttpContext, id: int):
     user = await User.get(id=id)
-    return json(camelize(user.to_dict()))
+    return camelize(user.to_dict())
     # {"firstName": "Ada", "createdAt": "2026-01-01T00:00:00Z"}
 ```
 
@@ -226,7 +226,7 @@ niche provider that narrows the user population, drop the field rather than
 masking it.
 
 ```python title="Confirming a password reset without leaking the address"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post("/password-reset")
 async def request_reset(ctx: HttpContext):
@@ -236,9 +236,9 @@ async def request_reset(ctx: HttpContext):
         await send_reset_email(user)
     # Always return the same shape whether or not the account exists, so this
     # endpoint cannot be used to enumerate registered addresses.
-    return json({
+    return {
         "message": f"If that account exists, a link was sent to {mask_email(body['email'])}"
-    })
+    }
 ```
 
 <Aside type="caution" title="mask_email assumes a well-formed address">
@@ -289,7 +289,7 @@ Sixty-four bytes of entropy produce an ~86-character string. Size your database 
 ```python title="A password-reset token"
 from datetime import datetime, timedelta, timezone
 from sillo.helpers.strings import random_token
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post("/password-reset")
 async def request_reset(ctx: HttpContext):
@@ -301,7 +301,7 @@ async def request_reset(ctx: HttpContext):
             token=random_token(32),   # ~43 chars, 256 bits of entropy
             expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
         )
-    return json({"message": "If that account exists, a link was sent."})
+    return {"message": "If that account exists, a link was sent."}
 ```
 
 <Aside type="danger" title="Never use random for anything a user must not guess">
@@ -349,14 +349,14 @@ It normalizes to NFKD and filters out anything Unicode classifies as a combining
 
 ```python title="Accent-insensitive search"
 from sillo.helpers.strings import strip_accents
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/search")
 async def search(ctx: HttpContext):
     query = strip_accents(ctx.query_params.get("q", "")).lower()
     # "Café" and "cafe" both normalize to "cafe" and match the same rows
     results = await Place.filter(name_normalized__icontains=query)
-    return json([r.to_dict() for r in results])
+    return [r.to_dict() for r in results]
 ```
 
 Store the normalized form alongside the original at write time. Normalizing every row at query time forces a full scan and cannot use an index.

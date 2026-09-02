@@ -262,31 +262,31 @@ from sillo import HttpContext, json
 @app.get("/admin/scheduler")
 async def scheduler_dashboard(ctx: HttpContext):
     sched = ctx.app.state["scheduler"]
-    return json({
+    return {
         "stats": sched.stats.to_dict(),
         "jobs": [j.to_dict() for j in sched.list()],
-    })
+    }
 
 @app.post("/admin/scheduler/{job_id}/pause")
 async def pause_job(ctx: HttpContext, job_id):
     sched = ctx.app.state["scheduler"]
     if not sched.pause(job_id):
         return json({"error": "Not found"}, status_code=404)
-    return json({"paused": True})
+    return {"paused": True}
 
 @app.post("/admin/scheduler/{job_id}/resume")
 async def resume_job(ctx: HttpContext, job_id):
     sched = ctx.app.state["scheduler"]
     if not sched.resume(job_id):
         return json({"error": "Not found"}, status_code=404)
-    return json({"resumed": True})
+    return {"resumed": True}
 
 @app.delete("/admin/scheduler/{job_id}")
 async def remove_job(ctx: HttpContext, job_id):
     sched = ctx.app.state["scheduler"]
     if not sched.remove(job_id):
         return json({"error": "Not found"}, status_code=404)
-    return json({"removed": True})
+    return {"removed": True}
 ```
 
 ---

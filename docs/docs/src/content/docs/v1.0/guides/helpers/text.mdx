@@ -52,10 +52,10 @@ from sillo.responses import json
 @app.get("/articles/{slug}")
 async def article(ctx: HttpContext, slug: str):
     art = await Article.get(slug=slug)
-    return json({
+    return {
         "article": art.to_dict(),
         "meta_description": truncate(strip_html(art.body_html), 160),
-    })
+    }
 ```
 
 <Aside type="caution" title="Truncation counts code points, not visible characters">
@@ -127,19 +127,19 @@ document containing "run") and the excerpt still needs to render something.
 ```python title="Search results with context"
 from sillo.helpers.text import excerpt, strip_html
 from sillo.helpers.html import escape_html
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/search")
 async def search(ctx: HttpContext):
     query = ctx.query_params.get("q", "")
     articles = await Article.filter(body__icontains=query).limit(20)
-    return json([
+    return [
         {
             "title": a.title,
             "snippet": escape_html(excerpt(strip_html(a.body_html), query, radius=80)),
         }
         for a in articles
-    ])
+    ]
 ```
 
 Note the ordering: strip the markup, take the excerpt, then escape. Excerpting raw HTML cuts mid-tag and produces broken markup; escaping before excerpting means the entity text counts toward the radius.

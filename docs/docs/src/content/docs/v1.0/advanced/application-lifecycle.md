@@ -664,11 +664,11 @@ All verb methods support both decorator and direct call patterns:
 
 ```python
 # Decorator pattern
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/users/{user_id}")
 async def get_user(ctx: HttpContext):
-    return json({"id": ctx.path_params["user_id"]})
+    return {"id": ctx.path_params["user_id"]}
 
 # Direct call pattern
 app.get("/users/{user_id}", handler=get_user)
@@ -724,7 +724,7 @@ The `Router.route()` method:
 
 ```python
 # Via add_route()
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.add_route(
     path="/users/{user_id}",
@@ -738,7 +738,7 @@ user_router = Router(prefix="/users")
 
 @user_router.route("/list", methods=["GET"])
 def get_users(ctx: HttpContext):
-    return json({"users": ["Alice", "Bob"]})
+    return {"users": ["Alice", "Bob"]}
 
 app.mount_router(user_router, name="users")
 ```
@@ -872,7 +872,7 @@ sequenceDiagram
 
 ```python
 # 1. User creates app
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app = SilloApp(title="My API", debug=True)
 
@@ -883,7 +883,7 @@ app = SilloApp(title="My API", debug=True)
 # 3. User registers routes
 @app.get("/users")
 async def list_users(ctx: HttpContext):
-    return json([])
+    return []
 
 @app.on_startup
 async def connect_db():

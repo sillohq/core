@@ -164,7 +164,7 @@ async def login_route(ctx: HttpContext, payload):
         return json({"detail": "Invalid credentials."}, status_code=401)
 
     start_session(ctx, user)
-    return json({"user": _serialize(user)})
+    return {"user": _serialize(user)}
 ```
 
 That single error message is deliberate. Distinguishing "no such account"

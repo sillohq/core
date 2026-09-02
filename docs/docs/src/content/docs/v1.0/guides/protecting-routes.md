@@ -403,7 +403,7 @@ api = Router(prefix="/api", auth=useAuth())
 @api.get("/orders")
 async def list_orders(ctx: HttpContext):
     rows = await Order.filter(owner_id=ctx.user.id).order_by("-id").limit(50)
-    return json([OrderOut.model_validate(r).model_dump() for r in rows])
+    return [OrderOut.model_validate(r).model_dump() for r in rows]
 
 
 @api.get("/orders/{order_id}")
@@ -411,7 +411,7 @@ async def get_order(ctx: HttpContext, order_id: int = Path(type=int)):
     order = await Order.get_or_none(id=order_id, owner_id=ctx.user.id)
     if order is None:
         raise HTTPException(status_code=404)
-    return json(OrderOut.model_validate(order).model_dump())
+    return OrderOut.model_validate(order).model_dump()
 
 
 @api.delete("/orders/{order_id}")

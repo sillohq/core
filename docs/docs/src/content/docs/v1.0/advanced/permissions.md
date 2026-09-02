@@ -884,7 +884,7 @@ async def edit_post(ctx: HttpContext, post_id: int):
 #### Checking permissions manually:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/posts")
 async def list_posts(ctx: HttpContext):
@@ -894,7 +894,7 @@ async def list_posts(ctx: HttpContext):
     else:
         posts = await Post.filter(is_public=True)
 
-    return json({"posts": posts})
+    return {"posts": posts}
 ```
 
 ### Database Schema

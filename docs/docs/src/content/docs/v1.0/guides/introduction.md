@@ -31,13 +31,13 @@ Sillo Core is the open foundation of the framework. It is designed to help a pro
 A Sillo application can begin with one route:
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 
 app = SilloApp()
 
 @app.get("/")
 async def home(ctx: HttpContext):
-    return json({"message": "Hello from Sillo"})
+    return {"message": "Hello from Sillo"}
 ```
 
 From there, the same application model can grow into validated endpoints, authenticated routes, database-backed records, queues, scheduled work, WebSocket channels, and operational tooling.
@@ -68,7 +68,7 @@ This example shows a validated endpoint, path parameter, and response object wor
 
 ```python
 from pydantic import BaseModel
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext, created
 
 app = SilloApp()
 
@@ -84,14 +84,10 @@ async def create_project(
     team_id: str,
     project: CreateProject,
 ):
-    return json(
-        {
-            "team_id": team_id,
-            "project": project.model_dump(),
-            "status": "created",
-        },
-        status_code=201,
-    )
+    return created({
+        "team_id": team_id,
+        "project": project.model_dump(),
+    })
 ```
 
 What is happening:
@@ -99,7 +95,9 @@ What is happening:
 - `team_id` comes from the path and is passed into the handler.
 - `request_model=CreateProject` validates the request body.
 - The validated Pydantic object can be injected into the handler.
-- The response object builds a JSON response with a status code.
+- Returning a `dict` would be enough — sillo encodes it and sends a `200`.
+  `created(...)` is here only because a POST that made something should say
+  `201`. See [Sending Responses](/v1.0/guides/sending-responses/).
 
 ##  What Is Already in Place
 
@@ -292,14 +290,14 @@ syntax, and `asyncio.timeout`, which is 3.11+.
 The smallest thing that runs, to anchor everything above:
 
 ```python title="main.py"
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 
 app = SilloApp()
 
 
 @app.get("/")
 async def index(ctx: HttpContext):
-    return json({"status": "ok"})
+    return {"status": "ok"}
 ```
 
 ```bash

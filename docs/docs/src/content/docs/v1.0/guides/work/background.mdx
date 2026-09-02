@@ -246,11 +246,11 @@ def fire(coro):
 ##  Monitoring
 
 ```python title="an ops endpoint"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/admin/background")
 async def background_status(ctx: HttpContext):
-    return json(BackgroundTask.count())
+    return BackgroundTask.count()
 ```
 
 Read the numbers correctly given the registry behaviour above: `running` and

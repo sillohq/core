@@ -100,12 +100,12 @@ is why one badly-behaved handler degrades everything: there is no other thread
 to pick up the slack.
 
 ```python title="what await actually does"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 async def handler(ctx: HttpContext):
     user = await User.get(id=1)      # loop runs other requests here
     rows = await fetch_orders()      # and here
-    return json(...)        # and here
+    return ...        # and here
 ```
 
 Between those `await`s, your code runs exclusively. That is the useful mental

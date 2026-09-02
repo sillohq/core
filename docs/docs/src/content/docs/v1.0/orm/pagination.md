@@ -58,14 +58,14 @@ from sillo.pagination import PageNumberPagination
 from sillo.record.pagination import TortoiseDataHandler
 
 
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/posts")
 async def list_posts(ctx: HttpContext):
     handler = TortoiseDataHandler(Post.filter(status="published").order_by("-id"))
     paginator = PageNumberPagination(handler, page_size=20)
     page = await paginator.paginate(ctx)
-    return json(page)
+    return page
 ```
 
 `TortoiseDataHandler` implements two methods (`get_total_items()` and

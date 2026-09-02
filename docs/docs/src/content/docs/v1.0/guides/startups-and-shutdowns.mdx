@@ -415,7 +415,7 @@ from sillo import HttpContext, json
 
 @app.get("/healthz")
 async def liveness(ctx: HttpContext):
-    return json({"status": "ok"})
+    return {"status": "ok"}
 
 
 @app.get("/readyz")
@@ -423,7 +423,7 @@ async def readiness(ctx: HttpContext):
     db = ctx.app.state["record"]
     if not await db.health():
         return json({"status": "not ready"}, status_code=503)
-    return json({"status": "ready"})
+    return {"status": "ready"}
 ```
 
 Because startup completes before the first request is served, a readiness

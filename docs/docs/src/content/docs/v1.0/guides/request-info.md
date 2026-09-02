@@ -226,19 +226,19 @@ async def process_request(ctx: HttpContext):
 sillo also provides additional request detection properties:
 
 ```python
-from sillo import HttpContext, json, html
+from sillo import HttpContext, html
 
 @app.get("/responsive")
 async def responsive_handler(ctx: HttpContext):
     # Check ctx characteristics
     if ctx.is_ajax:
-        return json({"message": "AJAX request"})
+        return {"message": "AJAX request"}
 
     if ctx.is_secure:
-        return json({"protocol": "HTTPS"})
+        return {"protocol": "HTTPS"}
 
     if ctx.accepts_json:
-        return json({"format": "JSON preferred"})
+        return {"format": "JSON preferred"}
 
     if ctx.accepts_html:
         return html("<h1>HTML BaseResponse</h1>")
@@ -447,17 +447,17 @@ When behaviour depends on a header you cannot see, dump the raw picture
 once rather than guessing:
 
 ```python title="a temporary diagnostic endpoint"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/_debug/echo")
 async def echo(ctx: HttpContext):
-    return json({
+    return {
         "method": ctx.method,
         "path": ctx.url.path,
         "query": dict(ctx.query_params),
         "headers": dict(ctx.headers),
         "client": ctx.client,
-    })
+    }
 ```
 
 Remove it before shipping, or protect it. It reflects headers including

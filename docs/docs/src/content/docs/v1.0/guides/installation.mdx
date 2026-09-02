@@ -133,14 +133,14 @@ Sillo is ASGI-based, so it needs a server. `uvicorn` is the usual choice:
 Create `main.py`:
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 
 app = SilloApp()
 
 
 @app.get("/")
 async def home(ctx: HttpContext):
-    return json({"message": "Hello from Sillo"})
+    return {"message": "Hello from Sillo"}
 ```
 
 Run it:

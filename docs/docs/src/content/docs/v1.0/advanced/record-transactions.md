@@ -711,25 +711,25 @@ db = setup_record(
 ### 6.3 Accessing the Database in Handlers
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/users")
 async def list_users(ctx: HttpContext):
     db = ctx.app.state["record"]
     users = await User.all()
-    return json([u.to_dict() for u in users])
+    return [u.to_dict() for u in users]
 ```
 
 Or more commonly, the models are imported directly:
 
 ```python
 from myapp.models import User
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/users")
 async def list_users(ctx: HttpContext):
     users = await User.all()
-    return json([u.to_dict() for u in users])
+    return [u.to_dict() for u in users]
 ```
 
 ### 6.4 Wiring Diagram

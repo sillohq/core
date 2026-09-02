@@ -32,7 +32,7 @@ Both are resolved by the same machinery, so you can mix them freely in one signa
 ##  The smallest useful form
 
 ```python
-from sillo import SilloApp, HttpContext, json, Depend
+from sillo import SilloApp, HttpContext, Depend
 
 app = SilloApp()
 
@@ -43,7 +43,7 @@ def get_greeting() -> str:
 
 @app.get("/greet")
 async def greet(ctx: HttpContext, greeting: str = Depend(get_greeting)):
-    return json({"message": greeting})
+    return {"message": greeting}
 ```
 
 `Depend(get_greeting)` tells sillo: *before calling `greet`, call `get_greeting()`, and bind its return value to the `greeting` parameter.* The dependency takes no arguments here, so it's just a zero-arg factory.
@@ -62,7 +62,7 @@ database. A dependency is just a function, so it can declare the same parameter
 extractors a handler uses:
 
 ```python
-from sillo import HttpContext, json, Query, Depend
+from sillo import HttpContext, Query, Depend
 
 
 def paginate(page: int = Query(1), size: int = Query(20)):
@@ -72,7 +72,7 @@ def paginate(page: int = Query(1), size: int = Query(20)):
 
 @app.get("/items")
 async def items(ctx: HttpContext, p: dict = Depend(paginate)):
-    return json({"pagination": p, "rows": []})
+    return {"pagination": p, "rows": []}
 ```
 
 Here `paginate` declares `page` and `size` as `Query` extractors. When sillo solves the `p` dependency, it first solves those two extractors from the incoming request, then calls `paginate(offset=..., limit=..., page=...)`, then binds the result to `p`.
@@ -89,7 +89,7 @@ has no extractor, to touch `ctx.state`, or to read the client IP. Use
 `Depend(get_request=True)`:
 
 ```python
-from sillo import HttpContext, json, Depend
+from sillo import HttpContext, Depend
 
 
 def get_client_ip(ctx: HttpContext = Depend(get_request=True)):
@@ -98,7 +98,7 @@ def get_client_ip(ctx: HttpContext = Depend(get_request=True)):
 
 @app.get("/ping")
 async def ping(ctx: HttpContext, ip: str = Depend(get_client_ip)):
-    return json({"client_ip": ip})
+    return {"client_ip": ip}
 ```
 
 `get_request=True` is special: it doesn't call a function. It injects the live `HttpContext` object directly. You can also write a normal dependency that takes `ctx` as a parameter and sillo will inject it:
@@ -117,7 +117,7 @@ Both forms work; `get_request=True` is the shorthand when a dependency *only* ne
 Dependencies can depend on other dependencies. sillo resolves the full tree, deepest first, and passes each result into its parent.
 
 ```python
-from sillo import SilloApp, HttpContext, json, Depend
+from sillo import SilloApp, HttpContext, Depend
 
 app = SilloApp()
 
@@ -138,7 +138,7 @@ async def data(
     ctx: HttpContext,
     tenant: dict = Depend(get_current_tenant),
 ):
-    return json(tenant)
+    return tenant
 ```
 
 Resolution order for `GET /data`:
@@ -157,7 +157,7 @@ If two dependencies both depend on `get_db`, you usually don't want to open two 
 The cache key is the dependency callable plus the names of any request-derived extractors it consumed. So `get_db()` (no request input) is cached once and reused by every other dependency that asks for it in the same request. But a dependency like `get_current_tenant(ctx, db=...)` keyed on the `X-Tenant` header would be re-run if the header value differed.
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 def get_db():
     print("OPENING CONNECTION")   # printed once per ctx
@@ -175,7 +175,7 @@ def needs_db_b(db=Depend(get_db)):
 @app.get("/x")
 async def x(ctx: HttpContext, a=Depend(needs_db_a), b=Depend(needs_db_b)):
     # get_db() ran exactly once
-    return json({"same": a is b})
+    return {"same": a is b}
 ```
 
 If you need to disable caching for a specific dependency, set `use_cache=False`
@@ -189,7 +189,7 @@ as an **async generator** and `yield` the value instead of `return`ing it:
 
 ```python
 from contextlib import asynccontextmanager
-from sillo import HttpContext, json, Depend
+from sillo import HttpContext, Depend
 
 
 async def db_transaction():
@@ -205,7 +205,7 @@ async def db_transaction():
 @app.post("/charge")
 async def charge(ctx: HttpContext, txn: dict = Depend(db_transaction)):
     # use txn here
-    return json({"charged": True})
+    return {"charged": True}
 ```
 
 sillo runs the body of the generator up to `yield` to produce the value, injects that value, runs the handler, and then resumes the generator after the handler returns so the `finally` block (cleanup) executes. This is the canonical pattern for "open something, use it in the handler, close it afterward" without leaking resources.
@@ -225,7 +225,7 @@ They compose cleanly:
 
 ```python
 from pydantic import BaseModel
-from sillo import SilloApp, HttpContext, json, Depend, Query
+from sillo import SilloApp, HttpContext, Depend, Query
 
 app = SilloApp()
 
@@ -246,11 +246,11 @@ async def create_order(
     actor: str = Depend(get_actor),
     dry_run: bool = Query(False),
 ):
-    return json({
+    return {
         "order": order.model_dump(),
         "actor": actor,
         "dry_run": dry_run,
-    })
+    }
 ```
 
 (For a route-level `request_model`, you can also bind the validated model to a parameter by matching its name to the model; see [Request Parameters](/v1.0/guides/request-parameters/) and [Handling Inputs](/v1.0/guides/request-inputs/).)
@@ -283,7 +283,7 @@ This ties the pieces together. A `db_session` dependency opens a connection for 
 ```python
 import asyncio
 from pydantic import BaseModel
-from sillo import SilloApp, HttpContext, json, Depend, Query
+from sillo import SilloApp, HttpContext, Depend, Query
 
 app = SilloApp()
 
@@ -323,12 +323,12 @@ async def create_note(
     note: NoteIn = Depend(lambda: ctx.validated_data),
     echo: bool = Query(False),
 ):
-    return json({
+    return {
         "session": session["id"],
         "user": user["user_id"],
         "note": note.model_dump(),
         "echo": echo,
-    })
+    }
 ```
 
 Resolution for `POST /notes`:

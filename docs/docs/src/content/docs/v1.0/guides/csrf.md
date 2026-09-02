@@ -165,7 +165,7 @@ from sillo.responses import json
 
 @app.get("/api/csrf")
 async def csrf(ctx: HttpContext):
-    return json({"token": ctx.state.csrf_token})
+    return {"token": ctx.state.csrf_token}
 ```
 
 That is the shape a single-page app wants: fetch it once, keep it, send it back

@@ -40,11 +40,11 @@ async def finish(ctx: HttpContext):
 Protect what follows with the cookie scheme:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/dashboard", auth=useAuth(schemes=["sessionCookie"]))
 async def dashboard(ctx: HttpContext):
-    return json({"user": ctx.user.display_name})
+    return {"user": ctx.user.display_name}
 ```
 
 This needs `SessionMiddleware` installed and `SessionAuthBackend` declared. See
@@ -56,14 +56,14 @@ No session anywhere. The callback mints a token and hands it over.
 
 ```python
 from sillo.auth.jwt_auth import create_jwt
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/auth/google/callback", exclude_from_schema=True)
 async def finish(ctx: HttpContext):
     profile = await exchange(google, ctx)
     user = await User.objects.get_or_create_from_oauth("google", profile)
     token = create_jwt({"id": str(user.id)}, settings.jwt_secret)
-    return json({"access_token": token})
+    return {"access_token": token}
 ```
 
 For a native app, redirect to a custom scheme instead so the OS hands the
@@ -78,11 +78,11 @@ token back to the application:
 Then gate on the bearer scheme:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/api/me", auth=useAuth(schemes=["bearerAuth"]))
 async def me(ctx: HttpContext):
-    return json({"identity": ctx.user.identity})
+    return {"identity": ctx.user.identity}
 ```
 
 ##  Account linking
@@ -119,15 +119,15 @@ started in another.
 Sometimes OAuth is identity verification, not login:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/verify/google/callback", exclude_from_schema=True)
 async def verify(ctx: HttpContext):
     profile = await exchange(google, ctx)
-    return json({
+    return {
         "email": profile.email,
         "verified": profile.email_verified,
-    })
+    }
 ```
 
 No session middleware, no user model, no auth backend required.

@@ -150,7 +150,7 @@ session_cookie_secure=config.app_env != "local"
 ##  Basic Session Operations
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/session-demo")
 async def session_demo(ctx: HttpContext):
@@ -171,10 +171,10 @@ async def session_demo(ctx: HttpContext):
     # Clear the entire session
     # ctx.session.clear()
     
-    return json({
+    return {
         "user_id": user_id,
         "session_keys": list(ctx.session.keys())
-    })
+    }
 ```
 
 ####  Session Properties and Methods
@@ -200,7 +200,7 @@ By default, sessions expire after 24 hours (86400 seconds). You can customize th
 
 ```python
 # Set global session expiration time
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.use(SessionMiddleware(secret_key=secret_key, session_expiration_time=3600))  # 1 hour
 
@@ -213,7 +213,7 @@ async def login(ctx: HttpContext):
     # Set this specific session to expire in 30 minutes
     ctx.session.set_expiry(1800)
     
-    return json({"success": True})
+    return {"success": True}
 ```
 
 ##  Session Backends
@@ -432,10 +432,10 @@ async def view_cart(ctx: HttpContext):
     # Calculate total
     total = sum(item["price"] * item["quantity"] for item in cart.values())
     
-    return json({
+    return {
         "items": cart,
         "total": total
-    })
+    }
 
 @app.post("/cart/add/{product_id}")
 async def add_to_cart(ctx: HttpContext):
@@ -463,14 +463,14 @@ async def add_to_cart(ctx: HttpContext):
     # Save cart to session
     ctx.session["cart"] = cart
     
-    return json({"success": True, "cart": cart})
+    return {"success": True, "cart": cart}
 
 @app.post("/cart/clear")
 async def clear_cart(ctx: HttpContext):
     if "cart" in ctx.session:
         del ctx.session["cart"]
     
-    return json({"success": True})
+    return {"success": True}
 ```
 
 ####  Example 3: Multi-step Form with Session Data

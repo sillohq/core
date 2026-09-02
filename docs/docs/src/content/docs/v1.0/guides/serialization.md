@@ -35,6 +35,21 @@ This page explains what gets serialized, how to teach sillo about a new type, wh
 
 Pydantic models and dataclasses are walked recursively, so nested structures serialize out of the box.
 
+:::caution[The encoder decides the Content-Type, too]
+Whatever the encoder reduces to a **string** is sent as `text/plain`; anything
+else is sent as `application/json`. That is why a `datetime` returned on its own
+is text and the same `datetime` inside a dict is JSON:
+
+```python
+return datetime.now()             # text/plain: 2026-01-01T12:00:00
+return {"at": datetime.now()}     # application/json: {"at":"2026-01-01T12:00:00"}
+```
+
+The same rule makes `return "<h1>Hi</h1>"` `text/plain` rather than HTML. When
+you mean a content type, name it: `html(...)`, `xml(...)`, `raw(...)`. See
+[Sending Responses](/v1.0/guides/sending-responses/).
+:::
+
 ##  The smallest useful form
 
 You usually need nothing at all. Return a value sillo already understands:

@@ -337,7 +337,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
 Usage in a handler:
 
 ```python
-from sillo import HttpContext, json, text
+from sillo import HttpContext, text
 
 @app.get("/data")
 async def get_data(ctx: HttpContext):
@@ -348,7 +348,7 @@ async def get_data(ctx: HttpContext):
     )
     if content_type == "text/csv":
         return text(to_csv(data))
-    return json(data)
+    return data
 ```
 
 ### 2.7 StrictContentNegotiationMiddleware (406)

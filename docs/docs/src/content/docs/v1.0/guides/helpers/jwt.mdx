@@ -233,7 +233,7 @@ async def login(ctx: HttpContext):
     refresh = create_refresh_token({"sub": str(user.id)}, settings.SECRET_KEY)
     await RefreshToken.create(user=user, token=refresh, revoked=False)
 
-    return json({
+    return {
         "access_token": create_access_token(
             {"sub": str(user.id), "role": user.role},
             settings.SECRET_KEY,
@@ -241,7 +241,7 @@ async def login(ctx: HttpContext):
         ),
         "refresh_token": refresh,
         "token_type": "bearer",
-    })
+    }
 ```
 
 ```python title="Refresh checks the database, unlike access verification"
@@ -260,13 +260,13 @@ async def refresh_token(ctx: HttpContext):
     if stored is None:
         return json({"error": "Refresh token revoked"}, status_code=401)
 
-    return json({
+    return {
         "access_token": create_access_token(
             {"sub": payload["sub"]},
             settings.SECRET_KEY,
             expires_delta=timedelta(minutes=15),
         )
-    })
+    }
 ```
 
 Access tokens stay stateless and fast: verify the signature, no query. Refresh tokens hit the database once every fifteen minutes per user, which is cheap, and give you a revocation point. Logging out marks the refresh token revoked; the access token still works until it expires, which is why fifteen minutes matters.

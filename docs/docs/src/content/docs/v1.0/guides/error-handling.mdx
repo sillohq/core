@@ -23,14 +23,14 @@ sillo provides a robust and flexible error handling system that allows you to ma
 ##  The Basic Idea
 ```py
 from sillo.exceptions import HTTPException
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/users/{user_id}")    
 async def get_user(ctx: HttpContext, user_id: int):
     user = await find_user(user_id)
     if not user:
         raise HTTPException(detail="User not found", status = 404)
-    return json(user)
+    return user
 
 ```
 
@@ -42,14 +42,14 @@ sillo includes built-in HTTP exceptions for common error scenarios:
 
 ```python {6}
 from sillo.exceptions import HTTPException
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/users/{user_id}")
 async def get_user(ctx: HttpContext, user_id: int):
     user = await find_user(user_id)
     if not user:
         raise HTTPException(detail="User not found", status = 404)
-    return json(user)
+    return user
 
 # If you raise a non-HTTPException (e.g., raise ValueError("fail")), sillo will return a 500 Internal Server Error unless you register a handler for that exception type.
 ```
@@ -77,7 +77,7 @@ sillo provides a way to create custom exception classes that extend the built-in
 
 ```python
 from sillo.exceptions import HTTPException
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class PaymentRequiredException(HTTPException):
     def __init__(self, detail: str = None):
@@ -91,7 +91,7 @@ class PaymentRequiredException(HTTPException):
 async def get_premium_content(ctx: HttpContext):
     if not ctx.user.has_premium:
         raise PaymentRequiredException("Upgrade to premium to access this content")
-    return json({"message": "Premium content available"})
+    return {"message": "Premium content available"}
 
 # If your custom exception handler raises an error, sillo will return a 500 error. Always handle exceptions in your handlers gracefully.
 ```
@@ -105,7 +105,7 @@ from sillo.exceptions import HTTPException
 from sillo import HttpContext, json
 
 async def handle_payment_required_exception(ctx: HttpContext, exception):
-    return json({"error": "Payment required"}, status=402)
+    return json({"error": "Payment required"}, status_code=402)
 
 app.add_exception_handler(PaymentRequiredException, handle_payment_required_exception)
 
@@ -113,7 +113,7 @@ app.add_exception_handler(PaymentRequiredException, handle_payment_required_exce
 async def get_premium_content(ctx: HttpContext):
     if not ctx.user.has_premium:
         raise PaymentRequiredException("Upgrade to premium to access this content")
-    return json({"message": "Premium content available"})      
+    return {"message": "Premium content available"}      
 ``` 
 
 ##  Status Code Handlers
@@ -124,7 +124,7 @@ from sillo.exceptions import HTTPException
 from sillo import HttpContext, json
 
 async def handle_payment_required_exception(ctx: HttpContext, exception):
-    return json({"error": "Payment required"}, status=402)
+    return json({"error": "Payment required"}, status_code=402)
 
 app.add_exception_handler(402, handle_payment_required_exception)
 
@@ -132,7 +132,7 @@ app.add_exception_handler(402, handle_payment_required_exception)
 async def get_premium_content(ctx: HttpContext):
     if not ctx.user.has_premium:
         raise PaymentRequiredException("Upgrade to premium to access this content")
-    return json({"message": "Premium content available"})      
+    return {"message": "Premium content available"}      
 ```
 
 In the provided example, we demonstrate how to create a custom exception handler for handling specific exceptions in a sillo application. We define a custom exception handler `handle_payment_required_exception`, which returns a JSON response with an error message and a status code when a `PaymentRequiredException` is raised. This handler is registered with the application using `app.add_exception_handler()`. This approach allows for granular control over error responses, improving the user experience by providing clear feedback for specific scenarios, such as when a user tries to access premium content without a subscription.
@@ -145,7 +145,7 @@ from sillo import SilloApp, HttpContext, json
 from sillo.exceptions import HTTPException
 
 async def server_error_handler(ctx: HttpContext, exception):
-    return json({"error": "Internal Server Error"}, status=500)
+    return json({"error": "Internal Server Error"}, status_code=500)
 
 app = SilloApp(server_error_handler=server_error_handler)
 ```

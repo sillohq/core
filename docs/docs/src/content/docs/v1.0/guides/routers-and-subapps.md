@@ -30,7 +30,7 @@ Both flatten into the app's route table at startup, so nesting adds no per-reque
 ##  The smallest useful form
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 from sillo.core.routing import Router
 
 app = SilloApp()
@@ -39,11 +39,11 @@ v1 = Router(prefix="/v1")
 
 @v1.get("/users")
 async def list_users(ctx: HttpContext):
-    return json({"users": []})
+    return {"users": []}
 
 @v1.get("/users/{user_id}")
 async def get_user(ctx: HttpContext, user_id):
-    return json({"user_id": user_id})
+    return {"user_id": user_id}
 
 app.mount_router(v1)
 ```
@@ -82,7 +82,7 @@ v1 = Router(
 A router can mount another router, building a deep prefix tree:
 
 ```python
-from sillo import SilloApp, HttpContext, json, text
+from sillo import SilloApp, HttpContext, text
 from sillo.core.routing import Router
 
 app = SilloApp()
@@ -96,7 +96,7 @@ async def users_index(ctx: HttpContext):
 
 @users.get("/{id}")
 async def users_detail(ctx: HttpContext, id):
-    return json({"user": id})
+    return {"user": id}
 
 # nest: /v1/users/*
 v1.mount_router(users)
@@ -166,15 +166,15 @@ different teams own different parts of a system.
 
 ```python
 from sillo.core.routing import Router, Group, Route
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 
 users = Router()
 
 async def list_users(ctx: HttpContext):
-    return json(["John", "Jane"])
+    return ["John", "Jane"]
 
 async def get_user(ctx: HttpContext, id):
-    return json({"user": id})
+    return {"user": id}
 
 group = Group(
     path="/users",
@@ -220,16 +220,16 @@ A `Group`'s `path` should start with `/`. If it doesn't, sillo warns and prepend
 Routes (and routers) accept a `name=` used with `url_for` to build URLs without hard-coding paths:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @v1.get("/users/{user_id}", name="get-user")
 async def get_user(ctx: HttpContext, user_id):
-    return json({"user_id": user_id})
+    return {"user_id": user_id}
 
 @app.get("/home")
 async def home(ctx: HttpContext):
     url = ctx.url_for("get-user", user_id=42)   # -> /v1/users/42
-    return json({"link": str(url)})
+    return {"link": str(url)}
 ```
 
 When a route lives under a router prefix, `url_for` includes that prefix automatically. Name routes once and generate links everywhere.
@@ -237,7 +237,7 @@ When a route lives under a router prefix, `url_for` includes that prefix automat
 ##  Putting it together: a modular app
 
 ```python
-from sillo import SilloApp, HttpContext, json, Depend
+from sillo import SilloApp, HttpContext, Depend
 from sillo.core.routing import Router, Group
 
 app = SilloApp()
@@ -247,14 +247,14 @@ api = Router(prefix="/api/v1", tags=["api"])
 
 @api.get("/health")
 async def health(ctx: HttpContext):
-    return json({"status": "ok"})
+    return {"status": "ok"}
 
 # admin sub-app
 admin = SilloApp()
 
 @admin.get("/stats")
 async def stats(ctx: HttpContext):
-    return json({"requests": 0})
+    return {"requests": 0}
 
 # compose
 app.mount_router(api)

@@ -32,7 +32,7 @@ async def upload_file(ctx: HttpContext):
     # Save file or process it
     # ...
     
-    return json({"filename": file.filename, "size": len(file_content)})
+    return {"filename": file.filename, "size": len(file_content)}
 ```
 
 ###  Multiple File Uploads
@@ -57,7 +57,7 @@ async def upload_files(ctx: HttpContext):
             "size": len(file_content)
         })
     
-    return json({"files": results})
+    return {"files": results}
 ```
 
 ##  Security Considerations
@@ -100,7 +100,7 @@ async def upload_image(ctx: HttpContext):
 Handle mixed form data and file uploads:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post("/profile")
 async def update_profile(ctx: HttpContext):
@@ -115,7 +115,7 @@ async def update_profile(ctx: HttpContext):
         # Save avatar
         # ...
     
-    return json({"name": name, "avatar_uploaded": bool(avatar)})
+    return {"name": name, "avatar_uploaded": bool(avatar)}
 ```
 
 ##  Advanced Configuration
@@ -164,11 +164,11 @@ async def upload_large_file(ctx: HttpContext):
             await f.write(chunk)
             total_size += len(chunk)
     
-    return json({
+    return {
         "filename": file.filename,
         "size": total_size,
         "status": "uploaded"
-    })
+    }
 ```
 
 ##  Troubleshooting

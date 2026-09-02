@@ -32,7 +32,7 @@ sillo supports four main parameter types:
 Path parameters are automatically detected and documented by sillo when you use parameter syntax in your route paths:
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 from sillo.openapi.models import Path, Query, Header, Cookie
 from typing import Optional
 
@@ -45,27 +45,27 @@ app = SilloApp()
 )
 async def get_user(ctx: HttpContext, user_id: int):
     """Fetch a user by their unique ID."""
-    return json({"user_id": user_id, "name": "John Doe"})
+    return {"user_id": user_id, "name": "John Doe"}
 
 @app.get("/posts/{post_id}/comments/{comment_id}")
 async def get_comment(ctx: HttpContext, post_id: int, comment_id: int):
     """Get a specific comment from a specific post."""
-    return json({
+    return {
         "post_id": post_id,
         "comment_id": comment_id,
         "content": "Great post!"
-    })
+    }
 
 # Path parameters with type constraints
 @app.get("/files/{file_path:path}")
 async def get_file(ctx: HttpContext, file_path: str):
     """Get file by path (supports nested paths with slashes)."""
-    return json({"file_path": file_path})
+    return {"file_path": file_path}
 
 @app.get("/products/{product_id:int}")
 async def get_product(ctx: HttpContext, product_id: int):
     """Get product by integer ID."""
-    return json({"product_id": product_id})
+    return {"product_id": product_id}
 ```
 
 ###  Path Parameter Types
@@ -102,7 +102,7 @@ Query parameters provide filtering, sorting, pagination, and search capabilities
 
 ```python
 from sillo.openapi.models import Query
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get(
     "/users",
@@ -168,7 +168,7 @@ async def list_users(ctx: HttpContext):
     sort_order = ctx.query_params.get('sort_order', 'desc')
     
     # Apply filters and return results
-    return json({
+    return {
         "users": [],
         "total": 0,
         "limit": limit,
@@ -179,14 +179,14 @@ async def list_users(ctx: HttpContext):
             "sort_by": sort_by,
             "sort_order": sort_order
         }
-    })
+    }
 ```
 
 ###  Advanced Query Parameter Patterns
 
 ```python
 # Array parameters
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get(
     "/products",
@@ -223,13 +223,13 @@ async def list_products(ctx: HttpContext):
     categories = ctx.query_params.getlist('categories')
     price_range = ctx.query_params.get('price_range', '').split(',')
     
-    return json({
+    return {
         "products": [],
         "filters": {
             "categories": categories,
             "price_range": price_range
         }
-    })
+    }
 
 # Boolean parameters
 @app.get(
@@ -256,10 +256,10 @@ async def list_articles(ctx: HttpContext):
     published = ctx.query_params.get('published', 'true').lower() == 'true'
     featured = ctx.query_params.get('featured', '').lower() == 'true'
     
-    return json({
+    return {
         "articles": [],
         "filters": {"published": published, "featured": featured}
-    })
+    }
 ```
 
 ##  Header Parameters
@@ -268,7 +268,7 @@ Headers are used for authentication, content negotiation, client information, an
 
 ```python
 from sillo.openapi.models import Header
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get(
     "/users/me",
@@ -311,12 +311,12 @@ async def get_current_user(ctx: HttpContext):
     language = ctx.headers.get('Accept-Language', 'en')
     client_version = ctx.headers.get('X-Client-Version')
     
-    return json({
+    return {
         "user": {"id": 123, "username": "current_user"},
         "request_id": request_id,
         "language": language,
         "client_version": client_version
-    })
+    }
 ```
 
 ##  Cookie Parameters
@@ -364,15 +364,15 @@ async def get_dashboard(ctx: HttpContext):
     if not session_id:
         return json({
             "error": "Session required"
-        }, status=401)
+        }, status_code=401)
     
-    return json({
+    return {
         "dashboard": {"widgets": []},
         "preferences": {
             "theme": theme,
             "timezone": timezone
         }
-    })
+    }
 ```
 
 
@@ -435,16 +435,16 @@ async def get_analytics_report(ctx: HttpContext):
     except ValueError:
         return json({
             "error": "Invalid date range format. Use YYYY-MM-DD:YYYY-MM-DD"
-        }, status=400)
+        }, status_code=400)
     
-    return json({
+    return {
         "report": {
             "date_range": {"start": start_date, "end": end_date},
             "metrics": metrics,
             "granularity": granularity,
             "data": []
         }
-    })
+    }
 ```
 
 ###  Parameter Dependencies
@@ -493,19 +493,19 @@ async def search(ctx: HttpContext):
     if not query and not category:
         return json({
             "error": "Either 'q' or 'category' parameter is required"
-        }, status=400)
+        }, status_code=400)
     
     if advanced and not query:
         return json({
             "error": "Advanced search requires 'q' parameter"
-        }, status=400)
+        }, status_code=400)
     
-    return json({
+    return {
         "results": [],
         "query": query,
         "category": category,
         "advanced": advanced
-    })
+    }
 ```
 
 ##  Best Practices
@@ -578,7 +578,7 @@ async def get_reports(ctx: HttpContext):
     if date_range and not validate_date_range(date_range):
         return json({
             "error": "Invalid date range format"
-        }, status=400)
+        }, status_code=400)
 ```
 
 Request parameters are essential for creating flexible, powerful APIs. Proper documentation ensures that API consumers understand how to use your endpoints effectively and helps prevent integration issues.

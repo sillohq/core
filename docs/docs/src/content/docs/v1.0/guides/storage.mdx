@@ -38,7 +38,7 @@ Then, in a handler:
 
 ```python
 from sillo.storage import bucket, stream_upload
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 async def upload_avatar(ctx: HttpContext):
     upload = (await ctx.files)["avatar"]
@@ -50,7 +50,7 @@ async def upload_avatar(ctx: HttpContext):
         user=ctx.user,
     )
 
-    return json({"key": stored.key, "size": stored.size})
+    return {"key": stored.key, "size": stored.size}
 ```
 
 `bucket(name)` just works — in this handler, in a queue job, in a script —

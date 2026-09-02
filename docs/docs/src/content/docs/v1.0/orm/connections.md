@@ -37,11 +37,11 @@ request may not find it.
 
 ```python
 # fine — the middleware set the context for this task
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/posts")
 async def list_posts(ctx: HttpContext):
-    return json(await Post.all().values("id", "title"))
+    return await Post.all().values("id", "title")
 
 
 # risky — a new task, outside the request's context
@@ -170,7 +170,7 @@ from sillo import HttpContext, json
 @app.get("/health")
 async def health(ctx: HttpContext):
     ok = await app.state["record"].health()
-    return json({"database": ok}, status=200 if ok else 503)
+    return json({"database": ok}, status_code=200 if ok else 503)
 ```
 
 Check every connection you depend on, not only the default. A replica that is

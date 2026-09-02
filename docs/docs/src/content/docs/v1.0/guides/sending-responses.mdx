@@ -1,6 +1,6 @@
 ---
 title: Sending Responses
-description: "Every response builder in sillo.responses: JSON, text, HTML, XML, files, redirects, streaming, SSE, pagination, and the two that raise instead of returning."
+description: "Return the value and sillo encodes it. What each type becomes, and the builders in sillo.responses for when you need a status, a header, a redirect, a file or a stream."
 head:
 - tag: meta
   attrs:
@@ -9,55 +9,128 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: "Every response builder in sillo.responses: JSON, text, HTML, XML, files, redirects, streaming, SSE, pagination, and the two that raise instead of returning."
+    content: "Return the value and sillo encodes it. What each type becomes, and the builders in sillo.responses for when you need a status, a header, a redirect, a file or a stream."
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
 #  Sending Responses
 
-A response in sillo is a value. You build one with a function, set whatever you
-need on it, and return it. There is no response object handed to your handler
-and nothing to configure before you have a body.
-
-Every builder lives in `sillo.responses` and is re-exported from the root
-package, so these two imports are the same function:
-
-```python
-from sillo import json
-from sillo.responses import json
-```
-
-Import the module — `from sillo import responses`, then `responses.json(...)` —
-in a file that also needs the standard library's `json` or `html`, or the `file`
-builtin.
-
-##  Returning data directly
-
-The simplest handler returns a plain value, and sillo encodes it as JSON with a
-`200`:
+**Return the value. That is the whole default.**
 
 ```py
 from sillo import HttpContext
 
 @app.get("/users")
-async def get_users(ctx: HttpContext):
-    return ["John Doe", "Jane Smith"]
+async def users(ctx: HttpContext):
+    return [{"id": 1, "name": "Ada"}]
 ```
 
-Dicts, lists, strings, numbers and most types the encoder knows about all work
-this way:
+That is a complete handler. sillo encodes the return value and sends it with a
+`200`. There is no builder to import, no response object to construct, and
+nothing to configure before you have a body.
 
-```py title="the shapes that need no builder"
-return {"name": "John Doe", "age": 30}
-return "Hello World"
-return 200
+Reach for a builder — `json(...)`, `redirect(...)`, `file(...)` — when you need
+something the return value cannot carry: a different status, a header, a
+cookie, a stream. Those are the second half of this page.
+
+##  What each returned type becomes
+
+The rule has two branches, and it is worth knowing which one you are on,
+because the second surprises people.
+
+**Anything the encoder reduces to a string is sent as `text/plain`. Everything
+else is sent as `application/json`.**
+
+| You return | Content-Type | Body |
+|---|---|---|
+| `{"ok": True}` | `application/json` | `{"ok":true}` |
+| `[1, 2, 3]` | `application/json` | `[1,2,3]` |
+| `(1, 2)`, `{1, 2}` | `application/json` | `[1,2]` |
+| `42`, `1.5`, `True` | `application/json` | `42`, `1.5`, `true` |
+| `None` | `application/json` | `null` |
+| `Decimal("1.50")` | `application/json` | `1.5` |
+| a Pydantic model | `application/json` | its fields |
+| a dataclass | `application/json` | its fields |
+| `"hello"` | `text/plain` | `hello` |
+| `datetime(...)`, `date(...)` | `text/plain` | `2026-01-01T12:00:00` |
+| `UUID(...)` | `text/plain` | the hyphenated form |
+| an `Enum` member | `text/plain` | its value |
+| `b"raw"` | `text/plain` | `raw` |
+
+Every one of those is a `200`.
+
+<Aside type="caution" title="A returned string is text/plain, not HTML">
+
+`return "<h1>Hi</h1>"` sends `text/plain`, so the browser shows the tags rather
+than a heading. The encoder has no way to tell markup from prose, and guessing
+wrong in the other direction — serving user text as HTML — is an XSS bug, so it
+does not guess.
+
+When you mean HTML, say so with `html("<h1>Hi</h1>")`.
+
+</Aside>
+
+The same asymmetry catches dates. A `datetime` on its own is `text/plain`,
+because the encoder turns it into a string and a bare string is text. The same
+`datetime` *inside* a dict is JSON, because the dict is what gets encoded:
+
+```py
+return datetime(2026, 1, 1)             # text/plain: 2026-01-01T00:00:00
+return {"at": datetime(2026, 1, 1)}     # application/json: {"at":"2026-01-01T00:00:00"}
 ```
 
-This is the right form for an endpoint with one outcome. The moment you need a
-status other than 200, a header, or a cookie, reach for a builder.
+##  When the return value is not enough
+
+A returned value carries a body and nothing else. These need a response object:
+
+| You need | Use |
+|---|---|
+| a status other than 200 | `json(data, status_code=201)`, or `created(...)` |
+| a response header | `json(data, headers={"X-Total": "5"})` |
+| a cookie | `json(data).set_cookie("session", token)` |
+| HTML, XML, or raw bytes | `html(...)`, `xml(...)`, `raw(...)` |
+| a redirect | `redirect(...)` and its named variants |
+| a file, a stream, or SSE | `file(...)`, `stream(...)`, `sse(...)` |
+| an empty body | `empty()` — a `204` |
+
+There is no `ctx.status_code` and no `ctx.set_cookie`: the context describes the
+*request*. Anything about the response lives on the response.
+
+##  Where a response model fits
+
+A `response_model` applies to a returned value exactly as it does to a built
+one, and it is the reason returning a dict stays safe as a codebase grows —
+undeclared fields are dropped rather than leaked:
+
+```py
+class User(BaseModel):
+    id: int
+    name: str
+
+@app.get("/me", response_model=User)
+async def me(ctx: HttpContext):
+    return {"id": 1, "name": "Ada", "password_hash": "..."}
+    # sends {"id":1,"name":"Ada"}
+```
+
+A handler that returns a built response is *not* filtered — building the
+response says the status, headers and body are your business. See
+[Response Models](/v1.0/guides/validation/response-models/).
 
 ##  The builders
+
+Every builder lives in `sillo.responses` and is re-exported from the root
+package, so these two imports are the same function:
+
+```python
+from sillo.responses import json
+from sillo import json
+```
+
+Import the module — `from sillo import responses`, then `responses.json(...)` —
+in a file that also needs the standard library's `json` or `html`, or the `file`
+builtin.
 
 Each one returns a response object. Nothing is sent until you return it.
 
@@ -65,7 +138,7 @@ Each one returns a response object. Nothing is sent until you return it.
 
 | | |
 |---|---|
-| `json(data)` | `application/json`, using the framework encoder |
+| `json(data)` | `application/json`, using the framework encoder — what a bare `return data` gives you, plus somewhere to hang options |
 | `text(body)` | `text/plain` |
 | `html(body)` | `text/html` |
 | `xml(body)` | `application/xml`, or pass `content_type=` for a narrower one |
@@ -73,11 +146,7 @@ Each one returns a response object. Nothing is sent until you return it.
 | `empty()` | a `204` with no body |
 
 ```py
-from sillo import HttpContext, json, text, html, xml, raw, empty
-
-@app.get("/users")
-async def users(ctx: HttpContext):
-    return json(["John Doe", "Jane Smith"])
+from sillo import HttpContext, text, html, xml, raw
 
 @app.get("/status")
 async def status(ctx: HttpContext):
@@ -139,11 +208,11 @@ method and body as-is.
 To redirect to a named route, ask the context for the URL:
 
 ```py
-from sillo import HttpContext, json, redirect
+from sillo import HttpContext, redirect
 
 @app.get("/user/{user_id}", name="user_profile")
 async def get_user(ctx: HttpContext, user_id: int):
-    return json({"user_id": user_id})
+    return {"user_id": user_id}
 
 @app.get("/users")
 async def list_users(ctx: HttpContext):
@@ -167,7 +236,7 @@ executing against your origin.
 ###  Streaming
 
 ```py
-from sillo import HttpContext, stream, ndjson, sse
+from sillo import HttpContext, stream
 
 @app.get("/numbers")
 async def numbers(ctx: HttpContext):
@@ -234,20 +303,20 @@ formats the result — the same envelope, the configured 404 page, and the
 centralised logging every other error goes through:
 
 ```py
-from sillo import HttpContext, json, abort, not_found
+from sillo import HttpContext, abort, not_found
 
 @app.get("/admin")
 async def admin(ctx: HttpContext):
     if not ctx.user.is_admin:
         abort(403, detail="Admins only")
-    return json({"ok": True})
+    return {"ok": True}
 
 @app.get("/items/{item_id:int}")
 async def get_item(ctx: HttpContext, item_id: int):
     item = await db.get(item_id)
     if item is None:
         not_found(detail=f"Item {item_id} not found")
-    return json(item)
+    return item
 ```
 
 `abort` raises `HTTPException`; `not_found` raises `NotFoundException`. Both

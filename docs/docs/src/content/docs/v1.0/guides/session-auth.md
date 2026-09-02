@@ -317,7 +317,7 @@ async def login(ctx: HttpContext):
     ctx.session["user_id"] = user.id
     ctx.session["issued_at"] = time.time()
 
-    return json({"id": user.id})
+    return {"id": user.id}
 
 
 @app.post("/logout")

@@ -211,24 +211,24 @@ app = SilloApp()
 async def get_profile(ctx: HttpContext):
     # Access authenticated user info
     # ctx.user is available after authentication middleware
-    return json({
+    return {
         "id": 123,
         "username": "johndoe",
         "email": "john@example.com"
-    })
+    }
 
 # Multiple protected endpoints
 @app.get("/settings", security=[{"bearerAuth": []}])
 async def get_settings(ctx: HttpContext):
-    return json({"theme": "dark", "notifications": True})
+    return {"theme": "dark", "notifications": True}
 
 @app.post("/posts", security=[{"bearerAuth": []}])
 async def create_post(ctx: HttpContext):
-    return json({"id": 456, "title": "New Post"}, status=201)
+    return json({"id": 456, "title": "New Post"}, status_code=201)
 
 @app.delete("/posts/{post_id}", security=[{"bearerAuth": []}])
 async def delete_post(ctx: HttpContext, post_id: int):
-    return json({"deleted": True}, status=204)
+    return json({"deleted": True}, status_code=204)
 ```
 
 ###  Custom Bearer Token Configuration
@@ -239,7 +239,7 @@ Customize the bearer token scheme for specific requirements:
 from sillo.openapi.models import HTTPBearer
 
 # Add custom JWT authentication scheme
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.openapi_config.add_security_scheme(
     "JWTAuth",
@@ -259,7 +259,7 @@ app.openapi_config.add_security_scheme(
 )
 async def admin_list_users(ctx: HttpContext):
     # Verify admin role in middleware
-    return json({"users": []})
+    return {"users": []}
 ```
 
 ##  🗝️ API Key Authentication
@@ -272,7 +272,7 @@ API keys provide simple authentication for programmatic access. They can be pass
 from sillo.openapi.models import APIKey
 
 # Register API key scheme
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.openapi_config.add_security_scheme(
     "ApiKeyAuth",
@@ -293,7 +293,7 @@ app.openapi_config.add_security_scheme(
 async def get_api_data(ctx: HttpContext):
     api_key = ctx.headers.get('X-API-Key')
     # Validate API key
-    return json({"data": "sensitive information"})
+    return {"data": "sensitive information"}
 
 # Multiple API key schemes for different purposes
 app.openapi_config.add_security_scheme(
@@ -314,14 +314,14 @@ app.openapi_config.add_security_scheme(
 async def admin_cleanup(ctx: HttpContext):
     admin_key = ctx.headers.get('X-Admin-Key')
     # Validate admin key and perform cleanup
-    return json({"cleaned": True})
+    return {"cleaned": True}
 ```
 
 ###  Query Parameter API Keys
 
 ```python
 # API key in query parameter
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.openapi_config.add_security_scheme(
     "QueryApiKey",
@@ -341,14 +341,14 @@ app.openapi_config.add_security_scheme(
 async def get_public_stats(ctx: HttpContext):
     api_key = ctx.query_params.get('api_key')
     # Validate and return stats
-    return json({"stats": {"users": 1000, "posts": 5000}})
+    return {"stats": {"users": 1000, "posts": 5000}}
 ```
 
 ###  Cookie-Based API Keys
 
 ```python
 # API key in cookie
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.openapi_config.add_security_scheme(
     "SessionAuth",
@@ -368,7 +368,7 @@ app.openapi_config.add_security_scheme(
 async def get_dashboard(ctx: HttpContext):
     session_token = ctx.cookies.get('session_token')
     # Validate session
-    return json({"dashboard": "data"})
+    return {"dashboard": "data"}
 ```
 
 ##  OAuth2 Authentication
@@ -412,7 +412,7 @@ app.openapi_config.add_security_scheme(
 )
 async def oauth_get_profile(ctx: HttpContext):
     # OAuth2 token validation handled by middleware
-    return json({"profile": "data"})
+    return {"profile": "data"}
 
 @app.post(
     "/oauth/posts",
@@ -420,7 +420,7 @@ async def oauth_get_profile(ctx: HttpContext):
     summary="Create post via OAuth2"
 )
 async def oauth_create_post(ctx: HttpContext):
-    return json({"created": True}, status=201)
+    return json({"created": True}, status_code=201)
 
 @app.delete(
     "/oauth/admin/users/{user_id}",
@@ -428,14 +428,14 @@ async def oauth_create_post(ctx: HttpContext):
     summary="Delete user (OAuth2 admin)"
 )
 async def oauth_delete_user(ctx: HttpContext, user_id: int):
-    return json({"deleted": True})
+    return {"deleted": True}
 ```
 
 ###  Client Credentials Flow
 
 ```python
 # OAuth2 client credentials for machine-to-machine
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.openapi_config.add_security_scheme(
     "OAuth2ClientCreds",
@@ -461,14 +461,14 @@ app.openapi_config.add_security_scheme(
     summary="Get data (service-to-service)"
 )
 async def get_service_data(ctx: HttpContext):
-    return json({"data": "service data"})
+    return {"data": "service data"}
 ```
 
 ###  Password Flow (Resource Owner)
 
 ```python
 # OAuth2 password flow (use with caution)
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.openapi_config.add_security_scheme(
     "OAuth2Password",
@@ -493,7 +493,7 @@ app.openapi_config.add_security_scheme(
     summary="Get internal data"
 )
 async def get_internal_data(ctx: HttpContext):
-    return json({"internal": "data"})
+    return {"internal": "data"}
 ```
 
 ##  Multiple Authentication Methods
@@ -522,16 +522,16 @@ async def flexible_auth_endpoint(ctx: HttpContext):
     elif ctx.headers.get('X-API-Key'):
         auth_type = "api_key"
     else:
-        return json({"error": "Authentication required"}, status=401)
+        return json({"error": "Authentication required"}, status_code=401)
     
-    return json({"auth_type": auth_type, "data": "protected data"})
+    return {"auth_type": auth_type, "data": "protected data"}
 ```
 
 ###  Combined Authentication Requirements
 
 ```python
 # Require BOTH Bearer token AND API key
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get(
     "/high-security",
@@ -546,7 +546,7 @@ from sillo import HttpContext, json
 )
 async def high_security_endpoint(ctx: HttpContext):
     # Both auth methods must be present
-    return json({"data": "highly sensitive data"})
+    return {"data": "highly sensitive data"}
 ```
 
 ##  Advanced Authentication Patterns
@@ -555,7 +555,7 @@ async def high_security_endpoint(ctx: HttpContext):
 
 ```python
 # Custom security scheme with roles
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 app.openapi_config.add_security_scheme(
     "RoleBasedAuth",
@@ -575,7 +575,7 @@ app.openapi_config.add_security_scheme(
 )
 async def admin_reports(ctx: HttpContext):
     # Role validation handled in middleware
-    return json({"reports": []})
+    return {"reports": []}
 
 @app.get(
     "/moderator/content",
@@ -583,13 +583,13 @@ async def admin_reports(ctx: HttpContext):
     summary="Moderator content (requires moderator role)"
 )
 async def moderator_content(ctx: HttpContext):
-    return json({"content": []})
+    return {"content": []}
 ```
 
 ###  Conditional Authentication
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get(
     "/content/{content_id}",
@@ -607,19 +607,19 @@ async def get_content(ctx: HttpContext, content_id: int):
     
     if is_authenticated:
         # Return full content
-        return json({
+        return {
             "id": content_id,
             "title": "Content Title",
             "body": "Full content body",
             "private_notes": "Internal notes"
-        })
+        }
     else:
         # Return public content only
-        return json({
+        return {
             "id": content_id,
             "title": "Content Title",
             "body": "Full content body"
-        })
+        }
 ```
 
 ##  Security Best Practices
@@ -656,7 +656,7 @@ async def get_secure_data(ctx: HttpContext):
             message="Authorization header is required",
             details={"header": "Authorization", "format": "Bearer <token>"}
         )
-        return json(error.dict(), status=401)
+        return json(error.dict(), status_code=401)
     
     if not auth_header.startswith('Bearer '):
         error = AuthErrorResponse(
@@ -665,10 +665,10 @@ async def get_secure_data(ctx: HttpContext):
             message="Invalid authorization format",
             details={"expected": "Bearer <token>", "received": auth_header[:20]}
         )
-        return json(error.dict(), status=401)
+        return json(error.dict(), status_code=401)
     
     # Token validation logic here
-    return json({"data": "secure information"})
+    return {"data": "secure information"}
 ```
 
 ###  Authentication Middleware Integration
@@ -690,7 +690,7 @@ async def auth_middleware(ctx: HttpContext, next_call):
         return json({
             "error": "Authentication required",
             "code": 401
-        }, status=401)
+        }, status_code=401)
     
     # Validate token (implement your logic)
     token = auth_header[7:]  # Remove 'Bearer ' prefix
@@ -700,7 +700,7 @@ async def auth_middleware(ctx: HttpContext, next_call):
         return json({
             "error": "Invalid or expired token",
             "code": 401
-        }, status=401)
+        }, status_code=401)
     
     # Add user to ctx context
     ctx.user = user

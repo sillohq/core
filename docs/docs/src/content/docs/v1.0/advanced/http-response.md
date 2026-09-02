@@ -1299,7 +1299,7 @@ sequenceDiagram
 @app.get("/users")
 async def get_users(ctx: HttpContext):
     users = await get_all_users()
-    return json(users)
+    return users
 ```
 
 ### 16.2 JSON with Pretty-Print (Debugging)
@@ -1690,8 +1690,8 @@ flowchart TD
     Q3 --> |No| INLINE["file(path)"]
 
     REDIR --> Q4{Permanent?}
-    Q4 --> |Yes| PERM["redirect(url, status=301)"]
-    Q4 --> |No| TEMP["redirect(url, status=302)"]
+    Q4 --> |Yes| PERM["permanent_redirect(url)"]
+    Q4 --> |No| TEMP["redirect(url)"]
 
     style JSONR fill:#FF6B6B,color:#fff
     style PLAIN fill:#4A90D9,color:#fff

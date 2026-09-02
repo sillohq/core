@@ -174,7 +174,7 @@ one layer out, and this is the layer where it is cheapest to get right.
 ## Partial updates
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class PostUpdate(BaseModel):
     title: str | None = None
@@ -186,7 +186,7 @@ class PostUpdate(BaseModel):
 async def update_post(ctx: HttpContext, payload, id=Path(type=int)):
     post = await Post.get(id=id)
     await post.update_from_dict(payload.model_dump(exclude_unset=True))
-    return json(post.to_dict())
+    return post.to_dict()
 ```
 
 `exclude_unset=True` is what makes this a real PATCH. Without it, a client

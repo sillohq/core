@@ -62,10 +62,10 @@ async def create_user(ctx: HttpContext):
         email = validated_data.email
         password = validated_data.password
     except Exception as e:
-        return json({"error": "Invalid data", "details": str(e)}, status=400)
+        return json({"error": "Invalid data", "details": str(e)}, status_code=400)
     
     # Create user logic here
-    return json({"id": 123, "username": username}, status=201)
+    return json({"id": 123, "username": username}, status_code=201)
 ```
 
 ##  Advanced Request Schemas
@@ -110,9 +110,9 @@ async def update_profile(ctx: HttpContext, user_id: int):
         street = validated_data.address.street
         phone = validated_data.contact.phone
     except Exception as e:
-        return json({"error": "Invalid profile data"}, status=400)
+        return json({"error": "Invalid profile data"}, status_code=400)
     
-    return json({"updated": True})
+    return {"updated": True}
 ```
 
 ###  Custom Business Logic Models
@@ -172,9 +172,9 @@ async def create_order(ctx: HttpContext):
     try:
         validated_order = OrderRequest(**order_data)
         # Process validated order
-        return json({"order_id": 12345}, status=201)
+        return json({"order_id": 12345}, status_code=201)
     except Exception as e:
-        return json({"error": "Order validation failed", "details": str(e)}, status=400)
+        return json({"error": "Order validation failed", "details": str(e)}, status_code=400)
 ```
 
 ##  Content Type Support
@@ -184,7 +184,7 @@ sillo supports multiple content types for request bodies:
 ###  JSON Requests (Default)
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.post(
     "/api/data",
@@ -193,13 +193,13 @@ from sillo import HttpContext, json
 )
 async def handle_json(ctx: HttpContext):
     data = await ctx.json
-    return json({"received": True})
+    return {"received": True}
 ```
 
 ###  Form Data Requests
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class ContactForm(BaseModel):
     name: str
@@ -215,7 +215,7 @@ class ContactForm(BaseModel):
 async def handle_contact_form(ctx: HttpContext):
     form_data = await ctx.form
     # Process form submission (manual validation if needed)
-    return json({"submitted": True})
+    return {"submitted": True}
 ```
 
 ###  File Upload with Multipart
@@ -245,16 +245,16 @@ async def upload_file(ctx: HttpContext):
     title = form_data.get('title')
     
     if not file or not title:
-        return json({"error": "File and title required"}, status=400)
+        return json({"error": "File and title required"}, status_code=400)
     
     # Process file upload
     file_content = await file.read()
     
-    return json({
+    return {
         "filename": file.filename,
         "size": len(file_content),
         "title": title
-    })
+    }
 ```
 
 ##  Documentation Enhancement
@@ -351,9 +351,9 @@ async def update_user(ctx: HttpContext, user_id: int):
     try:
         validated_data = UserUpdateRequest(**update_data)
         # Handle partial updates with validated data
-        return json({"updated": True})
+        return {"updated": True}
     except Exception as e:
-        return json({"error": "Update validation failed"}, status=400)
+        return json({"error": "Update validation failed"}, status_code=400)
 ```
 
 ##  Best Practices
@@ -400,16 +400,16 @@ async def create_user(ctx: HttpContext):
         validated_user = UserCreateRequest(**user_data)
         
         # Process user creation with validated data
-        return json({"created": True}, status=201)
+        return json({"created": True}, status_code=201)
     except ValidationError as e:
         return json({
             "error": "Validation failed",
             "details": e.errors()
-        }, status=400)
+        }, status_code=400)
     except Exception as e:
         return json({
             "error": "Invalid ctx data"
-        }, status=400)
+        }, status_code=400)
 ```
 
 ###  Testing Request Schemas

@@ -30,7 +30,7 @@ from sillo import HttpContext, json
 @app.patch("/me")
 async def update_me(ctx: HttpContext):
     await ctx.user.update_from_dict(await ctx.json())
-    return json(ctx.user.to_dict())
+    return ctx.user.to_dict()
 ```
 
 Looks fine. Now someone posts:
@@ -112,7 +112,7 @@ is to validate it:
 from pydantic import BaseModel
 
 
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class ProfileUpdate(BaseModel):
     name: str
@@ -122,7 +122,7 @@ class ProfileUpdate(BaseModel):
 @app.patch("/me")
 async def update_me(ctx: HttpContext, payload: ProfileUpdate):
     await ctx.user.update_from_dict(payload.model_dump(exclude_unset=True))
-    return json(ctx.user.to_dict())
+    return ctx.user.to_dict()
 ```
 
 Now the shape is declared once, enforced before the handler runs, and

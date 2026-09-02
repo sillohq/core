@@ -15,8 +15,8 @@ head:
 #  Handlers
 
 A *handler* is the function sillo calls when a request matches a route. It is
-where your application logic lives: read the request, do the work, return a
-response. Almost everything else in sillo (routing, middleware, dependency
+where your application logic lives: read the request, do the work, return the
+answer. Almost everything else in sillo (routing, middleware, dependency
 injection, serialization) exists to get the right request to the right handler
 and turn its result into bytes on the wire.
 
@@ -42,9 +42,11 @@ Two things to notice:
 1. The handler is `async` and takes **one positional parameter**: the context.
    Its name is yours to choose — `ctx` is the convention — but it is always
    first, and it is always there.
-2. Returning a plain `str` is enough. sillo wraps it in a `200 OK` JSON-or-text
-   response for you. For anything beyond the simplest case, return one of the
-   response builders.
+2. Returning a plain value is enough. sillo encodes it and sends a `200` — a
+   `str` as `text/plain`, a `dict` or `list` as `application/json`. That is the
+   default way to answer a request, not a shortcut for small ones. You only
+   need a response builder when you want something the value cannot carry: a
+   different status, a header, a cookie, a stream.
 
 ##  The context
 
@@ -54,35 +56,33 @@ the whole input side of the request, and it is documented in full under
 [Request Information](/v1.0/guides/request-info/).
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/")
 async def index(ctx: HttpContext):
-    return json({"method": ctx.method})
+    return {"method": ctx.method}
 ```
 
 Type annotations are optional but recommended. They give you IDE autocomplete
 and let static analyzers check your code. They do not change runtime behavior.
 
-There is no second parameter for the response. A response is a *value* you
-build and return, using the free functions in
-[`sillo.responses`](/v1.0/guides/sending-responses/):
+There is no second parameter for the response, and nothing on `ctx` that
+writes one — the context describes the *request*. You answer by returning:
 
 ```python
-from sillo import json, text, redirect
-
-json({"ok": True})              # a JSON body
-text("hello")                   # text/plain
-redirect("/elsewhere")          # a 302
+return {"ok": True}             # 200, application/json
 ```
 
-Each returns a response object, so anything you want to set on it — status,
-headers, cookies — is a method call on that result:
+When the value alone is not enough, return a response object built by one of
+the free functions in [`sillo.responses`](/v1.0/guides/sending-responses/).
+Anything you want to set on it — status, headers, cookies — is a method call
+on that result:
 
 ```python
-from sillo import json
+from sillo import json, redirect
 
-return json({"id": 7}).status(201).set_header("X-Trace", trace_id)
+redirect("/elsewhere")                                    # a 302
+json({"id": 7}).status(201).set_header("X-Trace", trace)  # a 201 with a header
 ```
 
 <aside type="tip" title="Where the names come from">
@@ -224,9 +224,9 @@ async def create_item(ctx: HttpContext):
 
 ##  Returning responses
 
-You can return a handler result in several ways, from least to most explicit:
+Three shapes, in the order you should reach for them:
 
-###  1. A plain value (auto-serialized)
+###  1. The value itself — the default
 
 ```python
 from sillo import HttpContext
@@ -236,12 +236,20 @@ async def ping(ctx: HttpContext):
     return {"status": "ok"}     # -> 200 application/json
 ```
 
-sillo JSON-encodes dicts, lists, and most types. Primitives become JSON scalars. This is the fastest way to write a small endpoint.
+Dicts, lists, tuples, sets, numbers, booleans, `None`, Pydantic models,
+dataclasses and `Decimal` are sent as JSON. A `str` — and anything the encoder
+reduces to one, such as a `datetime`, a `UUID` or an `Enum` member — is sent as
+`text/plain`. [Sending Responses](/v1.0/guides/sending-responses/) has the full
+table.
 
-###  2. A response builder
+This is the shape most handlers should have. A `response_model` still applies,
+so it stays safe as the codebase grows.
 
-For control over status, headers, or content type, return `json(...)`,
-`html(...)`, `text(...)`, `file(...)`, or `redirect(...)`:
+###  2. A response builder — when the value is not enough
+
+For a status other than 200, a header, a cookie, or a content type the encoder
+would not pick, return `json(...)`, `html(...)`, `text(...)`, `file(...)`, or
+`redirect(...)`:
 
 ```python
 from sillo import HttpContext, json
@@ -259,6 +267,9 @@ The builder comes first and the setters chain off it, because the setters are
 methods on the response the builder returned. There is nothing to configure
 before you have a body.
 
+Note that a handler returning a built response is **not** filtered by a
+`response_model` — building the response says the body is your business.
+
 ###  3. A raw `BaseResponse` subclass
 
 Return an instance of `JSONResponse`, `HTMLResponse`, `PlainTextResponse`, `FileResponse`, `StreamingResponse`, or `RedirectResponse` directly:
@@ -274,14 +285,15 @@ async def raw(ctx: HttpContext):
 
 ##  Status codes and headers
 
+A returned value is always a `200`. Anything else is a builder, because the
+status is part of the response and there is nowhere on `ctx` to put it:
+
 ```python
 from sillo import HttpContext, json
 
 @app.get("/statuses")
 async def statuses(ctx: HttpContext):
-    # 2xx
-    return json({"ok": True}, status_code=200)
-    # 4xx / 5xx
+    return {"ok": True}                                # 200
     return json({"error": "Not found"}, status_code=404)
 ```
 
@@ -334,7 +346,7 @@ See [Error Handling](/v1.0/guides/error-handling/) for the full picture, includi
 Handlers declare *what they need*; sillo resolves it. Mark a parameter with `Depend(...)`:
 
 ```python
-from sillo import HttpContext, json, Depend
+from sillo import HttpContext, Depend
 
 def get_current_user(ctx: HttpContext):
     token = ctx.headers.get("Authorization", "").removeprefix("Bearer ")
@@ -345,7 +357,7 @@ def get_current_user(ctx: HttpContext):
 
 @app.get("/me")
 async def me(ctx: HttpContext, user: dict = Depend(get_current_user)):
-    return json(user)
+    return user
 ```
 
 Dependencies can be nested, cached per request, and clean up after themselves
@@ -383,7 +395,7 @@ async def create_item(
     dry_run: bool = Query(False),
 ):
     if dry_run:
-        return json({"would_create": item.model_dump(), "as": user["user_id"]})
+        return {"would_create": item.model_dump(), "as": user["user_id"]}
 
     # ... persist item ...
     return json(
@@ -489,14 +501,14 @@ from the framework: path parameters, validated markers, dependencies, and (for
 
 The context carries the input: path and query parameters, headers, cookies, the
 body, the client address, and `ctx.state` for anything middleware attached. The
-output side is not a parameter at all — it is the value you return, built with
-`json`, `text`, `html`, `redirect`, and the streaming and file variants.
+output side is not a parameter at all — it is the value you return.
 
-Returning a response object is explicit and preferred. Returning a plain
-dict or list also works and is encoded to JSON with a 200; that shortcut
-is convenient and gives up control over the status and headers, which is
-why it stops being appropriate the moment an endpoint has more than one
-outcome.
+Return the value. A dict, a list, a Pydantic model: sillo encodes it and sends
+a `200`, and a `response_model` still shapes it. Build a response with `json`,
+`text`, `html`, `redirect` or the streaming and file variants when you need
+something the value cannot carry — a different status, a header, a cookie. Most
+handlers need the first; the branch that 404s needs the second, and the two mix
+freely in one function.
 
 ##  Naming and organisation
 

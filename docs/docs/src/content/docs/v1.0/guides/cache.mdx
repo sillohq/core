@@ -284,7 +284,7 @@ cooperate on one cache.
 ##  Full example
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 from sillo.cache import MemoryCache, configure_cache, cache
 
 configure_cache(MemoryCache(default_ttl=300))
@@ -294,7 +294,7 @@ app = SilloApp()
 @app.get("/products/{product_id:int}")
 async def product(ctx: HttpContext, product_id: int):
     data = await get_product(product_id)   # cached
-    return json(data)
+    return data
 
 @cache(namespace="catalog", ttl=600, tags=("catalog",))
 async def get_product(product_id: int):

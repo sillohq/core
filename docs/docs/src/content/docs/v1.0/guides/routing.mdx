@@ -37,7 +37,7 @@ app = SilloApp()
 
 @app.get("/")
 async def index(ctx: HttpContext):
-    return json({"message": "Hello"})
+    return {"message": "Hello"}
 
 @app.post("/items")
 async def create_item(ctx: HttpContext):
@@ -56,7 +56,7 @@ app = SilloApp()
 
 @app.get("/")
 async def index(ctx: HttpContext):
-    return json({"message": "Hello"})
+    return {"message": "Hello"}
 
 @app.post("/items")
 async def create_item(ctx: HttpContext):
@@ -66,7 +66,7 @@ async def create_item(ctx: HttpContext):
 @app.put("/items/{id}")
 async def update_item(ctx: HttpContext, id: str):
     data = await ctx.json
-    return json({"id": id, **data})
+    return {"id": id, **data}
 
 @app.delete("/items/{id}")
 async def delete_item(ctx: HttpContext, id: str):
@@ -84,7 +84,7 @@ from sillo import HttpContext, json
 @app.route("/items", methods=["GET", "POST"])
 async def handle_items(ctx: HttpContext):
     if ctx.method == "GET":
-        return json({"items": []})
+        return {"items": []}
     elif ctx.method == "POST":
         data = await ctx.json
         return json(data, status_code=201)
@@ -114,13 +114,13 @@ sillo also provides a `Route` class that allows you to define routes in a more s
 It's especially useful when you have a lot of routes and want to organize them in a logical manner.
 
 ```python
-from sillo import SilloApp, HttpContext, json
+from sillo import SilloApp, HttpContext
 from sillo.core.routing import Route
 
 app = SilloApp()
 
 async def get_user_handler(ctx: HttpContext, user_id):
-    return json({"user_id": user_id})
+    return {"user_id": user_id}
 route = Route(
     path="/users/{user_id:int}",
     handler=get_user_handler,
@@ -207,7 +207,7 @@ v2_router = Router(prefix="/api/v2", tags=["API v2"])
 # Add routes to v1 router
 @v1_router.get("/users")
 async def list_users_v1(ctx: HttpContext):
-    return json({"version": "v1", "users": []})
+    return {"version": "v1", "users": []}
 
 @v1_router.post("/users")
 async def create_user_v1(ctx: HttpContext):
@@ -217,7 +217,7 @@ async def create_user_v1(ctx: HttpContext):
 # Add routes to v2 router
 @v2_router.get("/users")
 async def list_users_v2(ctx: HttpContext):
-    return json({"version": "v2", "users": []})
+    return {"version": "v2", "users": []}
 
 @v2_router.post("/users")
 async def create_user_v2(ctx: HttpContext):
@@ -235,7 +235,7 @@ You can create nested routers for complex API structures:
 
 ```python
 # Create main API router
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 api_router = Router(prefix="/api", tags=["API"])
 
@@ -250,19 +250,19 @@ posts_router = Router(prefix="/posts", tags=["Posts"])
 # Add routes to resource routers
 @users_router.get("/")
 async def list_users(ctx: HttpContext):
-    return json({"users": []})
+    return {"users": []}
 
 @users_router.get("/{user_id:int}")
 async def get_user(ctx: HttpContext, user_id: int):
-    return json({"id": user_id})
+    return {"id": user_id}
 
 @posts_router.get("/")
 async def list_posts(ctx: HttpContext):
-    return json({"posts": []})
+    return {"posts": []}
 
 @posts_router.get("/{post_id:int}")
 async def get_post(ctx: HttpContext, post_id: int):
-    return json({"id": post_id})
+    return {"id": post_id}
 
 # Mount resource routers to version routers
 v1_router.mount_router(users_router)
@@ -297,7 +297,7 @@ You can apply middleware to all routes in a router:
 from sillo.middleware import CORSMiddleware
 
 # Create router with middleware
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 admin_router = Router(
     prefix="/admin",
@@ -307,11 +307,11 @@ admin_router = Router(
 
 @admin_router.get("/dashboard")
 async def admin_dashboard(ctx: HttpContext):
-    return json({"dashboard": "data"})
+    return {"dashboard": "data"}
 
 @admin_router.get("/users")
 async def admin_users(ctx: HttpContext):
-    return json({"users": []})
+    return {"users": []}
 
 # All routes in admin_router will have CORS middleware applied
 app.mount_router(admin_router)
@@ -394,49 +394,49 @@ The syntax is:
 **Examples**
 
 ```python title="Basic Types"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/users/{user_id:int}")
 async def get_user(ctx: HttpContext, user_id: int):
-    return json({"id": user_id})
+    return {"id": user_id}
 
 # If user_id is not an integer, sillo will return a 422 error.
 
 @app.get("/files/{filename:str}")
 async def get_file(ctx: HttpContext, filename: str):
-    return json({"file": filename})
+    return {"file": filename}
 
 @app.get("/items/{item_id:uuid}")
 async def get_item(ctx: HttpContext, item_id: str):
-    return json({"id": str(item_id)})
+    return {"id": str(item_id)}
 
 # If item_id is not a valid UUID, sillo will return a 422 error.
 ```
 
 ```python title="Path and Slug"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/static/{filepath:path}")
 async def get_static_file(ctx: HttpContext, filepath: str):
-    return json({"path": filepath})
+    return {"path": filepath}
 
 @app.get("/posts/{slug:slug}")
 async def get_post(ctx: HttpContext, slug: str):
-    return json({"slug": slug})
+    return {"slug": slug}
 
 # If the slug does not match the expected pattern, sillo will return a 422 error.
 ```
 
 ```python title="Numeric Types"
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/products/{price:float}")
 async def get_product(ctx: HttpContext, price: float):
-    return json({"price": price})
+    return {"price": price}
 
 @app.get("/orders/{order_id:int}")
 async def get_order(ctx: HttpContext, order_id: int):
-    return json({"order_id": order_id})
+    return {"order_id": order_id}
 
 # If price or order_id are not valid numbers, sillo will return a 422 error.
 ```
@@ -461,7 +461,7 @@ You can create and register custom path converters by subclassing the `Convertor
 ```python
 from sillo.core.converters import Convertor, register_url_convertor
 import re
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class EmailConvertor(Convertor[str]):
     regex = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
@@ -482,7 +482,7 @@ register_url_convertor("email", EmailConvertor())
 # Use the custom converter in routes
 @app.get("/users/{email:email}")
 async def get_user_by_email(ctx: HttpContext, email: str):
-    return json({"email": email})
+    return {"email": email}
 
 # If your custom converter raises a ValueError, sillo will return a 422 error with your message.
 ```
@@ -512,7 +512,7 @@ register_url_convertor("converter_name", MyConvertor())
 ###  Example: Version Converter
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class VersionConvertor(Convertor[str]):
     regex = r"v[0-9]+(\.[0-9]+)*"
@@ -531,7 +531,7 @@ register_url_convertor("version", VersionConvertor())
 
 @app.get("/api/{version:version}/users")
 async def get_users(ctx: HttpContext, version: str):
-    return json({"version": version})
+    return {"version": version}
 ```
 
 <Aside type="caution" title="Converter Registration">
@@ -573,7 +573,7 @@ from typing import Optional, List
 from datetime import datetime
 
 # Basic response models
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class UserResponse(BaseModel):
     id: int
@@ -609,7 +609,7 @@ class SuccessResponse(BaseModel):
 )
 async def get_user(ctx: HttpContext, user_id: int):
     user = await get_user_from_db(user_id)
-    return json(user)
+    return user
 
 @app.get(
     "/users",
@@ -619,7 +619,7 @@ async def get_user(ctx: HttpContext, user_id: int):
     }
 )
 async def list_users(ctx: HttpContext):
-    return json({
+    return {
         "users": [
             {
                 "id": 1,
@@ -632,7 +632,7 @@ async def list_users(ctx: HttpContext):
         "total": 1,
         "page": 1,
         "per_page": 10
-    })
+    }
 ```
 
 ####  Advanced Response Models
@@ -695,10 +695,10 @@ async def create_user(ctx: HttpContext):
 )
 async def delete_user(ctx: HttpContext, user_id: int):
     # ... delete user logic
-    return json({
+    return {
         "message": "User deleted successfully",
         "deleted_id": user_id
-    })
+    }
 ```
 
 ####  Response Model Inheritance
@@ -761,7 +761,7 @@ async def list_users_summary(ctx: HttpContext):
 
 ```python
 from pydantic import BaseModel, computed_field
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class UserWithStats(BaseModel):
     id: int
@@ -789,14 +789,14 @@ class UserWithStats(BaseModel):
 )
 async def get_user_stats(ctx: HttpContext, user_id: int):
     # ... fetch user stats
-    return json({
+    return {
         "id": user_id,
         "name": "John Doe",
         "email": "john@example.com",
         "posts_count": 25,
         "followers_count": 1000
         # total_engagement and engagement_rate are computed automatically
-    })
+    }
 ```
 
 ##  OpenAPI Integration
@@ -806,7 +806,7 @@ sillo automatically generates OpenAPI documentation from your routes:
 ```python
 from pydantic import BaseModel
 from typing import Optional
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 class UserResponse(BaseModel):
     id: int
@@ -834,7 +834,7 @@ class ErrorResponse(BaseModel):
 )
 async def get_user(ctx: HttpContext, user_id: int):
     user = await get_user_from_db(user_id)
-    return json(user)
+    return user
 ```
 
 ##  Security Requirements
@@ -842,7 +842,7 @@ async def get_user(ctx: HttpContext, user_id: int):
 You can specify security requirements for routes:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get(
     "/admin/users",
@@ -856,7 +856,7 @@ from sillo import HttpContext, json
     }
 )
 async def admin_list_users(ctx: HttpContext):
-    return json({"users": []})
+    return {"users": []}
 
 @app.post(
     "/users/login",
@@ -869,7 +869,7 @@ async def admin_list_users(ctx: HttpContext):
     }
 )
 async def login(ctx: HttpContext):
-    return json({"token": "jwt_token"})
+    return {"token": "jwt_token"}
 ```
 
 ##  URL Generation
@@ -879,15 +879,15 @@ async def login(ctx: HttpContext):
 You can generate URLs using route names:
 
 ```python
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/users/{user_id:int}", name="get_user")
 async def get_user(ctx: HttpContext, user_id: int):
-    return json({"id": user_id})
+    return {"id": user_id}
 
 @app.get("/posts/{post_id:int}", name="get_post")
 async def get_post(ctx: HttpContext, post_id: int):
-    return json({"id": post_id})
+    return {"id": post_id}
 
 # Generate URLs
 user_url = app.url_for("get_user", user_id=123)
@@ -901,12 +901,12 @@ print(post_url)  # /posts/456
 
 ```python
 from sillo.objects import URLPath
-from sillo import HttpContext, json
+from sillo import HttpContext
 
 @app.get("/search", name="search")
 async def search(ctx: HttpContext):
     query = ctx.query_params.get("q", "")
-    return json({"query": query})
+    return {"query": query}
 
 # Generate URL with query parameters
 search_url = app.url_for("search", q="python", page=1)
@@ -935,7 +935,7 @@ def create_crud_routes(resource_name: str, model_class):
     # List route
     async def list_handler(ctx: HttpContext):
         items = await model_class.all()
-        return json({f"{resource_name}": items})
+        return {f"{resource_name}": items}
 
     routes.append(Route(
         path=f"/{resource_name}",
@@ -973,7 +973,7 @@ def create_crud_routes(resource_name: str, model_class):
     # Get route
     async def get_handler(ctx: HttpContext, id: str):
         item = await model_class.get(id)
-        return json(item)
+        return item
 
     routes.append(Route(
         path=f"/{resource_name}/{{id:int}}",

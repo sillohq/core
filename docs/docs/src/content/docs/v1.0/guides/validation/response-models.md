@@ -265,7 +265,7 @@ async def get_user(ctx: HttpContext, user_id=Path(type=int)):
     user = await User.get_or_none(id=user_id)
     if user is None:
         return json({"error": "not found"}, status_code=404)   # untouched
-    return user                                                          # shaped
+    return user                                            # shaped by UserOut
 ```
 
 Once you have taken over status, headers, and body, sillo does not second-guess
