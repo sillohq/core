@@ -58,12 +58,12 @@ Each of those is a solved problem with good packages behind it. The work that re
 
 | | |
 |---|---|
-| Tests | 4,746 passing with none skipped, on CPython 3.10 through 3.14. Python 3.15 is in the matrix too and passes, but is not claimed on PyPI until it ships final |
+| Tests | 5,243 passing with none skipped, on CPython 3.10 through 3.14. Python 3.15 is in the matrix too and passes, but is not claimed on PyPI until it ships final |
 | Coverage | 91%, with a 90% floor enforced in CI before anything is published |
 | Types | Ships `py.typed`, so your own checker sees Sillo's annotations rather than `Any` |
 | Type check | `ty` clean across the package |
 | Lint and format | `ruff` clean, checked on every push |
-| Dependencies | Seven at install time. The other 14 feature groups are opt-in extras |
+| Dependencies | Five at install time. Everything else is an opt-in extra |
 | License | BSD-3-Clause |
 
 None of this is aspirational. The coverage floor fails the build rather than
@@ -78,38 +78,84 @@ here by hand.
 
 ## Installation
 
+**1.0 is not on PyPI yet.** `uv add sillo-framework` installs 0.x, which is a
+different API — see the note at the top. To build against this branch:
+
 ```bash
-uv add sillo-framework
+uv add "sillo-framework @ git+https://github.com/sillohq/core.git@main"
 ```
 
-For optional feature groups:
+Everything below documents 1.0. For the released line, read
+[the v0.x branch](https://github.com/sillohq/core/tree/v0.x).
+
+### Extras
+
+Five dependencies are installed by default. Every feature group beyond that is
+opt-in, so an application that never sends mail does not carry a mail library:
+
+| Extra | Brings in |
+|---|---|
+| `record` | The ORM and the migration engine (Tortoise) |
+| `jwt` | JWT signing and verification (PyJWT) |
+| `cache` | Redis cache backend — an in-memory one needs nothing |
+| `events` | Redis event distribution — likewise |
+| `mail` | Templated email bodies (Jinja2) |
+| `crypto` | The `encrypted` cast and `sillo.helpers.crypto` |
+| `storage-s3` | HTTP client for the S3 driver, which is still landing. The local and memory drivers need nothing |
+| `hashing-bcrypt`, `hashing-argon2`, `hashing-scrypt`, `hashing-all` | Password hashing. Falls back to `pbkdf2_sha256` if none is installed |
+| `granian` | The Granian server, as an alternative to uvicorn |
+| `all` | Everything above |
 
 ```bash
-uv add "sillo-framework[mail]"
-uv add "sillo-framework[jwt]"
-uv add "sillo-framework[cache]"
-uv add "sillo-framework[record]"
-uv add "sillo-framework[graphql]"
+uv add "sillo-framework[record,jwt,cache]"
 ```
 
-For a full development setup:
+GraphQL and the WebSocket room layer are no longer extras. They are separate
+packages that import into the `sillo` namespace:
 
 ```bash
-uv add "sillo-framework[all]"
+uv add sillo-graphql     # imports as sillo.graphql
 ```
 
 ## Hello World
 
+A handler takes one argument — the context — plus any path parameters,
+dependencies and validation markers it declares. Return a value and Sillo
+encodes it:
+
 ```python
-from sillo import SilloApp
+from sillo import HttpContext, SilloApp
 
 app = SilloApp(title="My API")
 
 
 @app.get("/")
-async def home(request, response):
-    return response.json({"message": "Hello from Sillo"})
+async def home(ctx: HttpContext):
+    return {"message": "Hello from Sillo"}
 ```
+
+When you need to say more than the body — a status code, a header, a redirect —
+use one of the free response builders:
+
+```python
+from sillo import HttpContext, SilloApp, created, redirect
+
+app = SilloApp(title="My API")
+
+
+@app.post("/users")
+async def make_user(ctx: HttpContext):
+    return created({"id": "user_1"})
+
+
+@app.get("/old")
+async def old(ctx: HttpContext):
+    return redirect("/new")
+```
+
+`json`, `html`, `text`, `redirect`, `file`, `stream`, `sse` and the rest are
+importable from `sillo` directly. There is no `response` object to thread
+through your call stack.
 
 Run it with uvicorn:
 
@@ -135,7 +181,7 @@ Sillo validates request bodies with Pydantic through `request_model`.
 
 ```python
 from pydantic import BaseModel
-from sillo import SilloApp
+from sillo import HttpContext, SilloApp, created
 
 app = SilloApp()
 
@@ -146,11 +192,42 @@ class CreateUser(BaseModel):
 
 
 @app.post("/users", request_model=CreateUser)
-async def create_user(request, response, user: CreateUser):
-    return response.json(user.model_dump(), status_code=201)
+async def create_user(ctx: HttpContext, user: CreateUser):
+    return created(user.model_dump())
 ```
 
-The validated model is also available as `request.validated_data`.
+The body is declared once, on the decorator, and injected into the first plain
+parameter after the context. It is also available as `ctx.validated_data`.
+
+Every other input location has a marker — `Query`, `Header`, `Cookie`, `Path`,
+`Form`, `File` — and constraints go on the marker, feeding both the validation
+and the generated OpenAPI schema, so the published contract and the enforced
+one cannot drift apart:
+
+```python
+from sillo import HttpContext, Query, SilloApp
+
+app = SilloApp()
+
+
+@app.get("/users")
+async def list_users(ctx: HttpContext, page=Query(1, type=int, ge=1, le=100)):
+    return {"page": page}
+```
+
+Bad input returns 422 naming the location that failed. A parameter error is
+wrapped in `detail`:
+
+```json
+{"detail": [{"loc": ["query", "page"], "msg": "Input should be less than or equal to 100", "type": "less_than_equal", "input": "999"}]}
+```
+
+A request-body error is currently returned as Pydantic's own error list,
+unwrapped:
+
+```json
+[{"type": "missing", "loc": ["email"], "msg": "Field required", "input": {"name": "Ada"}}]
+```
 
 ## Dependency Injection
 
@@ -184,37 +261,39 @@ def auth_header(ctx: HttpContext):
 ## Routing
 
 ```python
-from sillo import Router, SilloApp
+from sillo import HttpContext, Router, SilloApp
 
 app = SilloApp()
 api = Router(prefix="/api")
 
 
 @api.get("/users/{user_id:int}")
-async def get_user(request, response, user_id: int):
-    return response.json({"id": user_id})
+async def get_user(ctx: HttpContext, user_id: int):
+    return {"id": user_id}
 
 
 app.mount_router(api)
 ```
 
+Path parameters are converted by the type in the pattern, so `user_id` arrives
+as an `int` and a request for `/api/users/abc` never reaches the handler.
+
 ## What Sillo Provides
 
-- Async ASGI application core
-- HTTP routing, route groups, and mounted routers
-- Request and response helpers
-- Pydantic request validation
-- Dependency injection with nested dependencies
-- Query, header, and cookie parameter helpers
-- Middleware pipeline
-- CORS and CSRF support
-- Sessions and authentication utilities
-- API keys, JWT helpers, users, permissions, and guards
-- OpenAPI generation and interactive docs
+- Async ASGI application core, with lifespan-managed startup and shutdown
+- HTTP routing, path converters, route groups, and mounted routers
+- Response builders — `json`, `html`, `text`, `redirect`, `file`, `stream`, `sse`, `ndjson`, `xml`
+- Pydantic request validation, with `Query`, `Header`, `Cookie`, `Path`, `Form` and `File` markers
+- Dependency injection with nested dependencies and generator-based teardown
+- Middleware pipeline, CORS, CSRF, rate limiting, and security headers
+- Sessions, and pluggable auth backends for session, JWT and API-key credentials
+- Users, groups, permissions, and the `useAuth` route gate
+- OpenAPI generation and interactive documentation
+- WebSocket routes, with `WebSocketContext` alongside `HttpContext`
 - File uploads, streaming responses, static files, and frontend fallback serving
-- WebSockets, consumers, channels, groups, events, and history helpers
-- Cache abstraction with memory and Redis support
-- Event system and background work primitives
+- Storage buckets over local disk or memory, with signed URLs and upload policies
+- Cache abstraction with in-memory and Redis backends
+- Event system, background tasks, a queue, and a scheduler
 - Record layer for database-backed models, transactions, scopes, casting, and pagination
 - Mail service utilities
 - Sync and async test clients
