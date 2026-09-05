@@ -356,18 +356,22 @@ const MANUAL_GROUPS = [
 
     // -- Guides ------------------------------------------------
     {
-        label: 'Start Here',
+        label: 'Getting Started',
         items: [
             { label: 'Introduction', link: '/guides/introduction/' },
+            { label: 'Philosophy', link: '/guides/philosophy/' },
+            { label: 'FAQ', link: '/guides/faq/' },
+            { label: 'Coming from FastAPI & Django', link: '/guides/coming-from/' },
+            { label: "What's in the Box", link: '/guides/ecosystem/' },
             { label: 'Installation', link: '/guides/installation/' },
-            { label: 'Configuration', link: '/guides/configuration/' },
-            { label: 'Environment & .env', link: '/guides/environment/' },
             { label: 'Request Lifecycle', link: '/guides/request-lifecycle/' },
         ],
     },
     {
         label: 'Core Concepts',
         items: [
+            { label: 'Configuration', link: '/guides/configuration/' },
+            { label: 'Environment & .env', link: '/guides/environment/' },
             { label: 'Routing', link: '/guides/routing/' },
             { label: 'Routers & Sub-Apps', link: '/guides/routers-and-subapps/' },
             { label: 'Handlers', link: '/guides/handlers/' },

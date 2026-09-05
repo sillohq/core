@@ -249,7 +249,7 @@ from sillo import HttpContext, json, redirect
 @app.get(
     "/dashboard",
     auth=useAuth(
-        unauthorized=lambda ctx, response: redirect("/login"),
+        unauthorized=lambda ctx: redirect("/login"),
     ),
 )
 async def dashboard(ctx: HttpContext): ...
@@ -258,10 +258,10 @@ async def dashboard(ctx: HttpContext): ...
     "/api/orders",
     auth=useAuth(
         permissions=["orders:read"],
-        unauthorized=lambda ctx, response: json(
+        unauthorized=lambda ctx: json(
             {"error": "sign_in_required"}, status_code=401
         ),
-        forbidden=lambda ctx, response: json(
+        forbidden=lambda ctx: json(
             {"error": "not_allowed"}, status_code=403
         ),
     ),
