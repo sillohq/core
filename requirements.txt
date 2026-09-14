@@ -1,5 +1,5 @@
 uvicorn>=0.27.0
-anyio==4.14.1
+anyio==4.15.1
 python-multipart>=0.0.6
 typing-extensions==4.16.0
 pydantic>=2.0,<3.0
