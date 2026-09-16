@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **`SilloApp.wrap_asgi(...)` is gone.** `app.use(...)` now accepts a raw ASGI middleware factory directly, in place of a dispatch function — sillo infers which form it is from the middleware's `__call__` signature (three required positional parameters is raw ASGI, two is dispatch), or `raw=True`/`raw=False` states it explicitly. `app.wrap_asgi(mw, **kwargs)` becomes `app.use(mw, **kwargs)` (or `app.use(mw, raw=True, **kwargs)` when the signature is ambiguous, e.g. a factory taking only the next app). `Router.use(...)` gained the same `raw`/`*args`/`**kwargs` parameters.
+
 ## [1.0.0a1] - 2026-09-12
 
 The first alpha of 1.0 — **the context rewrite**. This is a breaking release

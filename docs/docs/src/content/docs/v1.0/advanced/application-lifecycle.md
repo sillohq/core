@@ -775,17 +775,27 @@ app.use(C)  # http_middleware = [C, B, A]
 # Chain: ServerErrorMiddleware → C → B → A → ExceptionMiddleware → Router
 ```
 
-### wrap_asgi()
+### Raw ASGI middleware via use()
 
-For raw ASGI middleware that doesn't follow the dispatch pattern:
+`use()` accepts a raw ASGI middleware factory in place of a dispatch
+function. sillo infers which form a middleware is from its signature --
+three required positional parameters is raw ASGI, two is the dispatch
+`(ctx, call_next)` form -- or you can pass `raw=True` to state it
+explicitly:
 
 ```python
-def wrap_asgi(self, middleware_cls, **kwargs):
-    self.app = middleware_cls(self.app, **kwargs)
+def use(self, middleware, *args, raw=None, **kwargs):
+    self.http_middleware.insert(
+        0,
+        Middleware(middleware, *args, **kwargs)
+        if raw
+        else Middleware(ASGIRequestResponseBridge, dispatch=middleware),
+    )
 ```
 
-This wraps the entire application (including all routes) at the ASGI level.
-The middleware receives raw `(scope, receive, send)` tuples.
+A raw middleware is inserted at position 0 like any other, so it wraps the
+entire application (including all routes) at the ASGI level and receives raw
+`(scope, receive, send)` tuples.
 
 ### Middleware Type Signature
 

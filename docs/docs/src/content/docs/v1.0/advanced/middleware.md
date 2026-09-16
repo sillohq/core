@@ -1090,8 +1090,10 @@ silently dropping the message.
 ## 13. app.use(): Application-Level Registration
 
 **File:** `core/sillo/application.py` (`use()` starts around line 996; the
-inference helpers `_runtime_call_signature`, `_is_raw_asgi_middleware`, and
-`_rebinding_factory` sit just above the class, starting around line 72)
+inference helpers `_runtime_call_signature`, `_required_positional_count`,
+`_is_raw_asgi_middleware`, `_is_prebuilt_raw_instance`, and
+`_rebinding_factory` now live in `core/sillo/middleware/define.py`, shared
+with `Router.use()`)
 
 `SilloApp.use()` registers a middleware — either style — at the application
 level, and inserts it at **position 0** of the middleware list. Simplified:
@@ -1104,7 +1106,7 @@ def use(self, middleware, *args, raw=None, **kwargs) -> None:
     if not raw and (args or kwargs):
         raise TypeError(...)   # dispatch middleware is already configured
 
-    if raw and not inspect.isclass(middleware):
+    if raw and _is_prebuilt_raw_instance(middleware):
         raw_factory = _rebinding_factory(middleware)  # bind .app, don't construct
     else:
         raw_factory = middleware

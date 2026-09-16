@@ -33,8 +33,16 @@ from sillo.events import EventEmitter
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.helpers.concurrency import run_in_threadpool
 from sillo.middleware.bridge import ASGIRequestResponseBridge
-from sillo.middleware.define import DefineMiddleware as Middleware
-from sillo.middleware.define import wrap_middleware
+from sillo.middleware.define import (
+    DefineMiddleware as Middleware,
+)
+from sillo.middleware.define import (
+    MiddlewareFactory,
+    _is_prebuilt_raw_instance,
+    _is_raw_asgi_middleware,
+    _rebinding_factory,
+    wrap_middleware,
+)
 from sillo.objects import RouteParam, URLPath
 from sillo.openapi.models import Parameter
 from sillo.parameters import ParameterExtractor, SolvedParamDependency
@@ -1308,32 +1316,124 @@ class Router(BaseRouter):
         self.routes.append(route)
         self._routes_sorted = False
 
-    def use(self, middleware: MiddlewareType) -> None:
+    def use(
+        self,
+        middleware: Annotated[
+            MiddlewareType | MiddlewareFactory | ASGIApp,
+            Doc(
+                "A callable middleware function that processes requests and responses."
+            ),
+        ],
+        *args: Annotated[
+            Any,
+            Doc("Positional arguments forwarded to a `raw=True` middleware factory."),
+        ],
+        raw: Annotated[
+            bool | None,
+            Doc(
+                "Treat `middleware` as a raw ASGI middleware factory, called as "
+                "`middleware(next_app, *args, **kwargs)`, instead of a dispatch "
+                "function. Left as `None`, sillo infers this from "
+                "`middleware`'s `__call__` signature: three required "
+                "positional parameters (ASGI's `scope, receive, send`, "
+                "whatever they're named) is raw, two (`ctx, call_next`) is "
+                "dispatch. Pass `True`/`False` to state it explicitly instead."
+            ),
+        ] = None,
+        **kwargs: Annotated[
+            Any,
+            Doc("Keyword arguments forwarded to a raw middleware factory."),
+        ],
+    ) -> None:
         """Register a middleware component on this router.
 
-        Adds a middleware callable to the router's middleware stack. The
-        middleware is wrapped in an ``ASGIRequestResponseBridge`` to ensure
-        compatibility with the internal ASGI middleware pipeline, then
-        inserted at the beginning of the middleware list so that it
-        executes as the outermost layer in the request processing chain.
+        Adds a middleware callable to the router's middleware stack, then
+        updates the stack so the new layer takes effect immediately. The last
+        middleware registered is the outermost layer, exactly as with
+        ``SilloApp.use``.
 
-        Router-level middleware applies to all routes registered on this
-        router and its sub-routers, making it suitable for cross-cutting
-        concerns such as authentication, logging, or CORS handling.
+        Two forms are accepted, and sillo tells them apart on its own -- see
+        ``raw`` below -- so nothing needs to be passed to say which one this
+        is, in the common case.
+
+        The dispatch form is an instance, or a plain function, taking
+        ``(ctx, call_next)``. It is wrapped in an ``ASGIRequestResponseBridge``
+        so it runs inside the internal ASGI pipeline. That is convenient, and
+        it costs a context object and a background task per layer per request.
+
+        A raw ASGI middleware is a *factory* -- usually a class -- invoked as
+        ``middleware(next_app, *args, **kwargs)``, whose ``__call__`` takes
+        ``(scope, receive, send)``. Nothing is built on its behalf, so it is
+        the cheaper form and the one to reach for when the middleware does not
+        need a parsed request. It sees every scope type the router's dispatch
+        application does (HTTP and WebSocket) before the router itself, and is
+        applied to
+        all routes registered on this router and its sub-routers, making it
+        suitable for cross-cutting concerns such as request logging, tracing,
+        or protocol-level transformations.
 
         Args:
-            middleware: A middleware callable or middleware tuple following
-                the framework's middleware interface. Can be a simple async
-                callable or a tuple of ``(cls, args, kwargs)`` for
-                class-based middleware with constructor arguments.
+            middleware: A callable taking an ``HttpContext`` and a
+                ``call_next`` callable and returning a response (dispatch
+                form), or a factory taking the next ASGI application as its
+                first argument and returning an ASGI application (raw form).
+            *args: Positional arguments for the factory. Raw ASGI middleware
+                only.
+            raw: Whether ``middleware`` is a raw ASGI middleware factory.
+                Left as ``None``, this is inferred from ``middleware``'s
+                signature.
+            **kwargs: Keyword arguments for the factory. Raw ASGI middleware
+                only.
 
         Returns:
             None. The middleware is inserted at the front of the router's
             internal middleware list.
+
+        Raises:
+            TypeError: If extra arguments are passed for middleware that
+                resolves to the dispatch form, or for a raw ASGI middleware
+                that is already constructed. The dispatch form takes a
+                middleware that is already configured, so there is nowhere
+                for them to go and silently dropping them would leave the
+                middleware running on its defaults.
         """
-        if callable(middleware):
-            mdw = Middleware(ASGIRequestResponseBridge, dispatch=middleware)
-            self.middleware.insert(0, mdw)
+        if raw is None:
+            raw = _is_raw_asgi_middleware(middleware)
+
+        if not raw and (args or kwargs):
+            raise TypeError(
+                "use() forwards extra arguments only to raw ASGI middleware. "
+                "This middleware's __call__ was read as the dispatch form "
+                "(ctx, call_next), so pass raw=True if it is meant to be a "
+                "raw ASGI factory, or configure the middleware before "
+                "registering it."
+            )
+
+        if raw and _is_prebuilt_raw_instance(middleware):
+            if args or kwargs:
+                raise TypeError(
+                    "use() forwards extra arguments only when constructing a "
+                    "raw ASGI middleware, and this one is already "
+                    "constructed. Pass its options to the instance itself, "
+                    f"not to use(): {middleware!r}"
+                )
+            raw_factory: MiddlewareFactory = _rebinding_factory(
+                cast(ASGIApp, middleware)
+            )
+        else:
+            raw_factory = cast(MiddlewareFactory, middleware)
+
+        self.middleware.insert(
+            0,
+            # Raw middleware is the factory itself: the chain builder calls
+            # `cls(next_app, *args, **kwargs)`, which is exactly the ASGI
+            # convention, so no wrapper is involved at all -- an
+            # already-constructed instance is wrapped in a one-shot factory
+            # above so the same call still works.
+            Middleware(raw_factory, *args, **kwargs)
+            if raw
+            else Middleware(ASGIRequestResponseBridge, dispatch=middleware),
+        )
 
     def get(
         self,
@@ -3528,45 +3628,6 @@ class Router(BaseRouter):
                     routers_to_process.append((sub_router, new_prefix))
 
         return all_routes
-
-    def wrap_asgi(
-        self,
-        middleware_cls: Annotated[
-            Callable[[ASGIApp], Any],
-            Doc(
-                "An ASGI middleware class or callable that takes an app as its first argument and returns an ASGI app"
-            ),
-        ],
-        **kwargs: Any,
-    ) -> None:
-        """Wrap the entire router with an ASGI-level middleware.
-
-        Applies an ASGI middleware around the router's internal dispatch
-        application, intercepting all requests (both HTTP and WebSocketContext)
-        before they reach the route matching and handling pipeline. This
-        operates at a lower level than router-level middleware added via
-        ``use``, wrapping the entire dispatch application rather than
-        individual route handlers.
-
-        This is useful for cross-cutting concerns that must apply to every
-        request regardless of which route is matched, such as request
-        logging, tracing, or protocol-level transformations.
-
-        Args:
-            middleware_cls: An ASGI middleware class or callable that
-                follows the ASGI interface, accepting an app as its first
-                argument and returning an ASGI-compatible application.
-            **kwargs: Additional keyword arguments passed to the middleware
-                constructor alongside the application reference.
-
-        Returns:
-            None. The router's internal ``app`` attribute is replaced with
-            the middleware-wrapped version.
-        """
-        self.app = middleware_cls(
-            self.app,  # ty:ignore[invalid-argument-type]
-            **kwargs,
-        )
 
 
 Routes = Route  # for backward compatibilty

@@ -25,7 +25,7 @@ sillo gives you three layers, from highest-level to lowest:
   `await call_next()` continuation.
 - **Class-based middleware** via `BaseMiddleware`: the same idea in a class,
   as a single `dispatch` method.
-- **Raw ASGI middleware** via `app.wrap_asgi(...)`: operates on the raw
+- **Raw ASGI middleware** via `app.use(...)`: operates on the raw
   `scope`/`receive`/`send` triple, for third-party or framework-agnostic
   middleware.
 
@@ -233,10 +233,18 @@ app.mount_router(api)
 
 ##  Raw ASGI middleware
 
-`app.wrap_asgi(...)` wraps the entire sillo app in a standard ASGI middleware
-that sees the raw `scope`, `receive`, and `send` callables, before sillo builds
-an `HttpContext` from them. Use this for third-party ASGI middleware (GZip,
-correlation IDs, Sentry) or when you need to touch the ASGI layer directly.
+`app.use(...)` accepts a raw ASGI middleware factory the same way it accepts
+a dispatch function. A raw middleware is a class -- or callable -- invoked as
+`middleware(next_app, *args, **kwargs)` whose `__call__` sees the raw
+`scope`, `receive`, and `send` callables before sillo builds an `HttpContext`
+from them. sillo tells the two forms apart from the signature: three required
+positional parameters (ASGI's `scope, receive, send`, whatever they're
+named) is raw, two (`ctx, call_next`) is dispatch. Pass `raw=True` to state
+it explicitly when the signature is ambiguous -- for example a factory taking
+only the next app.
+
+Use this for third-party ASGI middleware (GZip, correlation IDs, Sentry) or
+when you need to touch the ASGI layer directly:
 
 ```python
 def gzip_middleware(app):
@@ -245,7 +253,7 @@ def gzip_middleware(app):
         await app(scope, receive, send)
     return middleware
 
-app.wrap_asgi(gzip_middleware)
+app.use(gzip_middleware, raw=True)
 ```
 
 A class-based form is also supported, implement `__call__(self, scope, receive,
@@ -260,22 +268,24 @@ class ScopeLogger:
         print("scope:", scope["type"], scope.get("path"))
         await self.app(scope, receive, send)
 
-app.wrap_asgi(ScopeLogger)
+app.use(ScopeLogger)
 ```
 
 Raw ASGI middleware does **not** have access to sillo's `HttpContext`,
-only the ASGI primitives. If you need sillo objects, use `app.use` instead.
+only the ASGI primitives. If you need sillo objects, use a dispatch
+function with `app.use` instead.
 
-##  `use` vs `wrap_asgi`
+##  Dispatch vs raw ASGI middleware
 
-| | `app.use(fn)` | `app.wrap_asgi(mw)` |
+| | dispatch (`app.use(fn)`) | raw ASGI (`app.use(mw)`) |
 | --- | --- | --- |
 | Abstraction | High. Sillo `HttpContext` | Low. ASGI `scope`/`receive`/`send` |
 | Framework | sillo-specific | Framework-agnostic |
 | Best for | Auth, logging, request/response shaping | Third-party ASGI middleware, low-level tweaks |
 | Continuation | `await call_next()` | `await app(scope, receive, send)` |
 
-Pick `use` for application logic that touches sillo features; pick `wrap_asgi` to integrate standard ASGI components.
+Pick a dispatch function for application logic that touches sillo features;
+pick a raw ASGI middleware to integrate standard ASGI components.
 
 ##  First-party middleware modules
 

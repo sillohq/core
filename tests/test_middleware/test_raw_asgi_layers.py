@@ -19,19 +19,19 @@ from typing import Callable
 import anyio
 import pytest
 
-from sillo import SilloApp
-from sillo import json
-from sillo.application import (
-    _is_raw_asgi_middleware,
-    _rebinding_factory,
-    _runtime_call_signature,
-)
-from sillo.middleware.bridge import ASGIRequestResponseBridge
+from sillo import SilloApp, json
 from sillo.core.error.handler import ServerErrorMiddleware
 from sillo.core.http import HttpContext
 from sillo.exception_handler import ExceptionMiddleware
 from sillo.exceptions import HTTPException
 from sillo.middleware.base import BaseMiddleware
+from sillo.middleware.bridge import ASGIRequestResponseBridge
+from sillo.middleware.define import (
+    _is_prebuilt_raw_instance,
+    _is_raw_asgi_middleware,
+    _rebinding_factory,
+    _runtime_call_signature,
+)
 from sillo.testclient import TestClient
 from sillo.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -78,6 +78,29 @@ class StampHeader:
             await send(message)
 
         await self.app(scope, receive, send_stamped)
+
+
+def stamp_header_factory(app: ASGIApp) -> ASGIApp:
+    """A raw ASGI middleware as a bare factory function, not a class.
+
+    The ordinary shape third-party ASGI middleware from other frameworks
+    ships in: a function taking the next app and returning the actual
+    ``(scope, receive, send)`` callable, with nothing to construct.
+    """
+
+    async def middleware(scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await app(scope, receive, send)
+            return
+
+        async def send_stamped(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                message["headers"].append((b"x-stamp", b"on"))
+            await send(message)
+
+        await app(scope, receive, send_stamped)
+
+    return middleware
 
 
 def _app(**kwargs) -> SilloApp:
@@ -313,6 +336,59 @@ class TestRawMiddlewareThroughUse:
             client.get("/ping")
 
         assert seen == [("http", "/ping")]
+
+
+class TestRawFactoryFunctionThroughUse:
+    """A plain factory function, not a class, registered with raw=True.
+
+    Distinct from `TestRawMiddlewareThroughUse`, which only ever registers a
+    class: `use()` used to assume any non-class raw middleware was already a
+    constructed instance (`inspect.isclass(middleware)` was the only check),
+    so a bare factory function got rebound instead of called with the next
+    app -- and blew up the first time a request reached it, since the
+    function itself was then invoked as `fn(scope, receive, send)` instead of
+    `fn(app)`.
+    """
+
+    def test_a_factory_function_runs(
+        self, test_client_factory: Callable[[SilloApp], TestClient]
+    ):
+        app = _app()
+        app.use(stamp_header_factory, raw=True)
+
+        with test_client_factory(app) as client:
+            assert client.get("/ping").headers["x-stamp"] == "on"
+
+    def test_it_is_not_wrapped_in_a_bridge(self):
+        app = _app()
+        app.use(stamp_header_factory, raw=True)
+
+        assert not any(
+            isinstance(layer, ASGIRequestResponseBridge) for layer in _layers(app)
+        )
+
+    def test_it_is_inferred_as_raw_without_raw_true(
+        self, test_client_factory: Callable[[SilloApp], TestClient]
+    ):
+        # Single required positional parameter (`app`) carries no structural
+        # signal either way, so this stays an explicit-raw case rather than
+        # an inference one -- documented here so the assumption is pinned.
+        assert _is_raw_asgi_middleware(stamp_header_factory) is False
+
+    def test_a_factory_function_and_a_class_factory_coexist(
+        self, test_client_factory: Callable[[SilloApp], TestClient]
+    ):
+        app = _app()
+        app.use(Tagging("dispatch"))
+        app.use(stamp_header_factory, raw=True)
+        app.use(StampHeader, raw=True, header="x-trace-id", value="abc123")
+
+        with test_client_factory(app) as client:
+            response = client.get("/ping")
+
+        assert response.headers["x-stamp"] == "on"
+        assert response.headers["x-trace-id"] == "abc123"
+        assert response.json()["tags"] == ["dispatch"]
 
 
 class TestExtraArgumentsWithoutRaw:
@@ -610,3 +686,24 @@ class TestTheInferenceHelpersDirectly:
 
         assert result is instance
         assert instance.app is sentinel
+
+    def test_a_class_is_never_a_prebuilt_instance(self):
+        # A class is always a factory still awaiting `next_app`, regardless
+        # of what its instances' `__call__` looks like.
+        assert _is_prebuilt_raw_instance(StampHeader) is False
+
+    def test_a_factory_function_is_not_a_prebuilt_instance(self):
+        # One required positional parameter (`app`) -- a factory awaiting
+        # the next app, not an ASGI app already built.
+        assert _is_prebuilt_raw_instance(stamp_header_factory) is False
+
+    def test_an_already_built_instance_is_a_prebuilt_instance(self):
+        # Three required positional parameters on its own `__call__`
+        # (`scope, receive, send`) -- already shaped like the ASGI app it is.
+        class Recorder:
+            app = None
+
+            async def __call__(self, scope, receive, send):
+                pass
+
+        assert _is_prebuilt_raw_instance(Recorder()) is True
