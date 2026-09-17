@@ -1,5 +1,4 @@
-from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import HttpContext, SilloApp
 
 
 # Define raw ASGI middleware
@@ -29,12 +28,15 @@ def another_asgi_middleware(app):
 # Create SilloApp instance
 app = SilloApp()
 
-# Wrap ASGI middleware using sillo' wrap_middleware
-app.wrap_asgi(my_asgi_middleware)
-app.wrap_asgi(another_asgi_middleware)
+# Register the raw ASGI middleware factories with use(). Each takes the next
+# app and returns an ASGI callable -- a factory whose single ``app`` argument
+# the automatic shape detection cannot recognise on its own, so raw=True
+# states it explicitly. The last one registered is the outermost layer.
+app.use(my_asgi_middleware, raw=True)
+app.use(another_asgi_middleware, raw=True)
 
 
 # Define a simple route
-@app.route("/")
-async def homepage(req: Request, res: Response) -> Response:
-    return res.text("Hello from sillo!")
+@app.get("/")
+async def homepage(ctx: HttpContext):
+    return "Hello from sillo!"

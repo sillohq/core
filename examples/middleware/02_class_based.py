@@ -1,29 +1,30 @@
 from datetime import datetime
 
-from sillo.core.http import Request, Response
-from sillo.middleware.base import BaseMiddleware
+from sillo import HttpContext
+from sillo.middleware import BaseMiddleware
+from sillo.responses import json
 
 
 class ComplexMiddleware(BaseMiddleware):
-    async def process_request(self, req: Request, res: Response, cnext):
-        # Pre-processing: Log request details
-        print(f"Request received: {req.method} {req.url}")
+    async def dispatch(self, ctx: HttpContext, call_next):
+        # Pre-processing: log request details
+        print(f"Request received: {ctx.method} {ctx.url}")
 
         # Authentication check
-        if not req.headers.get("Authorization"):
-            return res.json({"error": "Unauthorized"}, status_code=401)
+        if not ctx.headers.get("Authorization"):
+            return json({"error": "Unauthorized"}, status_code=401)
 
         # Store request time
-        req.state.request_time = datetime.now()
+        ctx.state.request_time = datetime.now()
 
-        # Proceed to next middleware or handler
-        await cnext()
+        # Proceed to the rest of the chain
+        response = await call_next()
 
-    async def process_response(self, req: Request, res: Response):
-        # Post-processing: Add response headers
-        res.headers["X-Processed-Time"] = str(datetime.now() - req.state.request_time)
+        # Post-processing: add response headers
+        elapsed = datetime.now() - ctx.state.request_time
+        response.set_header("X-Processed-Time", str(elapsed))
 
         # Log response status
-        print(f"Response sent with status: {res.status_code}")
+        print(f"Response sent with status: {response.status_code}")
 
-        return res  # Return the modified response
+        return response

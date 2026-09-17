@@ -1,13 +1,12 @@
 """
-Tests for pure ASGI middleware using wrap_asgi
+Tests for pure ASGI middleware, and app.use() with raw ASGI middleware
 """
 
 from typing import Callable
 
 import pytest
 
-from sillo import SilloApp
-from sillo import json
+from sillo import SilloApp, json
 from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 from sillo.types import ASGIApp, Receive, Scope, Send
@@ -406,13 +405,13 @@ def test_pure_asgi_middleware_request_id(
         assert len(request_id_header) == 36  # UUID length
 
 
-# ========== wrap_asgi() Method Tests ==========
+# ========== use() with raw ASGI middleware ==========
 
 
-def test_wrap_asgi_basic(
+def test_use_raw_asgi_basic(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test basic wrap_asgi() method usage"""
+    """Test basic use() with a raw ASGI middleware class"""
     app = SilloApp()
 
     executed = []
@@ -431,8 +430,8 @@ def test_wrap_asgi_basic(
         executed.append("handler")
         return json({"message": "ok"})
 
-    # Use wrap_asgi method
-    app.wrap_asgi(SimpleMiddleware)
+    # Use the raw ASGI middleware class
+    app.use(SimpleMiddleware)
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -441,10 +440,10 @@ def test_wrap_asgi_basic(
         assert "handler" in executed
 
 
-def test_wrap_asgi_with_kwargs(
+def test_use_raw_asgi_with_kwargs(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test wrap_asgi() with keyword arguments"""
+    """Test use() with a raw ASGI middleware factory taking kwargs"""
     app = SilloApp()
 
     class ConfigurableMiddleware:
@@ -463,18 +462,18 @@ def test_wrap_asgi_with_kwargs(
         custom_value = ctx.scope.get("custom_value", "")
         return json({"custom_value": custom_value})
 
-    # Use wrap_asgi with kwargs
-    app.wrap_asgi(ConfigurableMiddleware, prefix="[", suffix="]")
+    # Use with kwargs
+    app.use(ConfigurableMiddleware, prefix="[", suffix="]")
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
         assert resp.json()["custom_value"] == "[value]"
 
 
-def test_wrap_asgi_multiple_times(
+def test_use_raw_asgi_multiple_times(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test calling wrap_asgi() multiple times"""
+    """Test calling use() with raw ASGI middleware multiple times"""
     app = SilloApp()
 
     execution_order = []
@@ -511,10 +510,10 @@ def test_wrap_asgi_multiple_times(
         execution_order.append("handler")
         return json({"message": "ok"})
 
-    # Wrap multiple times - last wrap is outermost
-    app.wrap_asgi(Middleware1)
-    app.wrap_asgi(Middleware2)
-    app.wrap_asgi(Middleware3)
+    # Register multiple times - last registered is outermost
+    app.use(Middleware1)
+    app.use(Middleware2)
+    app.use(Middleware3)
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -523,27 +522,10 @@ def test_wrap_asgi_multiple_times(
         assert execution_order == ["m3", "m2", "m1", "handler"]
 
 
-def test_wrap_asgi_returns_none(
+def test_use_raw_with_dispatch_middleware_ordering(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test that wrap_asgi() returns None (not chainable)"""
-    app = SilloApp()
-
-    class DummyMiddleware:
-        def __init__(self, app: ASGIApp):
-            self.app = app
-
-        async def __call__(self, scope: Scope, receive: Receive, send: Send):
-            await self.app(scope, receive, send)
-
-    result = app.wrap_asgi(DummyMiddleware)
-    assert result is None
-
-
-def test_wrap_asgi_with_sillo_middleware(
-    test_client_factory: Callable[[SilloApp], TestClient],
-):
-    """Test wrap_asgi() combined with use()"""
+    """Test use() combining a dispatch middleware with raw ASGI middleware"""
     app = SilloApp()
 
     execution_order = []
@@ -567,23 +549,24 @@ def test_wrap_asgi_with_sillo_middleware(
         execution_order.append("handler")
         return json({"message": "ok"})
 
-    # Add sillo middleware first
+    # Add the dispatch middleware first, then the raw ASGI middleware, so
+    # the raw middleware -- registered last -- is the outermost layer.
     app.use(sillo_middleware)
-    # Then wrap with ASGI middleware
-    app.wrap_asgi(ASGIMiddleware)
+    app.use(ASGIMiddleware)
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
         assert resp.status_code == 200
-        # sillo middleware (HTTP level) executes before ASGI middleware (wraps core app)
-        assert execution_order.index("sillo") < execution_order.index("asgi")
-        assert execution_order.index("asgi") < execution_order.index("handler")
+        # Raw ASGI middleware runs before the dispatch middleware (outermost),
+        # and the dispatch middleware runs before the handler.
+        assert execution_order.index("asgi") < execution_order.index("sillo")
+        assert execution_order.index("sillo") < execution_order.index("handler")
 
 
-def test_wrap_asgi_header_injection(
+def test_use_raw_asgi_header_injection(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test wrap_asgi() with header injection middleware"""
+    """Test use() with a raw ASGI middleware injecting headers"""
     app = SilloApp()
 
     class HeaderMiddleware:
@@ -611,17 +594,17 @@ def test_wrap_asgi_header_injection(
     async def handler(ctx: HttpContext):
         return json({"message": "ok"})
 
-    app.wrap_asgi(HeaderMiddleware, header_name="x-powered-by", header_value="sillo")
+    app.use(HeaderMiddleware, header_name="x-powered-by", header_value="sillo")
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
         assert resp.headers.get("x-powered-by") == "sillo"
 
 
-def test_wrap_asgi_scope_modification(
+def test_use_raw_asgi_scope_modification(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test wrap_asgi() modifying scope"""
+    """Test use() with a raw ASGI middleware modifying scope"""
     app = SilloApp()
 
     class ScopeMiddleware:
@@ -640,17 +623,17 @@ def test_wrap_asgi_scope_modification(
         custom_value = ctx.scope.get("app_name", "unknown")
         return json({"app_name": custom_value})
 
-    app.wrap_asgi(ScopeMiddleware, key="app_name", value="sillo-app")
+    app.use(ScopeMiddleware, key="app_name", value="sillo-app")
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
         assert resp.json()["app_name"] == "sillo-app"
 
 
-def test_wrap_asgi_error_handling(
+def test_use_raw_asgi_error_handling(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test wrap_asgi() with error handling middleware"""
+    """Test use() with a raw ASGI middleware handling errors"""
     app = SilloApp()
 
     class ErrorHandlerMiddleware:
@@ -661,7 +644,7 @@ def test_wrap_asgi_error_handling(
             if scope["type"] == "http":
                 try:
                     await self.app(scope, receive, send)
-                except Exception as e:
+                except Exception:
                     # Catch errors and send custom response
                     await send(
                         {
@@ -683,7 +666,7 @@ def test_wrap_asgi_error_handling(
     async def handler(ctx: HttpContext):
         raise ValueError("Test error")
 
-    app.wrap_asgi(ErrorHandlerMiddleware)
+    app.use(ErrorHandlerMiddleware)
 
     with test_client_factory(app) as client:
         resp = client.get("/test")

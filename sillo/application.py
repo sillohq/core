@@ -14,6 +14,7 @@ from typing import (
 
 from typing_extensions import Doc
 
+from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.core.dependencies import Depend
 from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder
 from sillo.core.error import (
@@ -29,7 +30,12 @@ from sillo.exception_handler import ExceptionMiddleware
 from sillo.logging import create_logger
 from sillo.middleware.bridge import ASGIRequestResponseBridge
 from sillo.middleware.define import DefineMiddleware as Middleware
-from sillo.middleware.define import MiddlewareFactory
+from sillo.middleware.define import (
+    MiddlewareFactory,
+    _is_prebuilt_raw_instance,
+    _is_raw_asgi_middleware,
+    _rebinding_factory,
+)
 from sillo.objects import URLPath
 from sillo.openapi import Contact, License
 from sillo.openapi._builder import APIDocumentation
@@ -58,7 +64,6 @@ if TYPE_CHECKING:
     from sillo.core.http import HttpContext
     from sillo.users import BaseUser
 
-import inspect
 import json
 import warnings
 
@@ -68,123 +73,6 @@ except ImportError:
     uvicorn = None  # type: ignore[assignment]  # ty: ignore[invalid-assignment]
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
-
-
-def _runtime_call_signature(
-    middleware: MiddlewareType | MiddlewareFactory | ASGIApp,
-) -> inspect.Signature | None:
-    """Return the signature that governs how `middleware` is actually called.
-
-    A class registered with `use()` is a *factory*: sillo constructs an
-    instance of it (`cls(next_app, *args, **kwargs)`) and it is that
-    instance's `__call__` -- not the class's `__init__`, which is what
-    `inspect.signature` reads for a class by default -- that runs per
-    request. `getattr(cls, "__call__", None)` is used rather than
-    `cls.__dict__.get("__call__")` so an `__call__` inherited from a base
-    class (as opposed to one only ever present on `object`, i.e. not
-    overridden at all) is found by walking the MRO the same way Python does
-    when it actually calls the instance.
-
-    Anything that isn't a class -- an instance, a bound method, a plain
-    function, a `functools.partial` -- is called directly as-is, so its own
-    signature is what matters. `inspect.unwrap` strips any `functools.wraps`
-    decoration first so a decorated middleware doesn't get misread as
-    `(*args, **kwargs)`.
-
-    Returns `None` when no such signature can be determined at all, which
-    callers must treat as "no structural signal either way."
-    """
-    if inspect.isclass(middleware):
-        # Not the `hasattr(x, "__call__")` anti-pattern `callable()` replaces:
-        # the object fetched here is inspected for its signature, not just
-        # tested for truthiness, and `callable(middleware)` would answer
-        # about the class itself (always true; classes are callable) rather
-        # than about what its *instances* -- what `use()` actually ends up
-        # calling -- will be.
-        target = getattr(middleware, "__call__", None)  # noqa: B004
-        if target is None or target is object.__call__:
-            return None
-    elif callable(middleware):
-        target = middleware
-    else:
-        return None
-
-    try:
-        return inspect.signature(inspect.unwrap(target))
-    except (TypeError, ValueError):
-        return None
-
-
-def _is_raw_asgi_middleware(
-    middleware: MiddlewareType | MiddlewareFactory | ASGIApp,
-) -> bool:
-    """Guess whether `middleware` is a raw ASGI factory rather than dispatch.
-
-    The two calling conventions `use()` accepts -- ASGI's `(scope, receive,
-    send)` and sillo's dispatch `(ctx, call_next)` -- are both called with
-    every argument positional and none defaulted. That makes the *count* of
-    required positional parameters the signal to read, not what their author
-    happened to name them: three is ASGI, two is dispatch, regardless of
-    whether those three are spelled `scope, receive, send` or something else
-    entirely.
-
-    A signature that swallows everything generically (`*args, **kwargs`), or
-    whose count matches neither convention, carries no structural signal in
-    either direction. That is left as dispatch -- the pre-existing default --
-    and `use()` separately raises if that guess turns out to be wrong and
-    factory arguments were also passed, rather than silently misrouting them.
-    """
-    sig = _runtime_call_signature(middleware)
-    if sig is None:
-        return False
-
-    positional_kinds = (
-        inspect.Parameter.POSITIONAL_ONLY,
-        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-    )
-    params = [p for p in sig.parameters.values() if p.name not in ("self", "cls")]
-    has_var_positional = any(p.kind is inspect.Parameter.VAR_POSITIONAL for p in params)
-    required_positional = [
-        p
-        for p in params
-        if p.kind in positional_kinds and p.default is inspect.Parameter.empty
-    ]
-
-    if has_var_positional:
-        return False
-    if len(required_positional) == 3:
-        return True
-    if len(required_positional) == 2:
-        return False
-    return False
-
-
-def _rebinding_factory(instance: ASGIApp) -> MiddlewareFactory:
-    """Wrap an already-constructed raw ASGI middleware as a one-shot factory.
-
-    `_build_request_chain` calls every raw entry as `cls(next_app, *args,
-    **kwargs)` -- the ASGI convention, which assumes `cls` is still waiting
-    to be built. `app.use(SessionMiddleware(secret_key=...))` and every other
-    built-in registered the same way pass an instance instead, already
-    configured and with nowhere to put `next_app` except by setting `.app` on
-    it directly -- which each of those sets to `None` at construction for
-    exactly this. Third-party raw ASGI middleware registered the same way is
-    expected to do likewise; one without a settable `.app` fails here with an
-    `AttributeError` naming the instance, which is a clearer signal than the
-    `TypeError` calling it as a factory would have raised instead.
-
-    `instance` is typed as the `ASGIApp` it already is, not the factory it is
-    about to be wrapped as -- `.app` is set on it with `setattr` rather than
-    attribute access because nothing in the `ASGIApp` shape (just `(scope,
-    receive, send) -> Awaitable`) promises that attribute exists; the
-    `AttributeError` this raises when it does not is the point.
-    """
-
-    def factory(app: ASGIApp) -> ASGIApp:
-        setattr(instance, "app", app)  # noqa: B010
-        return instance
-
-    return cast(MiddlewareFactory, factory)
 
 
 logger = create_logger("sillo")
@@ -663,7 +551,6 @@ class SilloApp:
                 different definitions. Silently overwriting one with the
                 other would document a credential the loser never reads.
         """
-        from sillo.auth.middleware import AuthenticationMiddleware
 
         for backend in self.auth_backends:
             scheme = backend.describe()
@@ -1221,7 +1108,7 @@ class SilloApp:
                 "registering it."
             )
 
-        if raw and not inspect.isclass(middleware):
+        if raw and _is_prebuilt_raw_instance(middleware):
             if args or kwargs:
                 raise TypeError(
                     "use() forwards extra arguments only when constructing a "
@@ -1664,7 +1551,7 @@ class SilloApp:
             Doc("""
                 Async handler function for GET requests.
                 Receives (ctx) and returns a response or raw data.
-                
+
                 Example:
                 async def get_user(ctx):
                     user = await get_user_from_db(ctx.path_params['user_id'])
@@ -1696,7 +1583,7 @@ class SilloApp:
             ArgsType | None,
             Doc("""
                 Response models by status code.
-                Example: 
+                Example:
                 {
                     200: UserSchema,
                     404: {"description": "User not found"},
@@ -3164,35 +3051,6 @@ class SilloApp:
                 required path parameters are missing from the arguments.
         """
         return self.router.url_for(_name, **path_params)
-
-    def wrap_asgi(
-        self,
-        middleware_cls: Annotated[
-            Callable[[ASGIApp], Any],
-            Doc(
-                "An ASGI middleware class or callable that takes an app as its first argument and returns an ASGI app"
-            ),
-        ],
-        **kwargs: Any,
-    ) -> None:
-        """
-        Wraps the entire application with an ASGI middleware.
-
-        This method allows adding middleware at the ASGI level, which intercepts all requests
-        (HTTP, WebSocketContext, and Lifespan) before they reach the application.
-
-        Args:
-            middleware_cls: An ASGI middleware class or callable that follows the ASGI interface
-            *args: Additional positional arguments to pass to the middleware
-            **kwargs: Additional keyword arguments to pass to the middleware
-
-        Returns:
-            SilloApp: The application instance for method chaining
-
-
-        """
-        self.app = middleware_cls(self.app, **kwargs)
-        self._build_request_chain()
 
     def get_all_routes(self) -> list[Route]:
         """
