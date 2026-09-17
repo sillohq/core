@@ -904,7 +904,7 @@ class Router(BaseRouter):
         # get_dependant() would be inspecting None. This was hidden by an
         # implicit-Optional annotation that claimed dependency was never None.
         self.dependencies: list[Dependant] = [
-            get_dependant(d.dependency)
+            get_dependant(d.dependency, needs_context=d.get_context)
             for d in (dependencies or [])
             if d.dependency is not None
         ]

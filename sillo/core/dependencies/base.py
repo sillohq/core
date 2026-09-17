@@ -42,15 +42,27 @@ class Depend:
             which the solver skips.
     """
 
-    def __init__(self, dependency: Callable[..., Any] | None = None) -> None:
+    def __init__(
+        self,
+        dependency: Callable[..., Any] | None = None,
+        *,
+        get_context: bool = True,
+    ) -> None:
         """
         Initialize a Depend marker around a dependency callable.
 
         Args:
             dependency: The callable that produces the value to inject. May be
                 a regular function, an async function, a generator, or an async
-                generator. Its first positional parameter is the context. Pass
-                ``None`` only for a bare router-level placeholder.
+                generator. Pass ``None`` only for a bare router-level
+                placeholder.
+            get_context: Whether ``dependency`` takes the active context as its
+                first positional parameter. Defaults to ``True``, matching a
+                route handler's own signature. Pass ``False`` for a dependency
+                that needs no context at all — its first parameter is then
+                treated like any other, eligible for ``Depend`` or an
+                extractor default, and none is passed positionally at call
+                time.
 
         Returns:
             None. This constructor initializes the ``Depend`` marker instance.
@@ -68,8 +80,17 @@ class Depend:
             # parameter — no marker:
             def current_user(ctx):
                 return ctx.state.user
+
+            # A dependency that needs no context at all:
+            def settings() -> Settings:
+                return Settings()
+
+            @app.get("/config")
+            async def show(ctx, cfg=Depend(settings, get_context=False)):
+                return json(cfg.dict())
         """
         self.dependency = dependency
+        self.get_context = get_context
 
     def __class_getitem__(cls, item: Any):
         """
@@ -162,6 +183,10 @@ class Dependant:
         _needs_form: Whether any node in the tree declares form or file
             parameters, so the form body is parsed once per request rather than
             being checked for per node.
+        needs_context: Whether ``call`` takes the active context as its first
+            positional parameter. Mirrors the owning ``Depend(get_context=...)``
+            marker; ``True`` for the root dependant, which is always the route
+            handler itself.
     """
 
     call: Callable[..., Any] | None = None
@@ -174,6 +199,7 @@ class Dependant:
     is_async_generator: bool = False
     cache_key: tuple[Callable[..., Any], tuple[str, ...]] | None = None
     use_cache: bool = True
+    needs_context: bool = True
     _execution_plan: list[ExecutionStep] = field(default_factory=list)
     _validator_plan: tuple[tuple[int, CompiledValidator], ...] = ()
     _needs_form: bool = False
@@ -189,6 +215,7 @@ def get_dependant(
     name: str | None = None,
     *,
     strict_validation: bool = False,
+    needs_context: bool = True,
 ) -> Dependant:
     """
     Analyze a callable's signature and build a Dependant dependency tree.
@@ -213,6 +240,11 @@ def get_dependant(
             malformed values produce a 422 instead of the historical 500.
             Propagates to nested dependencies so a whole application validates
             consistently.
+        needs_context: Whether ``call`` takes the active context as its first
+            positional parameter. ``True`` by default. Set to ``False`` for a
+            dependency built from ``Depend(fn, get_context=False)``, whose
+            first parameter is analyzed like any other rather than reserved
+            for the context.
 
     Returns:
         A fully constructed ``Dependant`` instance with its dependency tree,
@@ -233,10 +265,16 @@ def get_dependant(
     markers: list[tuple[str, ParameterExtractor]] = []
     cache_key_parts: list[str] = []
 
-    # The first positional parameter is the context slot — it is passed
-    # positionally at call time, exactly as a route handler receives `ctx`, so
-    # it is never a sub-dependency or an extractor. Everything after it is.
-    for param_name, param in list(sig.parameters.items())[1:]:
+    # When this callable takes a context, its first positional parameter is
+    # that context slot — passed positionally at call time, exactly as a route
+    # handler receives `ctx`, so it is never a sub-dependency or an extractor.
+    # A `Depend(fn, get_context=False)` callable takes no such slot, so every
+    # one of its parameters is analyzed like any other.
+    params = list(sig.parameters.items())
+    if needs_context:
+        params = params[1:]
+
+    for param_name, param in params:
         default = param.default
 
         if isinstance(default, Depend):
@@ -244,6 +282,7 @@ def get_dependant(
                 default.dependency,
                 param_name,
                 strict_validation=strict_validation,
+                needs_context=default.get_context,
             )
             deps.append(sub)
             cache_key_parts.append(param_name)
@@ -277,6 +316,7 @@ def get_dependant(
         is_async_generator=inspect.isasyncgenfunction(call),
         cache_key=cache_key,
         use_cache=True,
+        needs_context=needs_context,
     )
     dependant._execution_plan = _build_execution_plan(dependant)
 
@@ -562,23 +602,24 @@ async def _execute_dependency(
     if func is None:
         raise RuntimeError("Dependant node has no callable to execute")
     func = _resolve_override(func, ctx)
+    args: tuple[Any, ...] = (ctx,) if dependant.needs_context else ()
 
     if dependant.is_async_generator:
-        agen = func(ctx, **kwargs)
+        agen = func(*args, **kwargs)
         value = await agen.__anext__()
         cleanup_callbacks.append(lambda agen=agen: agen.aclose())
         return value
 
     if dependant.is_generator:
-        gen = func(ctx, **kwargs)
+        gen = func(*args, **kwargs)
         value = next(gen)
         cleanup_callbacks.append(lambda gen=gen: gen.close())
         return value
 
     if dependant.is_coroutine:
-        return await func(ctx, **kwargs)
+        return await func(*args, **kwargs)
 
-    return func(ctx, **kwargs)
+    return func(*args, **kwargs)
 
 
 def _resolve_override(

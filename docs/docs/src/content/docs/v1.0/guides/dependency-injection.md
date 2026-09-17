@@ -114,6 +114,33 @@ def get_settings(_):
 Everything after that first parameter is resolved by the DI system — further
 `Depend(...)` markers and `Query`/`Header`/`Cookie` extractors, in any mix.
 
+###  Opting out of the context with `get_context=False`
+
+Some dependencies never need the context at all — they only read their own
+arguments (a `Query`/`Header` extractor, a nested `Depend`, or nothing). For
+those, pass `get_context=False` and drop the leading `_` entirely:
+
+```python
+from sillo import Depend
+
+
+def app_settings() -> dict:
+    return {"debug": False}
+
+
+@app.get("/config")
+async def show_config(ctx, cfg: dict = Depend(app_settings, get_context=False)):
+    return cfg
+```
+
+With `get_context=False`, sillo does not pass anything positionally — the
+dependency's first parameter is analyzed like any other, so it can itself be a
+`Depend(...)` or an extractor default instead of being reserved for the
+context. This is useful for dependencies you want to keep entirely
+context-free (easier to unit test, reusable outside a request, or borrowed
+from code that predates sillo). The default remains `get_context=True`, which
+is what every example elsewhere on this page uses.
+
 ##  Nested dependencies
 
 Dependencies can depend on other dependencies. sillo resolves the full tree, deepest first, and passes each result into its parent.
@@ -400,9 +427,10 @@ assert resp.status_code == 200
   smell. Flatten when a dependency only exists to pass values through.
 - **Doing I/O in a non-generator dependency**: if you open a connection and
   `return` it, nothing closes it. Use `yield` so the teardown runs.
-- **Forgetting the context parameter.** Every dependency is called with the
-  context first, so `def get_flag(): ...` raises `TypeError` at request time.
-  Give it a leading parameter — `def get_flag(_): ...`.
+- **Forgetting the context parameter.** By default every dependency is called
+  with the context first, so `def get_flag(): ...` raises `TypeError` at
+  request time. Give it a leading parameter — `def get_flag(_): ...` — or
+  declare `Depend(get_flag, get_context=False)` if it truly never needs one.
 
 ##  On WebSocket routes
 

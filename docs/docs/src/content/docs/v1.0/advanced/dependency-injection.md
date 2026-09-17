@@ -49,21 +49,33 @@ tells the framework "resolve this value through the DI system instead of
 extracting it from the request."
 
 ```python
-# core/sillo/core/dependencies/base.py:25-85
+# core/sillo/core/dependencies/base.py:25-93
 class Depend:
-    def __init__(self, dependency: Callable[..., Any] | None = None) -> None:
+    def __init__(
+        self,
+        dependency: Callable[..., Any] | None = None,
+        *,
+        get_context: bool = True,
+    ) -> None:
         self.dependency = dependency
+        self.get_context = get_context
 ```
 
-A dependency callable is invoked like a route handler: its **first positional
-parameter receives the context** (`HttpContext` on an HTTP route,
-`WebSocketContext` on a WebSocket route). There is no marker for the context.
+A dependency callable is invoked like a route handler by default: its **first
+positional parameter receives the context** (`HttpContext` on an HTTP route,
+`WebSocketContext` on a WebSocket route). There is no marker for the context —
+it's a positional convention, not a type or name match. Passing
+`get_context=False` opts a dependency out of that convention entirely: no
+context is passed positionally, and the callable's first parameter is
+analyzed like any other parameter (eligible for `Depend` or an extractor
+default).
 
 ### 11.2.1  Fields
 
 | Field          | Type                      | Purpose                                                    |
 |----------------|---------------------------|------------------------------------------------------------|
 | `dependency`   | `Callable \| None`        | The callable whose return value is injected. `None` is a bare router-level placeholder the solver skips. |
+| `get_context`  | `bool`                    | Whether `dependency` takes the context as its first positional parameter. Default `True`. |
 
 ### 11.2.2  Generic Subscript Support
 
@@ -91,6 +103,14 @@ async def list_items(ctx: HttpContext, db=Depend(get_db)):
 # Pattern 2: A dependency that ignores the context still declares it
 def get_settings(_):
     return load_settings()
+
+# Pattern 2b: A dependency that opts out of the context entirely
+def app_settings() -> dict:
+    return load_settings()
+
+@app.get("/config")
+async def show_config(ctx: HttpContext, cfg=Depend(app_settings, get_context=False)):
+    ...
 
 # Pattern 3: Nested dependencies
 async def get_user(ctx: HttpContext, db=Depend(get_db)):
@@ -139,6 +159,7 @@ class Dependant:
     is_async_generator: bool = False
     cache_key: tuple[Callable[..., Any], tuple[str, ...]] | None = None
     use_cache: bool = True
+    needs_context: bool = True
     _execution_plan: list[ExecutionStep] = field(default_factory=list)
     _validator_plan: tuple[tuple[int, CompiledValidator], ...] = ()
     _needs_form: bool = False
@@ -158,6 +179,7 @@ class Dependant:
 | `is_async_generator` | `bool`                                       | `True` if `call` is an async generator (`async def` + `yield`). |
 | `cache_key`          | `tuple[Callable, tuple[str, ...]] \| None`   | Cache key for deduplication. `None` disables caching. |
 | `use_cache`          | `bool`                                       | Whether to consult the cache before executing. Default `True`. |
+| `needs_context`      | `bool`                                       | Whether `call` takes the context positionally. Mirrors the owning `Depend(get_context=...)`; always `True` for the root (handler) node. |
 | `_execution_plan`    | `list[ExecutionStep]`                        | Pre-computed DFS post-order flat list. Built once at registration. |
 | `_validator_plan`    | `tuple[tuple[int, CompiledValidator], ...]`  | `(node_id, validator)` pairs for every node with validated params. Empty = skip validation. |
 | `_needs_form`        | `bool`                                       | `True` if any node declares Form/File parameters. Controls form parsing. |
@@ -181,6 +203,7 @@ def get_dependant(
     name: str | None = None,
     *,
     strict_validation: bool = False,
+    needs_context: bool = True,
 ) -> Dependant:
 ```
 
@@ -195,15 +218,18 @@ This function runs **once per route at registration**. It:
 
 ```mermaid
 flowchart TD
-    A["get_dependant(call)"] --> B["signature(call)"]
-    B --> S["Skip the first parameter<br/>(the context slot)"]
-    S --> C{"For each remaining parameter:"}
-    C -->|"isinstance(default, Depend)"| F["get_dependant(dependency, param_name)<br/>recursive call"]
+    A["get_dependant(call, needs_context)"] --> B["signature(call)"]
+    B --> S{"needs_context?"}
+    S -->|"True"| S1["Skip the first parameter<br/>(the context slot)"]
+    S -->|"False"| S2["Keep every parameter"]
+    S1 --> C{"For each remaining parameter:"}
+    S2 --> C
+    C -->|"isinstance(default, Depend)"| F["get_dependant(dependency, param_name,<br/>needs_context=default.get_context)<br/>recursive call"]
     C -->|"isinstance(default, ParameterExtractor)"| G["Append to markers list"]
     C -->|"other"| H["Skip"]
     F --> I["Append child Dependant to deps"]
     G --> J["compile_validator(markers)"]
-    J --> K["Build Dependant node"]
+    J --> K["Build Dependant node<br/>(needs_context stored on it)"]
     K --> L["_build_execution_plan(root)"]
     L --> M["Flatten _validator_plan"]
     M --> N["Return Dependant"]
@@ -212,29 +238,46 @@ flowchart TD
 ### 11.5.1  Signature Walk
 
 ```python
-# base.py:231-253
+# base.py:246-268
 sig = signature(call)
 deps: list[Dependant] = []
 markers: list[tuple[str, ParameterExtractor]] = []
 cache_key_parts: list[str] = []
 
-# The first positional parameter is the context slot — passed positionally
-# at call time, like a route handler's `ctx`. Everything after it is DI.
-for param_name, param in list(sig.parameters.items())[1:]:
+# When this callable takes a context, its first positional parameter is
+# that context slot — passed positionally at call time, like a route
+# handler's `ctx`. A Depend(fn, get_context=False) callable takes no such
+# slot, so every parameter is analyzed like any other.
+params = list(sig.parameters.items())
+if needs_context:
+    params = params[1:]
+
+for param_name, param in params:
     default = param.default
     if isinstance(default, Depend):
-        sub = get_dependant(default.dependency, param_name, ...)
+        sub = get_dependant(
+            default.dependency,
+            param_name,
+            needs_context=default.get_context,
+            ...,
+        )
         deps.append(sub)
         cache_key_parts.append(param_name)
     elif isinstance(default, ParameterExtractor):
         markers.append((param_name, default))
 ```
 
-The first parameter is reserved for the context. Each remaining parameter
-falls into exactly one bucket:
-- **Depend with dependency** → recursive tree building
+The first parameter is reserved for the context only when `needs_context` is
+`True` (the default, and always the case for the root handler node). Each
+remaining parameter falls into exactly one bucket:
+- **Depend with dependency** → recursive tree building, propagating that
+  child's own `get_context` flag
 - **ParameterExtractor** → parameter extraction (Query/Header/Cookie/Path/Form/File)
 - **Other** → ignored (framework-external parameters)
+
+When `needs_context=False`, nothing is skipped — a context-free dependency's
+very first parameter can itself be a `Depend(...)` or an extractor default,
+since there is no reserved slot to protect it from.
 
 ### 11.5.2  Validator Compilation
 
@@ -532,30 +575,43 @@ async def _execute_dependency(
 ) -> Any:
 ```
 
-`ctx` is passed as the callable's first positional argument, then `kwargs`.
+`ctx` is passed as the callable's first positional argument, then `kwargs` —
+but only when `dependant.needs_context` is `True`. When it is `False` (a
+`Depend(fn, get_context=False)` node), nothing is passed positionally and the
+callable is invoked with `kwargs` alone.
 
 ### 11.9.1  Dispatch Table
 
-The function dispatches based on four callable types, checked in priority
-order:
+The function first decides its positional arguments from `needs_context`,
+then dispatches based on four callable types, checked in priority order:
 
 ```mermaid
 flowchart TD
-    A["_execute_dependency(dep, ctx, kwargs, cleanups)"] --> B{"is_async_generator?"}
-    B -->|"Yes"| C["agen = func(ctx, **kwargs)<br/>value = await agen.__anext__()<br/>cleanups.append(agen.aclose)"]
+    A["_execute_dependency(dep, ctx, kwargs, cleanups)"] --> Z{"needs_context?"}
+    Z -->|"True"| Z1["args = (ctx,)"]
+    Z -->|"False"| Z2["args = ()"]
+    Z1 --> B{"is_async_generator?"}
+    Z2 --> B
+    B -->|"Yes"| C["agen = func(*args, **kwargs)<br/>value = await agen.__anext__()<br/>cleanups.append(agen.aclose)"]
     B -->|"No"| D{"is_generator?"}
-    D -->|"Yes"| E["gen = func(ctx, **kwargs)<br/>value = next(gen)<br/>cleanups.append(gen.close)"]
+    D -->|"Yes"| E["gen = func(*args, **kwargs)<br/>value = next(gen)<br/>cleanups.append(gen.close)"]
     D -->|"No"| F{"is_coroutine?"}
-    F -->|"Yes"| G["return await func(ctx, **kwargs)"]
-    F -->|"No"| H["return func(ctx, **kwargs)"]
+    F -->|"Yes"| G["return await func(*args, **kwargs)"]
+    F -->|"No"| H["return func(*args, **kwargs)"]
 ```
 
 ### 11.9.2  Code Paths
 
-**Async Generator** (lines 574-578):
+```python
+func = dependant.call
+func = _resolve_override(func, ctx)
+args: tuple[Any, ...] = (ctx,) if dependant.needs_context else ()
+```
+
+**Async Generator**:
 ```python
 if dependant.is_async_generator:
-    agen = func(ctx, **kwargs)
+    agen = func(*args, **kwargs)
     value = await agen.__anext__()
     cleanup_callbacks.append(lambda agen=agen: agen.aclose())
     return value
@@ -567,7 +623,7 @@ generator instance.
 **Sync Generator**:
 ```python
 if dependant.is_generator:
-    gen = func(ctx, **kwargs)
+    gen = func(*args, **kwargs)
     value = next(gen)
     cleanup_callbacks.append(lambda gen=gen: gen.close())
     return value
@@ -577,12 +633,12 @@ Same pattern as async generators but synchronous.
 **Async Function**:
 ```python
 if dependant.is_coroutine:
-    return await func(ctx, **kwargs)
+    return await func(*args, **kwargs)
 ```
 
 **Regular Function**:
 ```python
-return func(ctx, **kwargs)
+return func(*args, **kwargs)
 ```
 
 ---
