@@ -652,6 +652,25 @@ class TestTheInferenceHelpersDirectly:
 
         assert _is_raw_asgi_middleware(NotCallable) is False
 
+    def test_a_class_with_call_explicitly_set_to_none_is_not_raw(self):
+        # `__call__ = None` is a real attribute, not a missing one, so
+        # `getattr(cls, "__call__", None)` returns `None` for the value
+        # rather than falling back to the metaclass's own `__call__` --
+        # the one way this branch actually reads as "no signature".
+        class NoCall:
+            __call__ = None
+
+        assert _runtime_call_signature(NoCall) is None
+        assert _is_raw_asgi_middleware(NoCall) is False
+
+    def test_a_signature_that_cannot_be_read_is_not_raw(self):
+        # `dir`/`vars` are C callables `inspect.signature` cannot introspect
+        # at all, raising `ValueError` rather than returning `(*args,
+        # **kwargs)` -- the other way a callable can carry no structural
+        # signal.
+        assert _runtime_call_signature(dir) is None
+        assert _is_raw_asgi_middleware(dir) is False
+
     def test_a_non_callable_instance_is_not_raw(self):
         assert _is_raw_asgi_middleware(object()) is False
         assert _runtime_call_signature(object()) is None
