@@ -14,7 +14,7 @@ from tortoise import Tortoise, fields
 from tortoise.exceptions import ConfigurationError
 
 from sillo.record import Model
-from sillo.record.transactions import transaction
+from sillo.record.transactions import begin, commit, rollback, transaction
 
 _has_global_fallback = (
     "_enable_global_fallback" in inspect.signature(Tortoise.init).parameters
@@ -125,3 +125,22 @@ async def test_two_sequential_savepoints_do_not_collide():
             await Note.create(text="second")
 
     assert await texts() == ["first", "second"]
+
+
+class TestManualTransactionControl:
+    """``begin``/``commit``/``rollback`` -- the non-context-manager escape
+    hatch for code that cannot structure its work as a single block."""
+
+    async def test_commit_keeps_the_work(self):
+        await begin()
+        await Note.create(text="committed")
+        await commit()
+
+        assert await texts() == ["committed"]
+
+    async def test_rollback_discards_the_work(self):
+        await begin()
+        await Note.create(text="rolled-back")
+        await rollback()
+
+        assert await texts() == []
