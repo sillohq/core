@@ -117,7 +117,7 @@ class EventProtocol(Protocol):
             >>> "dispatch_count" in metrics
             True
         """
-        ...
+        ...  # pragma: no cover - Protocol stub, never called directly
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Invoke the event as a callable, dispatching to all registered listeners.
@@ -148,4 +148,4 @@ class EventProtocol(Protocol):
             >>> result["listeners_executed"]
             1
         """
-        ...
+        ...  # pragma: no cover - Protocol stub, never called directly
