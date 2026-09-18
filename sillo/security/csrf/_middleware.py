@@ -121,17 +121,23 @@ class CSRFMiddleware:
         # handler downstream still sees a body to read.
         ctx = _CachedRequest(scope, receive)
 
-        rejection = await self.validate(ctx)
-        if rejection is not None:
-            await rejection(scope, receive, send)
-            return
-
-        scope["_sillo_body_replay"] = ctx.wrapped_receive
-
         async def send_with_csrf_cookie(message: Message) -> None:
             if message["type"] == "http.response.start":
                 self.set_token_cookie(ctx, ResponseHeaders(message))
             await send(message)
+
+        rejection = await self.validate(ctx)
+        if rejection is not None:
+            # `validate()` already minted a fresh `ctx.state.csrf_token` when
+            # the submitted one was missing/invalid -- stamping it here too
+            # means a client with no cookie yet (first request is a POST, or
+            # an earlier `Set-Cookie` got dropped by a CDN/proxy) gets one on
+            # the *rejection* and can retry, instead of 403-looping forever
+            # because only the success path ever set the cookie.
+            await rejection(scope, receive, send_with_csrf_cookie)
+            return
+
+        scope["_sillo_body_replay"] = ctx.wrapped_receive
 
         await app(scope, ctx.wrapped_receive, send_with_csrf_cookie)
 
