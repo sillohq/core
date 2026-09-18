@@ -127,6 +127,30 @@ class TestResidualPathNormalisation:
         assert status is MatchStatus.FULL
 
 
+class TestHandleWithNoPatternMatch:
+    async def test_a_path_the_pattern_no_longer_matches_passes_through_untouched(self):
+        """Defensive branch: `handle()` is only ever called by a router
+        after `match()` already confirmed this exact scope matches, so this
+        should not occur in practice -- but if the scope were mutated
+        between the two calls, the request must still reach the mounted app
+        rather than crash, with the scope left exactly as it arrived."""
+        seen = {}
+
+        async def app(scope, receive, send):
+            seen["path"] = scope["path"]
+            seen["root_path"] = scope.get("root_path")
+
+        group = Group(path="/api", app=app)
+        scope = {"type": "http", "path": "/does-not-match", "root_path": ""}
+
+        await group.handle(scope, None, None)
+
+        assert seen["path"] == "/does-not-match"
+        assert seen["root_path"] == ""
+        assert scope["path"] == "/does-not-match"
+        assert scope["root_path"] == ""
+
+
 class TestHandleNotFoundPropagation:
     async def test_the_original_scope_path_is_restored_on_not_found(self):
         async def always_missing(scope, receive, send):
