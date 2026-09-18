@@ -279,6 +279,14 @@ class TestScopeType:
         status, _ = route.match({"type": "websocket", "path": "/ws", "headers": []})
         assert status == MatchStatus.FULL
 
+    def test_a_websocket_request_to_a_different_path_does_not_match(self):
+        route = WebsocketRoute("/ws", handler=_ws_handler)
+        status, params = route.match(
+            {"type": "websocket", "path": "/not-ws", "headers": []}
+        )
+        assert status == MatchStatus.NONE
+        assert params == {}
+
     def test_the_http_route_answers_when_both_share_a_path(self):
         async def socket(ctx):  # pragma: no cover - never reached
             await ctx.accept()
@@ -296,3 +304,37 @@ class TestScopeType:
             # Previously a 500: the WebSocket route matched and was handed an
             # HTTP scope.
             assert client.request("PUT", "/both").status_code == 405
+
+
+class TestUrlPathFor:
+    async def _handler(self, ctx):  # pragma: no cover - never invoked
+        await ctx.accept()
+
+    def test_substitutes_a_path_parameter(self):
+        route = WebsocketRoute("/ws/rooms/{room_id}", self._handler)
+        route.name = "room"
+
+        assert str(route.url_path_for("room", room_id="42")) == "/ws/rooms/42"
+
+    def test_a_mismatched_name_is_refused(self):
+        route = WebsocketRoute("/ws/rooms/{room_id}", self._handler)
+        route.name = "room"
+
+        with pytest.raises(ValueError, match="does not match"):
+            route.url_path_for("not-room", room_id="42")
+
+    def test_an_unused_kwarg_is_ignored(self):
+        route = WebsocketRoute("/ws/ping", self._handler)
+        route.name = "ping"
+
+        assert str(route.url_path_for("ping", unused="value")) == "/ws/ping"
+
+
+class TestRepr:
+    async def _handler(self, ctx):  # pragma: no cover - never invoked
+        await ctx.accept()
+
+    def test_shows_the_raw_path(self):
+        route = WebsocketRoute("/ws/chat", self._handler)
+
+        assert repr(route) == "<WSRoute /ws/chat>"

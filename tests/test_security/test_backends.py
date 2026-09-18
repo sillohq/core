@@ -54,6 +54,12 @@ def test_get_backend_unknown_raises():
         get_backend("nope")
 
 
+def test_get_backend_record_lazily_imports_the_orm_backend():
+    from sillo.security.ratelimit.backends.record import RecordBackend
+
+    assert isinstance(get_backend("record"), RecordBackend)
+
+
 def test_inmemory_is_rate_limit_backend_subclass():
     assert isinstance(InMemoryBackend(), RateLimitBackend)
 

@@ -12,7 +12,7 @@ import ssl
 import pytest
 
 from sillo.record.config import DatabaseConfig
-from sillo.record.manager import DatabaseManager
+from sillo.record.manager import DatabaseManager, _build_ssl_context, _normalize_db_url
 
 
 def connection_for(config: DatabaseConfig) -> dict:
@@ -146,3 +146,65 @@ def test_registered_model_modules_reach_the_config():
 def test_timezone_is_carried_through():
     config = DatabaseConfig(url="sqlite://:memory:", timezone="Europe/Berlin")
     assert DatabaseManager(config)._build_tortoise_config()["timezone"] == "Europe/Berlin"
+
+
+# ── _normalize_db_url ──────────────────────────────────────────────────
+
+
+def test_a_url_with_no_scheme_separator_is_returned_unchanged():
+    assert _normalize_db_url("not-a-url") == "not-a-url"
+
+
+# ── _build_ssl_context ────────────────────────────────────────────────
+
+
+def _self_signed_cert_and_key(tmp_path):
+    """A throwaway self-signed cert/key pair, just to exercise
+    ``load_cert_chain`` -- nothing here is meant to be trusted."""
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+    import datetime
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "sillo-test")])
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_after(
+            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
+        )
+        .sign(key, hashes.SHA256())
+    )
+
+    cert_path = tmp_path / "cert.pem"
+    key_path = tmp_path / "key.pem"
+    cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
+    key_path.write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.TraditionalOpenSSL,
+            serialization.NoEncryption(),
+        )
+    )
+    return str(cert_path), str(key_path)
+
+
+def test_ssl_context_without_a_client_cert_still_verifies_the_server():
+    context = _build_ssl_context(DatabaseConfig(url="sqlite://:memory:"))
+    assert context.verify_mode.name == "CERT_REQUIRED"
+
+
+def test_ssl_context_loads_a_client_cert_when_configured(tmp_path):
+    cert_path, key_path = _self_signed_cert_and_key(tmp_path)
+    config = DatabaseConfig(
+        url="postgres://u:p@h/db", ssl_cert=cert_path, ssl_key=key_path
+    )
+
+    # Raises if the cert/key pair cannot be loaded -- the point of the test.
+    _build_ssl_context(config)
