@@ -210,6 +210,97 @@ async def test_guard_logout(test_client):
     await client.aclose()
 
 
+async def test_guard_attempt_without_a_user_model_fails_fast(test_client):
+    guard = SessionGuard(backend=None, user_model=None)
+    app = SilloApp()
+    app.use(SessionMiddleware(secret_key="test-key"))
+
+    @app.post("/login")
+    async def do_login(ctx: HttpContext):
+        ok = await guard.attempt(ctx, email="a@b.com", password="secret")
+        return json({"status": "ok" if ok else "fail"})
+
+    client = test_client(app)
+    res = await client.post("/login")
+    assert res.json()["status"] == "fail"
+    await client.aclose()
+
+
+async def test_guard_validate_without_a_user_model_fails_fast(test_client):
+    guard = SessionGuard(backend=None, user_model=None)
+    app = SilloApp()
+
+    @app.post("/validate")
+    async def validate(ctx: HttpContext):
+        body = await ctx.json
+        ok = await guard.validate(ctx, body)
+        return json({"valid": ok})
+
+    client = test_client(app)
+    res = await client.post("/validate", json={"email": "a@b.com", "password": "secret"})
+    assert res.json()["valid"] is False
+    await client.aclose()
+
+
+class _NoSessionAttribute:
+    """A context stand-in with no ``session`` attribute at all -- unlike a
+    real ``HttpContext`` used without ``SessionMiddleware``, whose
+    ``session`` property raises ``AssertionError`` rather than being
+    simply absent, so ``hasattr`` there never even reaches this branch."""
+
+
+async def test_guard_check_without_a_session_attribute_is_false():
+    guard = SessionGuard(backend=None, user_model=None)
+    assert await guard.check(_NoSessionAttribute()) is False
+
+
+async def test_guard_id_without_a_session_attribute_is_none():
+    guard = SessionGuard(backend=None, user_model=None)
+    assert await guard.id(_NoSessionAttribute()) is None
+
+
+async def test_guard_user_returns_the_full_record_from_the_session(test_client):
+    mock_model = make_mock_model(MockUser("alice", user_id="1"))
+    app = SilloApp()
+    app.use(SessionMiddleware(secret_key="test-key"))
+    guard = SessionGuard(backend=None, user_model=mock_model)
+
+    @app.post("/login")
+    async def do_login(ctx: HttpContext):
+        await guard.login(ctx, MockUser("alice", user_id="1"))
+        return json({"ok": True})
+
+    @app.get("/whoami")
+    async def whoami(ctx: HttpContext):
+        user = await guard.user(ctx)
+        return json({"username": user.username if user else None})
+
+    client = test_client(app)
+    login_res = await client.post("/login")
+    session = login_res.cookies.get("session_id")
+
+    res = await client.get("/whoami", cookies={"session_id": session})
+    assert res.json()["username"] == "alice"
+    await client.aclose()
+
+
+async def test_guard_user_is_none_without_a_session(test_client):
+    mock_model = make_mock_model(MockUser("alice", user_id="1"))
+    guard = SessionGuard(backend=None, user_model=mock_model)
+    app = SilloApp()
+    app.use(SessionMiddleware(secret_key="test-key"))
+
+    @app.get("/whoami")
+    async def whoami(ctx: HttpContext):
+        user = await guard.user(ctx)
+        return json({"username": user.username if user else None})
+
+    client = test_client(app)
+    res = await client.get("/whoami")
+    assert res.json()["username"] is None
+    await client.aclose()
+
+
 async def test_guard_validate(test_client):
     mock_model = make_mock_model(MockUser("alice", user_id="1"))
     app = SilloApp()
