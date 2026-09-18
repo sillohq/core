@@ -23,53 +23,38 @@
   <a href="https://github.com/sillohq/core/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/sillo-framework?color=green" alt="License"></a>
 </p>
 
-> [!IMPORTANT]
-> **This branch is Sillo 1.0, and 1.0 is not released.**
->
-> `main` is where 1.0 is being built. Nothing here is on PyPI, the API is still
-> moving, and it is not backwards compatible with the released line — handlers
-> take a single `ctx` argument, `sillo.graphql` and the WebSocket room layer
-> have moved into [their own packages](https://docs.sillo.build/packages/), and
-> more will change before it ships.
->
-> **`pip install sillo-framework` installs 0.x, not this.** The released code
-> lives on **[`v0.x`](https://github.com/sillohq/core/tree/v0.x)**, which is
-> where fixes and dependency updates go and where releases are cut from. Its
-> documentation is at
-> **[docs.sillo.build/v0.x](https://docs.sillo.build/v0.x/guides/introduction/)**.
->
-> Reading about the version you have installed? You want
-> [`v0.x`](https://github.com/sillohq/core/tree/v0.x). Building against 1.0
-> before it ships? Install from this branch:
->
-> ```bash
-> pip install "git+https://github.com/sillohq/core.git@main"
-> ```
->
-> The 1.0 documentation is at
-> [docs.sillo.build/v1.0](https://docs.sillo.build/v1.0/guides/introduction/),
-> and every page in it says the same thing at the top.
+<sub>`main` tracks Sillo 1.0, unreleased — `pip install sillo-framework` still gives you 0.x, from [`v0.x`](https://github.com/sillohq/core/tree/v0.x) ([docs](https://docs.sillo.build/v0.x/guides/introduction/)). Everything below is 1.0: install it with `pip install "git+https://github.com/sillohq/core.git@main"`, docs at [docs.sillo.build/v1.0](https://docs.sillo.build/v1.0/guides/introduction/).</sub>
 
 Sillo is the buildsmith framework for APIs, real-time systems, and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, queues, scheduler, and WebSockets already in place. The language does not change. You write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
 
 Each of those is a solved problem with good packages behind it. The work that remains is the fitting, and that is what Sillo does once so you do not do it per project. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI spec. The queue and the scheduler start with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
 
-## Project Health
+The badges above are the only numbers this README states about itself — they
+read live from the workflows that produce them, so they can't drift out of
+date the way a hand-typed table does. `py.typed` ships in the package, so
+your own checker sees Sillo's actual annotations rather than `Any`; five
+dependencies land at install time, and every feature group past that —
+records, JWT, Redis-backed cache and events, mail, encryption, S3, extra
+hashing schemes, Granian — is opt-in, so a service that never sends mail
+never carries a templating engine for it.
 
-| | |
-|---|---|
-| Tests | 5,243 passing with none skipped, on CPython 3.10 through 3.14. Python 3.15 is in the matrix too and passes, but is not claimed on PyPI until it ships final |
-| Coverage | 91%, with a 90% floor enforced in CI before anything is published |
-| Types | Ships `py.typed`, so your own checker sees Sillo's annotations rather than `Any` |
-| Type check | `ty` clean across the package |
-| Lint and format | `ruff` clean, checked on every push |
-| Dependencies | Five at install time. Everything else is an opt-in extra |
-| License | BSD-3-Clause |
-
-None of this is aspirational. The coverage floor fails the build rather than
-printing a warning, the type check runs on every supported Python, and the
-badges above read from those same workflows rather than from a number written
-here by hand.
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Hello World](#hello-world)
+- [Request Validation](#request-validation)
+- [Dependency Injection](#dependency-injection)
+- [Routing](#routing)
+- [Authentication](#authentication)
+- [Record — the ORM Layer](#record--the-orm-layer)
+- [Background Work: Tasks, Queues, and a Scheduler](#background-work-tasks-queues-and-a-scheduler)
+- [WebSockets](#websockets)
+- [OpenAPI, Without a Second Source of Truth](#openapi-without-a-second-source-of-truth)
+- [Storage, Cache, and Events](#storage-cache-and-events)
+- [What Sillo Provides](#what-sillo-provides)
+- [Scope And Boundaries](#scope-and-boundaries)
+- [Documentation](#documentation)
+- [Testing](#testing)
+- [Release Principles](#release-principles)
 
 ## Requirements
 
@@ -277,6 +262,219 @@ app.mount_router(api)
 
 Path parameters are converted by the type in the pattern, so `user_id` arrives
 as an `int` and a request for `/api/users/abc` never reaches the handler.
+
+## Authentication
+
+One `AuthenticationMiddleware` accepts any number of backends — session,
+JWT, API key, or your own — and `useAuth` gates a route by naming which of
+them may answer it. The gate and the OpenAPI `securityScheme` it writes come
+from the same declaration, so the published contract can't say more or less
+than what the middleware actually enforces:
+
+```python
+from sillo import HttpContext, SilloApp, json
+from sillo.auth import AuthenticationMiddleware, JWTAuthBackend, useAuth
+from sillo.users import SimpleUser
+
+app = SilloApp()
+app.use(AuthenticationMiddleware(SimpleUser, JWTAuthBackend(secret_key="change-me")))
+
+
+@app.get("/me", auth=useAuth(schemes=["jwt"]))
+async def me(ctx: HttpContext):
+    return json({"id": ctx.user.identity})
+```
+
+Stack backends to accept more than one credential type on the same route
+(`useAuth(schemes=["jwt", "apikey"])`), or write a backend of your own —
+`AuthenticationBackend.authenticate(ctx)` returning an `AuthResult` is the
+entire contract. Users, groups, and permissions sit on top as ordinary
+mixins (`UserProtocol`, `HasScopes`-style permission checks), not a
+parallel object model bolted onto Sillo's own.
+
+## Record — the ORM Layer
+
+Records are Tortoise ORM models with the parts a Django-adjacent codebase
+expects layered back in: attribute casting, transactions with savepoints,
+query scopes, and upsert:
+
+```python
+from tortoise import fields
+
+from sillo.record import Model
+
+
+class User(Model):
+    id = fields.IntField(pk=True)
+    email = fields.CharField(max_length=255, unique=True)
+    plan = fields.CharField(max_length=50, default="free")
+    is_active = fields.BooleanField(default=True)
+    metadata = fields.TextField(null=True)
+
+    _casts = {"metadata": "json"}  # dict in Python, JSON column in the database
+
+    @classmethod
+    def scope_vip(cls, queryset):
+        return queryset.filter(plan="vip")
+
+    @classmethod
+    def scope_active(cls, queryset):
+        return queryset.filter(is_active=True)
+
+
+# from a handler, a script, a job -- scope_vip + scope_active, chained
+active_vip = await User.all().vip().active().order_by("email")
+```
+
+A transaction is a context manager with real savepoints, not a special case
+bolted onto the session:
+
+```python
+from sillo.record.transactions import transaction
+
+# from inside a handler, a job, or a script
+async with transaction() as tx:
+    await ledger.debit(from_account, amount)
+    async with tx.savepoint():
+        await audit_log.write(event)  # rolled back alone if this fails
+    await ledger.credit(to_account, amount)
+```
+
+Global scopes (multi-tenancy filters, soft-delete) attach once and apply to
+every query on the model, with an explicit escape hatch for the query that
+legitimately needs to see past them:
+
+```python
+User.add_global_scope(lambda qs: qs.filter(tenant_id=current_tenant()))
+
+# from a handler, a job, or a script
+await User.all()                     # tenant-filtered
+await User.without_global_scopes()   # everyone, on purpose
+```
+
+## Background Work: Tasks, Queues, and a Scheduler
+
+A job is a class with a `handle()` method; dispatching it is a classmethod
+call from anywhere in the request path, a script, or another job:
+
+```python
+from sillo.work.queue.job import Job
+
+
+class SendWelcomeEmail(Job):
+    queue = "emails"
+    tries = 3
+    timeout = 30
+
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+
+    async def handle(self):
+        user = await User.get(id=self.user_id)
+        await mailer.send(user.email, "welcome")
+
+
+# from a handler, a job, or a script
+await SendWelcomeEmail.dispatch(new_user.id)
+await SendWelcomeEmail.dispatch_after(300, new_user.id)  # five minutes out
+```
+
+The scheduler runs alongside the queue, on the same application lifecycle —
+no separate cron process to keep in sync with the code it calls:
+
+```python
+from sillo.work.scheduler.manager import SchedulerManager
+from sillo.work.scheduler.triggers import CronTrigger
+
+scheduler = SchedulerManager()
+scheduler.schedule(cleanup_expired_sessions, CronTrigger("0 3 * * *"))
+scheduler.every(3600)(refresh_materialised_views)
+```
+
+Retries, timeouts, and rate limits are per-job middleware, not a global
+setting every job inherits whether it needs it or not.
+
+## WebSockets
+
+A socket handler is declared the same way an HTTP one is — a coroutine
+taking a context, with the same dependency injection and the same path
+parameter conversion:
+
+```python
+from sillo import SilloApp
+from sillo.websockets import WebSocketContext, WebSocketDisconnect
+
+app = SilloApp()
+
+
+@app.ws_route("/ws/rooms/{room_id:int}")
+async def chat(ws: WebSocketContext, room_id: int):
+    await ws.accept()
+    try:
+        while True:
+            message = await ws.receive_text()
+            await broadcast(room_id, message)
+    except WebSocketDisconnect:
+        await leave(room_id)
+```
+
+An HTTP route and a WebSocket route can share a path — a GraphQL endpoint
+serving queries over POST and subscriptions over a socket, say — without one
+shadowing the other or a mismatched scope reaching either handler.
+
+## OpenAPI, Without a Second Source of Truth
+
+The schema is generated from the same `request_model`, marker constraints,
+and `useAuth` declarations that already enforce the request at runtime —
+there is nothing to keep in sync by hand, and nothing the spec claims that
+the framework does not also check:
+
+```python
+from sillo.openapi import Scalar, Swagger
+
+app = SilloApp(title="My API", docs=[Swagger(path="/docs"), Scalar(path="/reference")])
+```
+
+Both interactive UIs read the one generated document; adding a second
+renderer is a list entry, not a second integration.
+
+## Storage, Cache, and Events
+
+Storage buckets abstract local disk and S3-compatible object storage behind
+one API, with signed URLs and per-bucket upload policies (content-type
+allowlists, size limits, ownership checks) enforced before a byte is
+written:
+
+```python
+from sillo.storage import BucketConfig, StorageConfig, setup_storage
+from sillo.storage.policies import Owned
+
+storage = setup_storage(app, StorageConfig(
+    default="attachments",
+    buckets={
+        "attachments": BucketConfig(driver="local", root="storage/attachments"),
+        "avatars": BucketConfig(driver="local", root="storage/avatars",
+                                 policy=Owned(), accepts=("image/png", "image/jpeg")),
+    },
+))
+```
+
+Caching is one decorator, backend-agnostic between an in-memory store and
+Redis:
+
+```python
+from sillo.cache import cache
+
+
+@cache(ttl=120, tags=["catalog"])
+async def get_product(product_id: int):
+    return await Product.get(id=product_id)
+```
+
+The event system is a plain emitter (`on`, `emit`) with an optional Redis
+transport for distributing events across processes — the same call site
+either way, so a service can start on the in-memory transport and move to
+Redis later without touching the code that emits or listens.
 
 ## What Sillo Provides
 
