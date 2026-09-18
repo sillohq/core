@@ -178,19 +178,27 @@ class Group(BaseRoute):
                 back to the client.
         """
         original_path = scope["path"]
-        matched_path = self.path.rstrip("/")
+        route_path = get_route_path(scope)
+        # `self.path` may contain a placeholder (e.g. `/tenants/{id:int}`),
+        # which never appears literally in a real request path -- the actual
+        # matched prefix has to come from the compiled pattern (the same one
+        # `match()` already confirmed against this exact path), not from
+        # slicing off the template text itself.
+        match = self.pattern.match(route_path)
+        matched_prefix = None
 
-        if original_path.startswith(matched_path):
-            remaining_path = original_path[len(matched_path) :] or "/"
+        if match is not None:
+            matched_prefix = route_path[: match.start("path")]
+            remaining_path = route_path[len(matched_prefix) :] or "/"
             scope["path"] = remaining_path
-            scope["root_path"] = scope.get("root_path", "") + matched_path
+            scope["root_path"] = scope.get("root_path", "") + matched_prefix
 
         try:
             await self.app(scope, receive, send)
         except NotFoundException:
             scope["path"] = original_path
-            if "root_path" in scope:
-                scope["root_path"] = scope["root_path"][: -len(matched_path)]
+            if matched_prefix is not None and "root_path" in scope:
+                scope["root_path"] = scope["root_path"][: -len(matched_prefix)]
             raise
 
     def url_path_for(self, name: str, **path_params: typing.Any) -> URLPath:
