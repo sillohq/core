@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0a2] - 2026-09-18
+
+The second alpha of 1.0.
+
+### Added
+
+- **`Depend(fn, get_context=False)`.** A dependency previously always had its first positional parameter reserved for the context, forcing dependencies that don't need it to declare a leading, unused parameter (often named `_`). `get_context=False` opts out: no context is passed positionally, and the callable's own first parameter is analyzed normally, so it can carry a `Depend(...)` or extractor default of its own.
+
+### Fixed
+
+- **A rejected CSRF request now carries a usable token.** A 403 for a missing or invalid token went out without a `Set-Cookie`, even though a fresh token had already been minted for it — a client with no cookie yet (its first request is a POST, or an earlier `Set-Cookie` was dropped by a CDN or proxy) got a 403 with nothing to retry with, and every retry failed the same way.
+- **A `Group` whose own mount prefix carries a path parameter now matches.** `Group(path="/tenants/{id:int}", app=...)` stripped the *literal template text* (`{id:int}` included) off the request path instead of the text the pattern actually matched, so a request under such a group fell through to the mounted app with its path untouched and 404'd there instead.
+
 ### Removed
 
 - **`SilloApp.wrap_asgi(...)` is gone.** `app.use(...)` now accepts a raw ASGI middleware factory directly, in place of a dispatch function — sillo infers which form it is from the middleware's `__call__` signature (three required positional parameters is raw ASGI, two is dispatch), or `raw=True`/`raw=False` states it explicitly. `app.wrap_asgi(mw, **kwargs)` becomes `app.use(mw, **kwargs)` (or `app.use(mw, raw=True, **kwargs)` when the signature is ambiguous, e.g. a factory taking only the next app). `Router.use(...)` gained the same `raw`/`*args`/`**kwargs` parameters.
