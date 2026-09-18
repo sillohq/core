@@ -1089,6 +1089,16 @@ class TestUtils:
     def test_guess_content_type_bytes(self):
         assert guess_content_type(b"bytes") == "application/octet-stream"
 
+    def test_guess_content_type_file_like(self):
+        class FileLike:
+            def read(self):
+                pass
+
+        assert guess_content_type(FileLike()) == "application/octet-stream"
+
+    def test_guess_content_type_unknown_defaults_to_json(self):
+        assert guess_content_type(42) == "application/json"
+
     def test_extract_response_summary_body_preview(self):
         req = Request("GET", "https://e.com")
         long_body = "x" * 1000

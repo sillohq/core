@@ -188,3 +188,17 @@ async def test_create_async_client_defaults():
     client = create_async_client()
     response = await client.get("/does-not-exist")
     assert response.status_code == 404
+
+
+def test_create_client_with_config():
+    client = create_client(client_config={"raise_server_exceptions": False})
+    assert client is not None
+    response = client.get("/does-not-exist")
+    assert response.status_code == 404
+
+
+async def test_create_async_client_with_config():
+    client = create_async_client(client_config={"raise_server_exceptions": False})
+    assert client is not None
+    response = await client.get("/does-not-exist")
+    assert response.status_code == 404
