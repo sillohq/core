@@ -1,7 +1,7 @@
 # Sillo
 
 <p align="center">
-  <img src="https://avatars.githubusercontent.com/u/199959103?s=400&u=2b9d0cb939318b295fefd0cdbc417f85d5d4ba87&v=4" alt="Sillo logo" width="160" height="160">
+  <img src="https://raw.githubusercontent.com/sillohq/core/main/docs/docs/public/logo.png" alt="Sillo logo" width="160" height="160">
 </p>
 
 <p align="center">
