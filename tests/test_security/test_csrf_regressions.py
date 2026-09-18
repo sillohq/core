@@ -218,6 +218,34 @@ class TestFailedValidationKeepsTheToken:
             )
 
 
+class TestRejectionHandsBackAToken:
+    def test_a_request_with_no_cookie_at_all_gets_one_on_the_403(self):
+        """The 403 for a missing cookie used to go out through the raw
+        ``send``, bypassing the code that stamps the CSRF cookie -- so a
+        client whose very first request is a POST (an XHR from a page that
+        never did a plain GET, or a client whose earlier `Set-Cookie` was
+        dropped by a CDN/proxy) got a 403 with no cookie to retry with, and
+        every retry failed the exact same way forever."""
+        with TestClient(build()) as client:
+            first = client.post("/protected")
+            assert first.status_code == 403
+            token = client.cookies["csrftoken"]
+
+            second = client.post("/protected", headers={"X-CSRFToken": token})
+
+        assert second.status_code == 200
+
+    def test_a_request_with_a_stale_cookie_gets_a_fresh_one_on_the_403(self):
+        with TestClient(build()) as client:
+            first = client.post("/protected", headers={"X-CSRFToken": "nope"})
+            assert first.status_code == 403
+            token = client.cookies["csrftoken"]
+
+            second = client.post("/protected", headers={"X-CSRFToken": token})
+
+        assert second.status_code == 200
+
+
 class TestSafeMethods:
     @pytest.mark.parametrize("method", ["get", "head", "options"])
     def test_they_never_need_a_token(self, method):

@@ -529,3 +529,9 @@ def test_without_an_inner_app_raises():
             receive,
             send,
         )
+
+
+def test_security_module_import():
+    from sillo.middleware import security
+
+    assert security.SecurityMiddleware is security.Shield
