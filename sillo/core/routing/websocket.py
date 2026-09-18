@@ -19,7 +19,7 @@ from sillo.websockets.errors import WebSocketErrorMiddleware
 from ._utils import MatchStatus, get_route_path, route_specificity
 from .base import BaseRoute
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from sillo.core.http import HttpContext
 
 

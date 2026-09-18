@@ -176,3 +176,34 @@ def test_ws_generator_dependency_is_torn_down(
             assert ws.receive_text() == "resource"
 
     assert events == ["open", "handler:resource", "close"]
+
+
+def test_ws_async_generator_dependency_is_awaited_on_teardown(
+    test_client_factory: Callable[[SilloApp], TestClient],
+):
+    """An async generator dependency's cleanup (``aclose()``) returns an
+    awaitable, unlike a sync generator's ``close()`` -- the teardown loop has
+    to actually await it rather than just calling it."""
+    events: list[str] = []
+
+    app = SilloApp()
+
+    async def get_async_resource(_):
+        events.append("open")
+        try:
+            yield "async-resource"
+        finally:
+            events.append("close")
+
+    @app.ws_route("/ws/agen")
+    async def endpoint(ws: WebSocketContext, res: str = Depend(get_async_resource)):
+        await ws.accept()
+        events.append(f"handler:{res}")
+        await ws.send_text(res)
+        await ws.close()
+
+    with test_client_factory(app) as client:
+        with client.websocket_connect("/ws/agen") as ws:
+            assert ws.receive_text() == "async-resource"
+
+    assert events == ["open", "handler:async-resource", "close"]
