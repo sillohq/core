@@ -9,8 +9,10 @@ what is derived from it, and what happens when there is none.
 from __future__ import annotations
 
 import io
+import os
 import sys
 import textwrap
+from pathlib import Path
 
 import pytest
 
@@ -47,9 +49,21 @@ def clean_environment(monkeypatch):
 
 
 @pytest.fixture
-def elsewhere(tmp_path, monkeypatch):
+def elsewhere(tmp_path, monkeypatch, request):
     """A working directory with no application in it."""
     monkeypatch.chdir(tmp_path)
+    # Remove any directories from sys.path that would let `app:app`
+    # resolve (e.g. the project root with a demo app.py), so the
+    # test truly exercises the "no application found" path.
+    saved = [
+        entry
+        for entry in list(sys.path)
+        if entry == ""
+        or os.path.isfile(os.path.join(entry, "app.py"))
+    ]
+    for entry in saved:
+        sys.path.remove(entry)
+    request.addfinalizer(lambda: sys.path.extend(saved))
     return tmp_path
 
 
