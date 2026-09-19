@@ -7,21 +7,25 @@ access schedulers, queue connections, event dispatchers, and background
 task managers directly in your handler signatures without manually
 reaching into ``ctx.app.state``.
 
+Each provider takes the active context, so it is declared with
+``get_context=True`` — ``Depend``'s default changed to ``False`` in 1.0.0a3,
+since most dependencies need no context at all; these do.
+
 Usage::
 
     from sillo.core.dependencies import Depend
     from sillo.work.dependency import scheduler, queue_connection, events
 
     @app.get("/admin/scheduler")
-    async def scheduler_status(ctx, sched = Depend(scheduler)):
+    async def scheduler_status(ctx, sched = Depend(scheduler, get_context=True)):
         return json(sched.stats.to_dict())
 
     @app.get("/admin/queues")
-    async def queue_status(ctx, conn = Depend(queue_connection)):
+    async def queue_status(ctx, conn = Depend(queue_connection, get_context=True)):
         return json({"size": await conn.size("default")})
 
     @app.post("/signup")
-    async def signup(ctx, dispatcher = Depend(events)):
+    async def signup(ctx, dispatcher = Depend(events, get_context=True)):
         user = await create_user(...)
         await dispatcher.dispatch(UserSignedUp(user_id=user.id))
         return json(ok=True)

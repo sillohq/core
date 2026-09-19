@@ -39,7 +39,7 @@ def test_request_model_composes_with_depend(app, client):
         return "db"
 
     @app.post("/users", request_model=UserCreate)
-    async def handler(ctx, user, db=Depend(get_db)):
+    async def handler(ctx, user, db=Depend(get_db, get_context=True)):
         return json({"name": user.name, "db": db})
 
     assert client.post("/users", json={"name": "Al", "age": 1}).json() == {
@@ -84,7 +84,7 @@ def test_request_model_with_everything(app, client):
         user,
         team_id=Path(type=int),
         page=Query(1, type=int, ge=1),
-        db=Depend(get_db),
+        db=Depend(get_db, get_context=True),
     ):
         return json({"name": user.name, "team": team_id, "page": page, "db": db})
 
@@ -207,7 +207,7 @@ def test_markers_work_inside_dependencies(app, client):
         return {"page": page, "size": size}
 
     @app.get("/items")
-    async def handler(ctx, pager=Depend(pagination)):
+    async def handler(ctx, pager=Depend(pagination, get_context=True)):
         return json(pager)
 
     assert client.get("/items?page=3&size=20").json() == {"page": 3, "size": 20}

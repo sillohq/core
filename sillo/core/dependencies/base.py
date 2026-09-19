@@ -29,12 +29,15 @@ class Depend:
     Used as a parameter default to signal that the value should be produced by
     calling ``dependency`` rather than extracted from the request.
 
-    A dependency callable is invoked exactly like a route handler: its **first
-    positional parameter receives the active context** — an ``HttpContext`` on
-    an HTTP route, a ``WebSocketContext`` on a WebSocket route — and any further
-    parameters may themselves be ``Depend`` or extractor markers, forming a
-    graph that is resolved at request time. A dependency that does not need the
-    context still declares the first parameter (name it ``_`` by convention).
+    By default a dependency callable takes no context: its first parameter is
+    analyzed like any other, eligible for ``Depend`` or an extractor default,
+    and nothing is passed positionally at call time. Pass
+    ``get_context=True`` for a dependency that needs the active context — an
+    ``HttpContext`` on an HTTP route, a ``WebSocketContext`` on a WebSocket
+    route — and it is then invoked exactly like a route handler, with the
+    context as its first positional parameter. Further parameters, either
+    way, may themselves be ``Depend`` or extractor markers, forming a graph
+    that is resolved at request time.
 
     Attributes:
         dependency: The callable whose return value will be injected. ``None``
@@ -46,7 +49,7 @@ class Depend:
         self,
         dependency: Callable[..., Any] | None = None,
         *,
-        get_context: bool = True,
+        get_context: bool = False,
     ) -> None:
         """
         Initialize a Depend marker around a dependency callable.
@@ -57,12 +60,15 @@ class Depend:
                 generator. Pass ``None`` only for a bare router-level
                 placeholder.
             get_context: Whether ``dependency`` takes the active context as its
-                first positional parameter. Defaults to ``True``, matching a
-                route handler's own signature. Pass ``False`` for a dependency
-                that needs no context at all — its first parameter is then
-                treated like any other, eligible for ``Depend`` or an
-                extractor default, and none is passed positionally at call
-                time.
+                first positional parameter. Defaults to ``False`` — most
+                dependencies (a settings object, a computed value, a
+                sub-dependency built from other extractors) need no context at
+                all, and their first parameter is treated like any other,
+                eligible for ``Depend`` or an extractor default. Pass
+                ``True`` for a dependency that does need it — a database
+                connection pulled off ``ctx.app.state``, the current user read
+                from ``ctx`` — and it is then invoked like a route handler,
+                context as its first positional parameter.
 
         Returns:
             None. This constructor initializes the ``Depend`` marker instance.
@@ -73,20 +79,21 @@ class Depend:
                 return await Database.connect()
 
             @app.get("/items")
-            async def list_items(ctx, db=Depend(get_db)):
+            async def list_items(ctx, db=Depend(get_db, get_context=True)):
                 return json(await db.query("SELECT * FROM items"))
 
             # A dependency that only needs the context reads it off its first
-            # parameter — no marker:
+            # parameter, with get_context=True — there is no marker on the
+            # dependency function itself to read it from:
             def current_user(ctx):
                 return ctx.state.user
 
-            # A dependency that needs no context at all:
+            # The default: a dependency that needs no context at all.
             def settings() -> Settings:
                 return Settings()
 
             @app.get("/config")
-            async def show(ctx, cfg=Depend(settings, get_context=False)):
+            async def show(ctx, cfg=Depend(settings)):
                 return json(cfg.dict())
         """
         self.dependency = dependency

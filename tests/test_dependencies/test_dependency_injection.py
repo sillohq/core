@@ -27,7 +27,7 @@ def test_basic_dependency_injection(
         return "user_123"
 
     @app.get("/user")
-    async def get_user(ctx: HttpContext, user_id: str = Depend(get_user_id)):
+    async def get_user(ctx: HttpContext, user_id: str = Depend(get_user_id, get_context=True)):
         return json({"user_id": user_id})
 
     with test_client_factory(app) as client:
@@ -47,7 +47,7 @@ def test_async_dependency_injection(
 
     @app.get("/async-user")
     async def get_async_user(
-        ctx: HttpContext, user_id: str = Depend(async_get_user_id)
+        ctx: HttpContext, user_id: str = Depend(async_get_user_id, get_context=True)
     ):
         return json({"user_id": user_id})
 
@@ -67,13 +67,13 @@ def test_nested_dependencies(test_client_factory: Callable[[SilloApp], TestClien
     def get_user_id(_):
         return "user_123"
 
-    def get_user_context(_, user_id: str = Depend(get_user_id)):
+    def get_user_context(_, user_id: str = Depend(get_user_id, get_context=True)):
         return {"user_id": user_id, "context": "test_context"}
 
     @app.get("/nested-user")
     async def get_nested_user(
         ctx: HttpContext,
-        user_context: dict = Depend(get_user_context),
+        user_context: dict = Depend(get_user_context, get_context=True),
     ):
         return json({"user_context": user_context})
 
@@ -93,13 +93,13 @@ def test_async_nested_dependencies(
     async def async_get_user_id(_):
         return "async_user_789"
 
-    def get_user_context(_, user_id: str = Depend(async_get_user_id)):
+    def get_user_context(_, user_id: str = Depend(async_get_user_id, get_context=True)):
         return {"user_id": user_id, "context": "async_context"}
 
     @app.get("/async-nested-user")
     async def get_async_nested_user(
         ctx: HttpContext,
-        user_context: dict = Depend(get_user_context),
+        user_context: dict = Depend(get_user_context, get_context=True),
     ):
         return json({"user_context": user_context})
 
@@ -122,16 +122,16 @@ def test_deeply_nested_dependencies(
     def get_base_value(_):
         return "base_value"
 
-    def get_middle_value(_, base: str = Depend(get_base_value)):
+    def get_middle_value(_, base: str = Depend(get_base_value, get_context=True)):
         return {"base": base, "middle": "middle_value"}
 
-    def get_user_context(_, middle: dict = Depend(get_middle_value)):
+    def get_user_context(_, middle: dict = Depend(get_middle_value, get_context=True)):
         return {"user_id": "deep_user", "context": middle, "level": "deep"}
 
     @app.get("/deep-nested")
     async def get_deep_nested(
         ctx: HttpContext,
-        user_context: dict = Depend(get_user_context),
+        user_context: dict = Depend(get_user_context, get_context=True),
     ):
         return json({"user_context": user_context})
 
@@ -154,16 +154,16 @@ def test_async_deeply_nested_dependencies(
     async def async_get_base_value(_):
         return "async_base"
 
-    def get_middle_value(_, base: str = Depend(async_get_base_value)):
+    def get_middle_value(_, base: str = Depend(async_get_base_value, get_context=True)):
         return {"base": base, "middle": "sync_middle"}
 
-    async def async_get_user_context(_, middle: dict = Depend(get_middle_value)):
+    async def async_get_user_context(_, middle: dict = Depend(get_middle_value, get_context=True)):
         return {"user_id": "async_deep_user", "context": middle, "level": "async_deep"}
 
     @app.get("/async-deep-nested")
     async def get_async_deep_nested(
         ctx: HttpContext,
-        user_context: dict = Depend(async_get_user_context),
+        user_context: dict = Depend(async_get_user_context, get_context=True),
     ):
         return json({"user_context": user_context})
 
@@ -194,7 +194,7 @@ def test_dependency_with_query_extractor(
     @app.get("/query-user")
     async def get_query_user(
         ctx: HttpContext,
-        user_data: dict = Depend(get_filtered_user),
+        user_data: dict = Depend(get_filtered_user, get_context=True),
     ):
         return json({"user_data": user_data})
 
@@ -218,7 +218,7 @@ def test_dependency_with_mixed_extractor_and_dependencies(
         return "mixed_user_123"
 
     def get_user_with_extractor(
-        _, limit: str = Query(default="20"), user_id: str = Depend(get_user_id)
+        _, limit: str = Query(default="20"), user_id: str = Depend(get_user_id, get_context=True)
     ):
         return {
             "user_id": user_id,
@@ -228,7 +228,7 @@ def test_dependency_with_mixed_extractor_and_dependencies(
     @app.get("/mixed-extractor")
     async def get_mixed_extractor(
         ctx: HttpContext,
-        user_data: dict = Depend(get_user_with_extractor),
+        user_data: dict = Depend(get_user_with_extractor, get_context=True),
     ):
         return json({"user_data": user_data})
 
@@ -249,11 +249,11 @@ def test_app_level_dependencies(test_client_factory: Callable[[SilloApp], TestCl
     def get_app_config(_):
         return {"app_name": "test_app", "version": "1.0"}
 
-    app = SilloApp(dependencies=[Depend(get_app_config)])
+    app = SilloApp(dependencies=[Depend(get_app_config, get_context=True)])
 
     @app.get("/app-config")
     async def get_app_config_endpoint(
-        ctx: HttpContext, config: dict = Depend(get_app_config)
+        ctx: HttpContext, config: dict = Depend(get_app_config, get_context=True)
     ):
         return json({"config": config})
 
@@ -272,12 +272,12 @@ def test_app_level_async_dependencies(
     async def async_get_app_config(_):
         return {"app_name": "async_app", "version": "2.0", "async": True}
 
-    app = SilloApp(dependencies=[Depend(async_get_app_config)])
+    app = SilloApp(dependencies=[Depend(async_get_app_config, get_context=True)])
 
     @app.get("/async-app-config")
     async def get_async_app_config(
         ctx: HttpContext,
-        config: dict = Depend(async_get_app_config),
+        config: dict = Depend(async_get_app_config, get_context=True),
     ):
         return json({"config": config})
 
@@ -302,11 +302,11 @@ def test_router_level_dependencies(
     def get_router_config(_):
         return {"router_name": "test_router", "prefix": "/api"}
 
-    router = Router(prefix="/api", dependencies=[Depend(get_router_config)])
+    router = Router(prefix="/api", dependencies=[Depend(get_router_config, get_context=True)])
 
     @router.get("/router-config")
     async def get_router_config_endpoint(
-        ctx: HttpContext, config: dict = Depend(get_router_config)
+        ctx: HttpContext, config: dict = Depend(get_router_config, get_context=True)
     ):
         return json({"config": config})
 
@@ -332,17 +332,17 @@ def test_router_level_dependencies_with_app_dependencies(
 
     def get_combined_config(
         _,
-        app_config: dict = Depend(get_app_config),
-        router_config: dict = Depend(get_router_config),
+        app_config: dict = Depend(get_app_config, get_context=True),
+        router_config: dict = Depend(get_router_config, get_context=True),
     ):
         return {**app_config, **router_config, "combined": True}
 
-    app = SilloApp(dependencies=[Depend(get_app_config)])
-    router = Router(prefix="/api", dependencies=[Depend(get_router_config)])
+    app = SilloApp(dependencies=[Depend(get_app_config, get_context=True)])
+    router = Router(prefix="/api", dependencies=[Depend(get_router_config, get_context=True)])
 
     @router.get("/combined-config")
     async def get_combined_config_endpoint(
-        ctx: HttpContext, config: dict = Depend(get_combined_config)
+        ctx: HttpContext, config: dict = Depend(get_combined_config, get_context=True)
     ):
         return json({"config": config})
 
@@ -374,21 +374,21 @@ def test_nested_router_dependencies(
 
     def get_combined_nested_config(
         _,
-        api_config: dict = Depend(get_api_config),
-        users_config: dict = Depend(get_users_config),
+        api_config: dict = Depend(get_api_config, get_context=True),
+        users_config: dict = Depend(get_users_config, get_context=True),
     ):
         return {**api_config, **users_config, "nested": True}
 
     # Main API router
-    api_router = Router(prefix="/api", dependencies=[Depend(get_api_config)])
+    api_router = Router(prefix="/api", dependencies=[Depend(get_api_config, get_context=True)])
 
     # Users sub-router
-    users_router = Router(prefix="/users", dependencies=[Depend(get_users_config)])
+    users_router = Router(prefix="/users", dependencies=[Depend(get_users_config, get_context=True)])
 
     @users_router.get("/config")
     async def get_nested_config(
         ctx: HttpContext,
-        config: dict = Depend(get_combined_nested_config),
+        config: dict = Depend(get_combined_nested_config, get_context=True),
     ):
         return json({"config": config})
 
@@ -427,11 +427,11 @@ def test_deeply_nested_router_dependencies(
 
     def get_combined_deep_config(
         _,
-        app_config: dict = Depend(get_app_config),
-        api_config: dict = Depend(get_api_config),
-        v1_config: dict = Depend(get_v1_config),
-        users_config: dict = Depend(get_users_config),
-        profiles_config: dict = Depend(get_profiles_config),
+        app_config: dict = Depend(get_app_config, get_context=True),
+        api_config: dict = Depend(get_api_config, get_context=True),
+        v1_config: dict = Depend(get_v1_config, get_context=True),
+        users_config: dict = Depend(get_users_config, get_context=True),
+        profiles_config: dict = Depend(get_profiles_config, get_context=True),
     ):
         return {
             **app_config,
@@ -443,26 +443,26 @@ def test_deeply_nested_router_dependencies(
         }
 
     # App level
-    app = SilloApp(dependencies=[Depend(get_app_config)])
+    app = SilloApp(dependencies=[Depend(get_app_config, get_context=True)])
 
     # API router
-    api_router = Router(prefix="/api", dependencies=[Depend(get_api_config)])
+    api_router = Router(prefix="/api", dependencies=[Depend(get_api_config, get_context=True)])
 
     # V1 router
-    v1_router = Router(prefix="/v1", dependencies=[Depend(get_v1_config)])
+    v1_router = Router(prefix="/v1", dependencies=[Depend(get_v1_config, get_context=True)])
 
     # Users router
-    users_router = Router(prefix="/users", dependencies=[Depend(get_users_config)])
+    users_router = Router(prefix="/users", dependencies=[Depend(get_users_config, get_context=True)])
 
     # Profiles router (deepest level)
     profiles_router = Router(
-        prefix="/profiles", dependencies=[Depend(get_profiles_config)]
+        prefix="/profiles", dependencies=[Depend(get_profiles_config, get_context=True)]
     )
 
     @profiles_router.get("/deep-config")
     async def get_deep_config(
         ctx: HttpContext,
-        config: dict = Depend(get_combined_deep_config),
+        config: dict = Depend(get_combined_deep_config, get_context=True),
     ):
         return json({"config": config})
 
@@ -495,7 +495,7 @@ def test_mixed_app_router_nested_dependencies(
     def get_database_connection(_):
         return {"db": "connected", "pool": "active"}
 
-    def get_user_service(_, db: dict = Depend(get_database_connection)):
+    def get_user_service(_, db: dict = Depend(get_database_connection, get_context=True)):
         return {"service": "user_service", "db": db}
 
     def get_auth_service(_):
@@ -503,32 +503,32 @@ def test_mixed_app_router_nested_dependencies(
 
     def get_api_config(
         _,
-        db: dict = Depend(get_database_connection),
-        user_service: dict = Depend(get_user_service),
+        db: dict = Depend(get_database_connection, get_context=True),
+        user_service: dict = Depend(get_user_service, get_context=True),
     ):
         return {"api": "v1", "db": db, "user_service": user_service}
 
     def get_user_handler_config(
-        _, auth: dict = Depend(get_auth_service), api: dict = Depend(get_api_config)
+        _, auth: dict = Depend(get_auth_service, get_context=True), api: dict = Depend(get_api_config, get_context=True)
     ):
         return {"handler": "user_handler", "auth": auth, "api": api}
 
     # App-level dependencies
-    app = SilloApp(dependencies=[Depend(get_database_connection)])
+    app = SilloApp(dependencies=[Depend(get_database_connection, get_context=True)])
 
     # API router with dependencies
-    api_router = Router(prefix="/api", dependencies=[Depend(get_api_config)])
+    api_router = Router(prefix="/api", dependencies=[Depend(get_api_config, get_context=True)])
 
     # Auth router (nested)
-    auth_router = Router(prefix="/auth", dependencies=[Depend(get_auth_service)])
+    auth_router = Router(prefix="/auth", dependencies=[Depend(get_auth_service, get_context=True)])
 
     # Users router (nested under auth)
-    users_router = Router(prefix="/users", dependencies=[Depend(get_user_service)])
+    users_router = Router(prefix="/users", dependencies=[Depend(get_user_service, get_context=True)])
 
     @users_router.get("/profile")
     async def get_user_profile(
         ctx: HttpContext,
-        config: dict = Depend(get_user_handler_config),
+        config: dict = Depend(get_user_handler_config, get_context=True),
     ):
         return json({"config": config})
 
@@ -561,7 +561,7 @@ def test_generator_dependencies(test_client_factory: Callable[[SilloApp], TestCl
 
     @app.get("/generator-test")
     async def test_generator(
-        ctx: HttpContext, db: dict = Depend(get_database_connection)
+        ctx: HttpContext, db: dict = Depend(get_database_connection, get_context=True)
     ):
         return json({"db": db})
 
@@ -592,7 +592,7 @@ def test_async_generator_dependencies(
     @app.get("/async-generator-test")
     async def test_async_generator(
         ctx: HttpContext,
-        db: dict = Depend(async_get_database_connection),
+        db: dict = Depend(async_get_database_connection, get_context=True),
     ):
         return json({"db": db})
 
@@ -619,7 +619,7 @@ def test_generator_dependency_cleanup(
             cleanup_state["closed"] = True
 
     @app.get("/yield-cleanup")
-    async def yield_cleanup(ctx: HttpContext, res: dict = Depend(get_resource)):
+    async def yield_cleanup(ctx: HttpContext, res: dict = Depend(get_resource, get_context=True)):
         assert res["conn"] == "open"
         return json({"ok": True})
 
@@ -642,14 +642,14 @@ def test_nested_yield_dependencies(
         finally:
             flags["outer_closed"] = True
 
-    def inner_dep(_, outer=Depend(outer_dep)):
+    def inner_dep(_, outer=Depend(outer_dep, get_context=True)):
         try:
             yield {"inner": True, "outer": outer}
         finally:
             flags["inner_closed"] = True
 
     @app.get("/nested-yield")
-    async def nested_yield(ctx: HttpContext, inner=Depend(inner_dep)):
+    async def nested_yield(ctx: HttpContext, inner=Depend(inner_dep, get_context=True)):
         return json({"inner": inner})
 
     with test_client_factory(app) as client:
@@ -676,7 +676,7 @@ def test_async_yield_dependencies_cleanup(
             state["closed"] = True
 
     @app.get("/async-yield-cleanup")
-    async def async_yield_endpoint(ctx: HttpContext, data=Depend(async_dep)):
+    async def async_yield_endpoint(ctx: HttpContext, data=Depend(async_dep, get_context=True)):
         return json(data)
 
     with test_client_factory(app) as client:
@@ -700,14 +700,14 @@ def test_deep_yield_dependency_chain(
         finally:
             order.append("cleanup_a")
 
-    async def dep_b(_, a=Depend(dep_a)):
+    async def dep_b(_, a=Depend(dep_a, get_context=True)):
         order.append("setup_b")
         try:
             yield f"B({a})"
         finally:
             order.append("cleanup_b")
 
-    def dep_c(_, b=Depend(dep_b)):
+    def dep_c(_, b=Depend(dep_b, get_context=True)):
         order.append("setup_c")
         try:
             yield f"C({b})"
@@ -715,7 +715,7 @@ def test_deep_yield_dependency_chain(
             order.append("cleanup_c")
 
     @app.get("/deep-yield")
-    async def deep_yield_endpoint(ctx: HttpContext, c=Depend(dep_c)):
+    async def deep_yield_endpoint(ctx: HttpContext, c=Depend(dep_c, get_context=True)):
         return json({"result": c})
 
     with test_client_factory(app) as client:
@@ -750,7 +750,7 @@ def test_dependency_first_param_is_the_context(
         return ctx.url.path
 
     @app.get("/context-first")
-    async def handler(ctx: HttpContext, path: str = Depend(get_path)):
+    async def handler(ctx: HttpContext, path: str = Depend(get_path, get_context=True)):
         # The dependency saw the same context object the handler did.
         assert seen["ctx"] is ctx
         return json({"path": path, "method": ctx.method})
@@ -775,7 +775,7 @@ def test_dependency_reads_headers_off_the_context(
     @app.get("/auth-info")
     async def handler(
         ctx: HttpContext,
-        auth: dict = Depend(get_auth_info),
+        auth: dict = Depend(get_auth_info, get_context=True),
     ):
         return json({"auth": auth})
 
@@ -796,7 +796,7 @@ def test_dependency_context_plus_sub_dependencies(
 
     def get_full_context(
         ctx: HttpContext,
-        user_id: str = Depend(get_user_id),
+        user_id: str = Depend(get_user_id, get_context=True),
     ):
         return {
             "user_id": user_id,
@@ -807,7 +807,7 @@ def test_dependency_context_plus_sub_dependencies(
     @app.post("/full-context")
     async def handler(
         ctx: HttpContext,
-        resolved: dict = Depend(get_full_context),
+        resolved: dict = Depend(get_full_context, get_context=True),
     ):
         return json({"ctx": resolved})
 
@@ -835,8 +835,8 @@ def test_context_dependency_and_plain_dependency_in_one_handler(
     @app.get("/mixed-handler")
     async def handler(
         ctx: HttpContext,
-        path: str = Depend(get_path),
-        db: str = Depend(get_db),
+        path: str = Depend(get_path, get_context=True),
+        db: str = Depend(get_db, get_context=True),
     ):
         return json({"path": path, "db": db})
 

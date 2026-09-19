@@ -218,46 +218,45 @@ unwrapped:
 
 Use `Depend` to inject request-scoped dependencies into handlers.
 
-By default, a dependency is called like a handler: its first positional
-parameter receives the active context (`HttpContext`, or `WebSocketContext`
-on a socket route) — this is `Depend(fn, get_context=True)`, `True` being
-the default, so plain `Depend(fn)` already does it.
+By default a dependency takes no context: nothing is passed positionally,
+and its first parameter is analyzed like any other, free to carry a
+`Depend` or extractor default of its own:
 
 ```python
-from sillo import Depend, HttpContext, SilloApp
+from sillo import Depend, HttpContext, SilloApp, json
 
 app = SilloApp()
 
 
+def settings() -> dict:
+    return {"feature_flags": []}
+
+
+@app.get("/config")
+async def show(ctx: HttpContext, cfg=Depend(settings)):
+    return json(cfg)
+```
+
+Pass `get_context=True` for a dependency that does need the context — it is
+then called like a handler, the active context (`HttpContext`, or
+`WebSocketContext` on a socket route) as its first positional parameter:
+
+```python
 async def get_current_user(ctx: HttpContext):
     return {"id": "user_1", "name": "Ada"}
 
 
 @app.get("/me")
-async def me(ctx: HttpContext, user=Depend(get_current_user)):
+async def me(ctx: HttpContext, user=Depend(get_current_user, get_context=True)):
     return user
 ```
 
-A dependency that reads the request does so straight off that first parameter:
+A dependency that reads the request does so straight off that first
+parameter, with `get_context=True`:
 
 ```python
 def auth_header(ctx: HttpContext):
     return ctx.headers.get("Authorization")
-```
-
-A dependency that needs no context at all opts out with
-`get_context=False`: no context is passed positionally, so its own first
-parameter is analyzed like any other and is free to carry a `Depend` or
-extractor default of its own:
-
-```python
-def settings() -> Settings:
-    return Settings()
-
-
-@app.get("/config")
-async def show(ctx: HttpContext, cfg=Depend(settings, get_context=False)):
-    return json(cfg.dict())
 ```
 
 ## Routing
