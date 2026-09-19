@@ -13,8 +13,9 @@ Key Features:
 - Dependency injection with pre-flattened execution plan (zero recursion at runtime)
 - Pydantic validation on every input and output — no type annotations needed
 - Middleware system: CORS, CSRF, sessions, auth, rate limiting, compression
-- Depend(fn): a dependency is called like a handler — its first parameter is
-  the active context (HttpContext, or WebSocketContext on a socket route)
+- Depend(fn): most dependencies take no context. Depend(fn, get_context=True)
+  is for the ones that do — called like a handler, with the active context
+  (HttpContext, or WebSocketContext on a socket route) as its first parameter
 - GraphQL through the sillo-graphql package, importable as sillo.graphql
 - WebSocket support with type safety
 - Flexible routing with path parameters and type conversion
@@ -49,7 +50,7 @@ Common Patterns:
     async def create_user(ctx, user,                     # <- the body
                           team_id=Path(type=int),        # path segment
                           notify=Query(False, type=bool),
-                          db=Depend(get_db)):
+                          db=Depend(get_db, get_context=True)):
         return await save(user, team_id, db)
 
     The JSON body is declared once, on the decorator, with request_model=. It
@@ -68,15 +69,19 @@ Common Patterns:
 2. Dependency Injection:
     from sillo import Depend
 
-    # A dependency is called like a handler: first parameter is the context.
+    # Most dependencies need no context — nothing is passed positionally.
+    def get_settings():
+        return Settings()
+
+    # get_context=True calls it like a handler: context as first parameter.
     async def get_db(ctx):
         return Database()
 
     @app.get("/items")
-    async def list_items(ctx, db=Depend(get_db)):
+    async def list_items(ctx, db=Depend(get_db, get_context=True)):
         return json(await db.query("SELECT * FROM items"))
 
-    # Read the request straight off that first parameter:
+    # Read the request straight off that first parameter, with get_context=True:
     def get_auth(ctx):
         return ctx.headers.get("Authorization")
 

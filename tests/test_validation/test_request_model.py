@@ -81,7 +81,7 @@ def test_request_model_with_di_does_not_clash():
         return "db_connected"
 
     @app.post("/users", request_model=UserCreate)
-    async def create_user(ctx: HttpContext, db: str = Depend(get_db)):
+    async def create_user(ctx: HttpContext, db: str = Depend(get_db, get_context=True)):
         user = ctx.validated_data
         return json({"name": user.name, "db": db})
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`Depend(fn, get_context=...)` now defaults `get_context` to `False`.** Most dependencies need no context at all — a settings object, a computed value, a sub-dependency built from other extractors — and previously still had to declare a leading, unused context parameter (conventionally named `_`) to satisfy the old default of `True`. A dependency that does need the active context now opts in explicitly with `Depend(fn, get_context=True)`; without it, the dependency's own first parameter is analyzed like any other, eligible for `Depend` or an extractor default, and nothing is passed positionally at call time. **This is a breaking change**: every existing `Depend(fn)` call whose `fn` reads the context off its first parameter needs `get_context=True` added, or that parameter silently stops receiving the context (and instead has whatever `Query`/`Header`/`Depend` default it declares, if any, or a missing-argument error if none). `sillo.work.dependency`'s built-in providers (`scheduler`, `queue_connection`, `events`, `default_queue`) all need it, since each reads `ctx.base_app`.
+
 ## [1.0.0a2] - 2026-09-18
 
 The second alpha of 1.0.

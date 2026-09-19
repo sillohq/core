@@ -1188,9 +1188,9 @@ class SilloApp:
     ) -> Iterator[None]:
         """Swap a ``Depend(...)`` callable for a test double, then restore it.
 
-        A handler written as ``async def me(ctx, db=Depend(get_db))`` cannot
-        be tested without a real database unless something stands in for
-        ``get_db``. This is that something:
+        A handler written as ``async def me(ctx, db=Depend(get_db,
+        get_context=True))`` cannot be tested without a real database unless
+        something stands in for ``get_db``. This is that something:
 
             async def fake_db(ctx):
                 return FakeSession()

@@ -1,9 +1,9 @@
 """Dependency injection on WebSocket routes.
 
 WebSocket handlers are analysed the same way HTTP handlers are, so they may
-declare ``Depend(...)`` parameters. A dependency callable receives the live
-``WebSocketContext`` as its first positional argument, exactly as the handler
-does.
+declare ``Depend(...)`` parameters. With ``get_context=True``, a dependency
+callable receives the live ``WebSocketContext`` as its first positional
+argument, exactly as the handler does.
 """
 
 from typing import Callable
@@ -15,14 +15,14 @@ from sillo.websockets import WebSocketContext
 
 
 def test_ws_depend_callable(test_client_factory: Callable[[SilloApp], TestClient]):
-    """A plain Depend(callable) resolves and binds on a WebSocket route."""
+    """A plain Depend(callable, get_context=True) resolves and binds on a WebSocket route."""
     app = SilloApp()
 
     def get_greeting(_) -> str:
         return "hi"
 
     @app.ws_route("/ws/dep")
-    async def endpoint(ws: WebSocketContext, greeting: str = Depend(get_greeting)):
+    async def endpoint(ws: WebSocketContext, greeting: str = Depend(get_greeting, get_context=True)):
         await ws.accept()
         await ws.send_text(greeting)
         await ws.close()
@@ -35,14 +35,14 @@ def test_ws_depend_callable(test_client_factory: Callable[[SilloApp], TestClient
 def test_ws_depend_async_callable(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """An async Depend(callable) is awaited before the handler runs."""
+    """An async Depend(callable, get_context=True) is awaited before the handler runs."""
     app = SilloApp()
 
     async def get_token(_) -> str:
         return "tok-42"
 
     @app.ws_route("/ws/async-dep")
-    async def endpoint(ws: WebSocketContext, token: str = Depend(get_token)):
+    async def endpoint(ws: WebSocketContext, token: str = Depend(get_token, get_context=True)):
         await ws.accept()
         await ws.send_text(token)
         await ws.close()
@@ -65,7 +65,7 @@ def test_ws_dependency_first_param_is_websocket_context(
         return isinstance(ctx, WebSocketContext)
 
     @app.ws_route("/ws/ctx")
-    async def endpoint(ws: WebSocketContext, is_ws_ctx: bool = Depend(capture)):
+    async def endpoint(ws: WebSocketContext, is_ws_ctx: bool = Depend(capture, get_context=True)):
         await ws.accept()
         await ws.send_json(
             {
@@ -92,7 +92,7 @@ def test_ws_dependency_reads_off_its_context(
         return ctx.headers.get("sec-websocket-protocol", "none")
 
     @app.ws_route("/ws/subdep")
-    async def endpoint(ws: WebSocketContext, proto: str = Depend(read_protocol)):
+    async def endpoint(ws: WebSocketContext, proto: str = Depend(read_protocol, get_context=True)):
         await ws.accept()
         await ws.send_text(proto)
         await ws.close()
@@ -115,7 +115,7 @@ def test_ws_depend_with_path_param(
     async def endpoint(
         ws: WebSocketContext,
         room_id: str,
-        prefix: str = Depend(get_prefix),
+        prefix: str = Depend(get_prefix, get_context=True),
     ):
         await ws.accept()
         await ws.send_text(f"{prefix}:{room_id}")
@@ -135,11 +135,11 @@ def test_ws_nested_dependencies(
     def get_config(_) -> dict:
         return {"env": "test"}
 
-    def get_service(_, config: dict = Depend(get_config)) -> str:
+    def get_service(_, config: dict = Depend(get_config, get_context=True)) -> str:
         return f"service[{config['env']}]"
 
     @app.ws_route("/ws/nested")
-    async def endpoint(ws: WebSocketContext, service: str = Depend(get_service)):
+    async def endpoint(ws: WebSocketContext, service: str = Depend(get_service, get_context=True)):
         await ws.accept()
         await ws.send_text(service)
         await ws.close()
@@ -165,7 +165,7 @@ def test_ws_generator_dependency_is_torn_down(
             events.append("close")
 
     @app.ws_route("/ws/gen")
-    async def endpoint(ws: WebSocketContext, res: str = Depend(get_resource)):
+    async def endpoint(ws: WebSocketContext, res: str = Depend(get_resource, get_context=True)):
         await ws.accept()
         events.append(f"handler:{res}")
         await ws.send_text(res)
@@ -196,7 +196,7 @@ def test_ws_async_generator_dependency_is_awaited_on_teardown(
             events.append("close")
 
     @app.ws_route("/ws/agen")
-    async def endpoint(ws: WebSocketContext, res: str = Depend(get_async_resource)):
+    async def endpoint(ws: WebSocketContext, res: str = Depend(get_async_resource, get_context=True)):
         await ws.accept()
         events.append(f"handler:{res}")
         await ws.send_text(res)

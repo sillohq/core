@@ -21,7 +21,7 @@ def get_user_id(_):
     return "user_123"
 
 
-def get_user_context(_, user_id: str = Depend(get_user_id)):
+def get_user_context(_, user_id: str = Depend(get_user_id, get_context=True)):
     return {"user_id": user_id}
 
 
@@ -44,7 +44,7 @@ def test_override_context_manager_swaps_value(
     app = SilloApp()
 
     @app.get("/db")
-    async def read_db(ctx: HttpContext, db: str = Depend(get_db)):
+    async def read_db(ctx: HttpContext, db: str = Depend(get_db, get_context=True)):
         return json({"db": db})
 
     def fake_db(_):
@@ -107,7 +107,7 @@ def test_dependency_overrides_dict_direct_assignment(
     app = SilloApp()
 
     @app.get("/db")
-    async def read_db(ctx: HttpContext, db: str = Depend(get_db)):
+    async def read_db(ctx: HttpContext, db: str = Depend(get_db, get_context=True)):
         return json({"db": db})
 
     def fake_db(_):
@@ -133,7 +133,7 @@ def test_override_matches_by_identity_not_name(
     app = SilloApp()
 
     @app.get("/db")
-    async def read_db(ctx: HttpContext, db: str = Depend(get_db)):
+    async def read_db(ctx: HttpContext, db: str = Depend(get_db, get_context=True)):
         return json({"db": db})
 
     with (
@@ -152,7 +152,7 @@ def test_override_propagates_to_nested_dependency(
 
     @app.get("/context")
     async def read_context(
-        ctx: HttpContext, user_context: dict = Depend(get_user_context)
+        ctx: HttpContext, user_context: dict = Depend(get_user_context, get_context=True)
     ):
         return json(user_context)
 
@@ -175,7 +175,7 @@ def test_override_with_no_registered_override_passes_through(
     app = SilloApp()
 
     @app.get("/db")
-    async def read_db(ctx: HttpContext, db: str = Depend(get_db)):
+    async def read_db(ctx: HttpContext, db: str = Depend(get_db, get_context=True)):
         return json({"db": db})
 
     assert app.dependency_overrides == {}
@@ -191,7 +191,7 @@ def test_override_async_dependency(
     app = SilloApp()
 
     @app.get("/db")
-    async def read_db(ctx: HttpContext, db: str = Depend(async_get_db)):
+    async def read_db(ctx: HttpContext, db: str = Depend(async_get_db, get_context=True)):
         return json({"db": db})
 
     async def fake_async_db(_):
@@ -209,7 +209,7 @@ def test_override_generator_dependency(
     app = SilloApp()
 
     @app.get("/db")
-    async def read_db(ctx: HttpContext, db: str = Depend(gen_get_db)):
+    async def read_db(ctx: HttpContext, db: str = Depend(gen_get_db, get_context=True)):
         return json({"db": db})
 
     def fake_gen_db(_):
@@ -227,7 +227,7 @@ def test_override_async_generator_dependency(
     app = SilloApp()
 
     @app.get("/db")
-    async def read_db(ctx: HttpContext, db: str = Depend(agen_get_db)):
+    async def read_db(ctx: HttpContext, db: str = Depend(agen_get_db, get_context=True)):
         return json({"db": db})
 
     async def fake_agen_db(_):
