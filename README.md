@@ -218,8 +218,10 @@ unwrapped:
 
 Use `Depend` to inject request-scoped dependencies into handlers.
 
-A dependency is called like a handler: its first positional parameter is the
-context (`HttpContext`, or `WebSocketContext` on a socket route).
+By default, a dependency is called like a handler: its first positional
+parameter receives the active context (`HttpContext`, or `WebSocketContext`
+on a socket route) — this is `Depend(fn, get_context=True)`, `True` being
+the default, so plain `Depend(fn)` already does it.
 
 ```python
 from sillo import Depend, HttpContext, SilloApp
@@ -241,6 +243,21 @@ A dependency that reads the request does so straight off that first parameter:
 ```python
 def auth_header(ctx: HttpContext):
     return ctx.headers.get("Authorization")
+```
+
+A dependency that needs no context at all opts out with
+`get_context=False`: no context is passed positionally, so its own first
+parameter is analyzed like any other and is free to carry a `Depend` or
+extractor default of its own:
+
+```python
+def settings() -> Settings:
+    return Settings()
+
+
+@app.get("/config")
+async def show(ctx: HttpContext, cfg=Depend(settings, get_context=False)):
+    return json(cfg.dict())
 ```
 
 ## Routing
