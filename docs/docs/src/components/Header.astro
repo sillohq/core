@@ -13,8 +13,8 @@
  * export, so a deep import would fail to resolve at build time. It is a
  * button targeting the `drawer` popover that PageFrame renders.
  *
- * The "dev" flag beside the logo is the one place that marks every page of a
- * `preview` version (see `versions.mjs`) as unreleased — the notice in
+ * The "preview" flag beside the logo is the one place that marks every page
+ * of a `preview` version (see `versions.mjs`) as unreleased — the notice in
  * `MarkdownContent.astro` only repeats that in full on the manual's front
  * door, so this is what a reader still sees on page two.
  */
@@ -55,7 +55,7 @@ const { version } = routeParts(withoutBase);
             </svg>
         </button>
         <SiteTitle />
-        {version?.preview && <span class="dev-flag">dev</span>}
+        {version?.preview && <span class="preview-flag">preview</span>}
     </div>
 
     <div class="header-search">
@@ -142,7 +142,7 @@ const { version } = routeParts(withoutBase);
 
     /* Marks a `preview` version (see `versions.mjs`) beside the logo — the
        one flag that follows a reader across every page of that version. */
-    .dev-flag {
+    .preview-flag {
         padding-inline: calc(var(--spacing) * 1);
         border-radius: calc(var(--spacing) * 0.75);
         background: color-mix(in oklab, var(--foreground) 10%, transparent);
@@ -375,7 +375,7 @@ const { version } = routeParts(withoutBase);
         }
 
         .header-left :global(.site-title),
-        .header-left .dev-flag {
+        .header-left .preview-flag {
             display: none;
         }
 

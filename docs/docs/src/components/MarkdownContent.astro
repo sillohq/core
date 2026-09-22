@@ -8,7 +8,7 @@
  * turned into noise once the manual had more than a couple of pages — so it
  * now shows once, on the manual's own front door (the "first intro page"),
  * which is where someone arrives from the switcher or a bare `/v1.0/` link
- * and has not seen it yet. The "dev" flag beside the logo in the nav (see
+ * and has not seen it yet. The "preview" flag beside the logo in the nav (see
  * `Header.astro`) is what keeps the rest of the pages honest about the
  * version without repeating the full notice on each one.
  *
@@ -16,7 +16,7 @@
  * the one wrapper that renders exactly once per page, on every template.
  */
 import ThemeMarkdownContent from 'lucode-starlight/components/overrides/MarkdownContent.astro';
-import { VERSIONS, DEFAULT_VERSION, routeParts } from '../versions.mjs';
+import { VERSIONS, STABLE_VERSION, routeParts } from '../versions.mjs';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const INTRO_PAGE = 'guides/introduction/';
@@ -26,10 +26,10 @@ const withoutBase = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.leng
 const { version, rest } = routeParts(withoutBase);
 const isIntroPage = rest === INTRO_PAGE;
 
-const stable = VERSIONS.find((entry) => entry.slug === DEFAULT_VERSION);
+const stable = VERSIONS.find((entry) => entry.slug === STABLE_VERSION);
 /* The same page in the released version, which is what someone who landed here
    by accident actually wanted. */
-const stableHref = `${BASE}/${DEFAULT_VERSION}/${rest || INTRO_PAGE}`;
+const stableHref = `${BASE}/${STABLE_VERSION}/${rest || INTRO_PAGE}`;
 ---
 
 <ThemeMarkdownContent>
@@ -37,9 +37,9 @@ const stableHref = `${BASE}/${DEFAULT_VERSION}/${rest || INTRO_PAGE}`;
         version?.preview && isIntroPage && (
             <aside class="version-notice" aria-label="Version notice">
                 <p>
-                    This is the <strong>{version.label}</strong> documentation, for a release that
-                    is still in development. The API it describes is not on PyPI and can still
-                    change.
+                    This is the <strong>{version.label}</strong> documentation, a preview of a
+                    release that has not shipped yet. The API it describes is not on PyPI and can
+                    still change.
                 </p>
                 <p>
                     Reading about the version you have installed?{' '}

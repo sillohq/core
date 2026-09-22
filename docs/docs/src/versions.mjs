@@ -26,28 +26,39 @@ import { join } from 'node:path';
  * @property {string} slug   First URL segment, and the content directory name.
  * @property {string} label  What the switcher shows.
  * @property {string} [note] A short qualifier beside the label in the menu.
- * @property {boolean} [preview] Renders the "in development" treatment: a
- *   "dev" flag beside the logo in the nav on every page (`Header.astro`),
+ * @property {boolean} [preview] Renders the "preview" treatment: a
+ *   "preview" flag beside the logo in the nav on every page (`Header.astro`),
  *   and the full unreleased-version notice on the manual's front door only
  *   (`MarkdownContent.astro`).
  */
 
 /** @type {DocsVersion[]} */
 export const VERSIONS = [
-    { slug: 'v0.x', label: 'v0.x', note: 'current release' },
-    { slug: 'v1.0', label: 'v1.0', note: 'in development', preview: true },
+    { slug: 'v1.0', label: 'v1.0', note: 'preview', preview: true },
+    { slug: 'v0.x', label: 'v0.x', note: 'stable release' },
 ];
 
 /**
  * The version an unversioned URL lands on.
  *
- * This is the released one, not the newest one: `/guides/routing/` is what is
- * linked from the marketing site and indexed by search engines, and someone
- * following one of those has `pip install sillo` installed, which is 0.x. The
- * v1.0 manual is reachable from the switcher and says at the top of every page
- * that it describes an unreleased version.
+ * `/guides/routing/` is what is linked from the marketing site and indexed by
+ * search engines, and it now points at the v1.0 manual: that is the version
+ * being written toward, even though `pip install sillo` still installs 0.x.
+ * The v1.0 manual says at the top of its front door that it describes an
+ * unreleased, preview version, and links back to the v0.x manual for anyone
+ * who landed here with 0.x actually installed.
  */
-export const DEFAULT_VERSION = 'v0.x';
+export const DEFAULT_VERSION = 'v1.0';
+
+/**
+ * The version that is actually on PyPI right now.
+ *
+ * Used by the preview notice (`MarkdownContent.astro`) to link a reader on
+ * v1.0 back to the manual for what they likely have installed — distinct
+ * from `DEFAULT_VERSION`, which is where unversioned URLs land and is now the
+ * preview version itself.
+ */
+export const STABLE_VERSION = VERSIONS.find((entry) => !entry.preview)?.slug ?? DEFAULT_VERSION;
 
 /**
  * Every manual, in section-bar order. `segment` is the second URL segment.
