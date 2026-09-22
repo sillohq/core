@@ -308,6 +308,18 @@ def _locals_line(frame) -> str:
     return ", ".join(pairs)
 
 
+def _fit(text: str, width: int) -> str:
+    """Trim plain (unstyled) text to `width` columns, marking the cut.
+
+    Called before any colour is applied to a piece — styling an
+    already-fitted string can never push it back over the box's border,
+    where slicing a styled string could cut an escape sequence in half.
+    """
+    if len(text) <= width:
+        return text
+    return text[: max(1, width - 1)] + "…"
+
+
 def _box(lines: list[str], p: Palette, style: Style, indent: str = "    ") -> list[str]:
     """Frame `lines` in a border, so one cascade link reads as one unit.
 
@@ -319,13 +331,21 @@ def _box(lines: list[str], p: Palette, style: Style, indent: str = "    ") -> li
     def c(text: str) -> str:
         return p.render(text, style)
 
-    width = min(max((len(strip_ansi(line)) for line in lines), default=0), _BOX_WIDTH)
+    # Belt and braces: callers are expected to fit their own text with
+    # `_fit` before colouring it, but a plain (unstyled) line that somehow
+    # arrives too wide is still clipped here rather than left to spill past
+    # the border -- a styled one cannot be sliced safely, so it is trusted.
+    fitted = [
+        line if len(line) != len(strip_ansi(line)) else _fit(line, _BOX_WIDTH)
+        for line in lines
+    ]
+    width = min(max((len(strip_ansi(line)) for line in fitted), default=0), _BOX_WIDTH)
     top = c(f"╭{'─' * (width + 2)}╮")
     bottom = c(f"╰{'─' * (width + 2)}╯")
     side = c("│")
 
     out = [f"{indent}{top}"]
-    for line in lines:
+    for line in fitted:
         pad = " " * max(0, width - len(strip_ansi(line)))
         out.append(f"{indent}{side} {line}{pad} {side}")
     out.append(f"{indent}{bottom}")
@@ -337,22 +357,35 @@ def _cause_block(exc: BaseException, p: Palette) -> list[str]:
 
     Deliberately lighter than the top exception's own report — a full source
     window per link, several links deep, would be noise rather than signal.
+
+    Every piece is trimmed to its own budget with :func:`_fit` *before* it is
+    coloured, so a long class name, path or source line can never push the
+    line past the box's border -- the failure mode this is guarding against
+    is text spilling out past the right-hand edge, not a wasted character or
+    two of slack.
     """
 
     def c(text: str, style: Style) -> str:
         return p.render(text, style)
 
-    message = _clip(str(exc), _BOX_WIDTH - 20) or "(no message)"
-    lines = [f"{c(type(exc).__name__, DANGER | _BOLD)}: {message}"]
+    type_name = _fit(type(exc).__name__, 30)
+    message = _fit(_clip(str(exc)), max(1, _BOX_WIDTH - len(type_name) - 2))
+    message = message or "(no message)"
+    lines = [f"{c(type_name, DANGER | _BOLD)}: {message}"]
 
     frames = _app_frames(exc) or traceback.extract_tb(exc.__traceback__)
     if frames:
         fs = frames[-1]
-        where = (
-            f"{c(_short(fs.filename), _LOC)}{c(':', _LOC)}{c(str(fs.lineno), _LOC_N)}"
-        )
-        lines.append(f"{c('at', MUTED)} {where}   in {c(fs.name, _BOLD)}")
-        src = _line_at(fs.filename, fs.lineno or 0)
+        name = _fit(fs.name, 24)
+        lineno = str(fs.lineno)
+        # Fixed furniture around the two variable-length pieces: "at ",
+        # the ":" between path and line number, and "   in " before the
+        # function name -- 10 columns total.
+        fixed = len("at ") + len(":") + len("   in ")
+        loc = _fit(_short(fs.filename), max(1, _BOX_WIDTH - fixed - len(name) - len(lineno)))
+        where = f"{c(loc, _LOC)}{c(':', _LOC)}{c(lineno, _LOC_N)}"
+        lines.append(f"{c('at', MUTED)} {where}   in {c(name, _BOLD)}")
+        src = _fit(_line_at(fs.filename, fs.lineno or 0), _BOX_WIDTH - 2)
         if src:
             lines.append(f"{c(THROW, PRIMARY)} {src}")
     return lines

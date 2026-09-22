@@ -246,6 +246,31 @@ def test_a_short_chain_is_fully_boxed_with_no_summary():
     assert "more" not in block
 
 
+def test_a_long_message_or_name_is_clipped_to_stay_inside_the_box():
+    # A wide class name, message, path or function name used to push text
+    # straight past the box's right-hand border instead of being trimmed.
+    class ThisIsAnAbsurdlyLongCustomExceptionClassNameForTestingPurposes(Exception):
+        pass
+
+    def inner():
+        try:
+            {}["a-rather-long-dictionary-key-that-would-never-normally-show-up"]
+        except KeyError as missing:
+            raise ThisIsAnAbsurdlyLongCustomExceptionClassNameForTestingPurposes(
+                "a very long exception message that goes on and on and on well "
+                "past what any box drawn to a terminal could reasonably hold"
+            ) from missing
+
+    block = error_report.render(_raise(inner), palette=PLAIN)
+    box_lines = [ln for ln in block.splitlines() if "│" in ln]
+    assert box_lines  # sanity: a box was actually drawn
+    widths = {len(ln) for ln in box_lines}
+    assert len(widths) == 1  # every row of every box is the same width
+    for ln in box_lines:
+        assert ln.startswith(f"    {'│'}")
+        assert ln.endswith("│")
+
+
 # ── one_line / emit ─────────────────────────────────────────────────────
 
 
