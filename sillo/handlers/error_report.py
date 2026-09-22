@@ -43,7 +43,7 @@ import sysconfig
 import traceback
 import typing
 
-from sillo.console.style import DANGER, INFO, MUTED, PRIMARY, Palette, Style
+from sillo.console.style import DANGER, INFO, MUTED, PRIMARY, Palette, Style, strip_ansi
 
 if typing.TYPE_CHECKING:
     from sillo.core.http import HttpContext
@@ -52,6 +52,12 @@ EMOJI = "💥"
 WORD = "oops"
 THROW = "›"
 CALL = "→"
+
+#: How many links of a `raise ... from ...` chain get their own box before
+#: the rest are summarised on one line — a chain this deep is already a
+#: design smell, and printing all of it just buries the top of the stack.
+_CAUSE_LIMIT = 4
+_BOX_WIDTH = 76
 
 _MODES = ("off", "app", "full")
 _BOLD = Style(bold=True)
@@ -302,6 +308,91 @@ def _locals_line(frame) -> str:
     return ", ".join(pairs)
 
 
+def _fit(text: str, width: int) -> str:
+    """Trim plain (unstyled) text to `width` columns, marking the cut.
+
+    Called before any colour is applied to a piece — styling an
+    already-fitted string can never push it back over the box's border,
+    where slicing a styled string could cut an escape sequence in half.
+    """
+    if len(text) <= width:
+        return text
+    return text[: max(1, width - 1)] + "…"
+
+
+def _box(lines: list[str], p: Palette, style: Style, indent: str = "    ") -> list[str]:
+    """Frame `lines` in a border, so one cascade link reads as one unit.
+
+    A chain of ``raise ... from ...`` blurs together as plain lines — the
+    border is what lets the eye jump straight from one cause to the next
+    without re-reading each one to find where it starts.
+    """
+
+    def c(text: str) -> str:
+        return p.render(text, style)
+
+    # Belt and braces: callers are expected to fit their own text with
+    # `_fit` before colouring it, but a plain (unstyled) line that somehow
+    # arrives too wide is still clipped here rather than left to spill past
+    # the border -- a styled one cannot be sliced safely, so it is trusted.
+    fitted = [
+        line if len(line) != len(strip_ansi(line)) else _fit(line, _BOX_WIDTH)
+        for line in lines
+    ]
+    width = min(max((len(strip_ansi(line)) for line in fitted), default=0), _BOX_WIDTH)
+    top = c(f"╭{'─' * (width + 2)}╮")
+    bottom = c(f"╰{'─' * (width + 2)}╯")
+    side = c("│")
+
+    out = [f"{indent}{top}"]
+    for line in fitted:
+        pad = " " * max(0, width - len(strip_ansi(line)))
+        out.append(f"{indent}{side} {line}{pad} {side}")
+    out.append(f"{indent}{bottom}")
+    return out
+
+
+def _cause_block(exc: BaseException, p: Palette) -> list[str]:
+    """One cascade link's own compact summary: type, message, where, one line.
+
+    Deliberately lighter than the top exception's own report — a full source
+    window per link, several links deep, would be noise rather than signal.
+
+    Every piece is trimmed to its own budget with :func:`_fit` *before* it is
+    coloured, so a long class name, path or source line can never push the
+    line past the box's border -- the failure mode this is guarding against
+    is text spilling out past the right-hand edge, not a wasted character or
+    two of slack.
+    """
+
+    def c(text: str, style: Style) -> str:
+        return p.render(text, style)
+
+    type_name = _fit(type(exc).__name__, 30)
+    message = _fit(_clip(str(exc)), max(1, _BOX_WIDTH - len(type_name) - 2))
+    message = message or "(no message)"
+    lines = [f"{c(type_name, DANGER | _BOLD)}: {message}"]
+
+    frames = _app_frames(exc) or traceback.extract_tb(exc.__traceback__)
+    if frames:
+        fs = frames[-1]
+        name = _fit(fs.name, 24)
+        lineno = str(fs.lineno)
+        # Fixed furniture around the two variable-length pieces: "at ",
+        # the ":" between path and line number, and "   in " before the
+        # function name -- 10 columns total.
+        fixed = len("at ") + len(":") + len("   in ")
+        loc = _fit(
+            _short(fs.filename), max(1, _BOX_WIDTH - fixed - len(name) - len(lineno))
+        )
+        where = f"{c(loc, _LOC)}{c(':', _LOC)}{c(lineno, _LOC_N)}"
+        lines.append(f"{c('at', MUTED)} {where}   in {c(name, _BOLD)}")
+        src = _fit(_line_at(fs.filename, fs.lineno or 0), _BOX_WIDTH - 2)
+        if src:
+            lines.append(f"{c(THROW, PRIMARY)} {src}")
+    return lines
+
+
 def render(
     exc: BaseException,
     ctx: HttpContext | None = None,
@@ -390,20 +481,25 @@ def render(
         if values:
             out.append(f"{label('with')}{c(values, MUTED)}")
 
-    # -- what it was raised from ---------------------------------
+    # -- what it was raised from, each link its own box -----------
     cause = _cause(exc)
-    if cause is not None:
-        at = ""
-        c_frames = _app_frames(cause) or traceback.extract_tb(cause.__traceback__)
-        if c_frames:
-            f = c_frames[-1]
-            at = (
-                f"   at {c(_short(f.filename), _LOC)}"
-                f"{c(':', _LOC)}{c(str(f.lineno), _LOC_N)}"
-            )
-        out.append(
-            f"{label('from')}{type(cause).__name__}: {_clip(str(cause), 70)}{at}"
-        )
+    seen = {id(exc)}
+    depth = 0
+    while cause is not None and id(cause) not in seen:
+        seen.add(id(cause))
+        depth += 1
+        if depth > _CAUSE_LIMIT:
+            remaining = 1
+            rest = _cause(cause)
+            while rest is not None and id(rest) not in seen:
+                seen.add(id(rest))
+                remaining += 1
+                rest = _cause(rest)
+            out.append(f"{label('from')}{c(f'… {remaining} more', MUTED)}")
+            break
+        out.append(f"{label('caused by')}")
+        out.extend(_box(_cause_block(cause, p), p, MUTED))
+        cause = _cause(cause)
 
     if mode == "full":
         out.append("")

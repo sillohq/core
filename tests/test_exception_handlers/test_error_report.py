@@ -148,7 +148,7 @@ def test_no_request_line_without_a_context(tmp_path, monkeypatch):
     assert "request" not in block
 
 
-def test_chained_cause_is_one_line():
+def test_chained_cause_gets_its_own_box():
     def inner():
         try:
             {}["k"]
@@ -156,9 +156,11 @@ def test_chained_cause_is_one_line():
             raise ValueError("wrapped") from missing
 
     block = error_report.render(_raise(inner), palette=PLAIN)
-    from_lines = [ln for ln in block.splitlines() if ln.lstrip().startswith("from")]
-    assert len(from_lines) == 1
-    assert "KeyError: 'k'" in from_lines[0]
+    lines = block.splitlines()
+    assert any(ln.lstrip().startswith("caused by") for ln in lines)
+    boxed = "\n".join(lines)
+    assert "╭" in boxed and "╰" in boxed
+    assert "KeyError: 'k'" in boxed
 
 
 def test_with_line_lists_the_raising_frames_locals(tmp_path, monkeypatch):
@@ -214,6 +216,59 @@ def test_an_error_wholly_inside_a_dependency_still_shows_a_frame():
 
     block = error_report.render(_raise(lambda: json.loads("{")), palette=PLAIN)
     assert "\n    at        " in block
+
+
+def test_a_deep_chain_boxes_the_first_few_links_then_summarises():
+    def raise_chain(n):
+        if n == 0:
+            raise ValueError("root cause")
+        try:
+            raise_chain(n - 1)
+        except Exception as e:
+            raise RuntimeError(f"level {n}") from e
+
+    block = error_report.render(_raise(lambda: raise_chain(8)), palette=PLAIN)
+    assert block.count("caused by") == error_report._CAUSE_LIMIT
+    assert block.count("╭") == error_report._CAUSE_LIMIT
+    assert "… 4 more" in block
+    assert "level 4" in block  # the last boxed link
+    assert "level 3" not in block  # folded into the summary
+
+
+def test_a_short_chain_is_fully_boxed_with_no_summary():
+    def inner():
+        try:
+            {}["k"]
+        except KeyError as missing:
+            raise ValueError("wrapped") from missing
+
+    block = error_report.render(_raise(inner), palette=PLAIN)
+    assert "more" not in block
+
+
+def test_a_long_message_or_name_is_clipped_to_stay_inside_the_box():
+    # A wide class name, message, path or function name used to push text
+    # straight past the box's right-hand border instead of being trimmed.
+    class ThisIsAnAbsurdlyLongCustomExceptionClassNameForTestingPurposes(Exception):
+        pass
+
+    def inner():
+        try:
+            {}["a-rather-long-dictionary-key-that-would-never-normally-show-up"]
+        except KeyError as missing:
+            raise ThisIsAnAbsurdlyLongCustomExceptionClassNameForTestingPurposes(
+                "a very long exception message that goes on and on and on well "
+                "past what any box drawn to a terminal could reasonably hold"
+            ) from missing
+
+    block = error_report.render(_raise(inner), palette=PLAIN)
+    box_lines = [ln for ln in block.splitlines() if "│" in ln]
+    assert box_lines  # sanity: a box was actually drawn
+    widths = {len(ln) for ln in box_lines}
+    assert len(widths) == 1  # every row of every box is the same width
+    for ln in box_lines:
+        assert ln.startswith(f"    {'│'}")
+        assert ln.endswith("│")
 
 
 # ── one_line / emit ─────────────────────────────────────────────────────
@@ -282,7 +337,8 @@ def test_cause_falls_back_to_implicit_context():
             raise ValueError("wrapped")  # no `from` -> __context__
 
     block = error_report.render(_raise(inner), palette=PLAIN)
-    assert "from      KeyError" in block
+    assert "caused by" in block
+    assert "KeyError" in block
 
 
 def test_short_repr_covers_the_odd_shapes():
