@@ -382,7 +382,9 @@ def _cause_block(exc: BaseException, p: Palette) -> list[str]:
         # the ":" between path and line number, and "   in " before the
         # function name -- 10 columns total.
         fixed = len("at ") + len(":") + len("   in ")
-        loc = _fit(_short(fs.filename), max(1, _BOX_WIDTH - fixed - len(name) - len(lineno)))
+        loc = _fit(
+            _short(fs.filename), max(1, _BOX_WIDTH - fixed - len(name) - len(lineno))
+        )
         where = f"{c(loc, _LOC)}{c(':', _LOC)}{c(lineno, _LOC_N)}"
         lines.append(f"{c('at', MUTED)} {where}   in {c(name, _BOLD)}")
         src = _fit(_line_at(fs.filename, fs.lineno or 0), _BOX_WIDTH - 2)
