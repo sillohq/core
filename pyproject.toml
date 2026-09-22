@@ -31,7 +31,7 @@ exclude = [
 
 [project]
 name = "sillo-framework"
-version = "1.0.0a2"
+version = "1.0.0rc1"
 description = "Python with the pieces already in place: an async web framework whose ORM, auth, admin, queues, scheduler and WebSockets share one configuration model."
 authors = [
     {name = "Chidebele Dunamis", email = "techwithdunamix@gmail.com"}
@@ -365,7 +365,7 @@ ignore = [
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "1.0.0a2"
+version = "1.0.0rc1"
 version_files = [
     "pyproject.toml:version",
     "sillo/__init__.py:__version__"
