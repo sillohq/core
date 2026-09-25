@@ -90,6 +90,23 @@ def test_html_respects_the_frame_limit(middleware, request_):
     assert len(long) > len(short)
 
 
+def test_html_shows_the_failing_frame_last(middleware, request_):
+    def outer():
+        return inner()
+
+    def inner():
+        raise RuntimeError("bottom")
+
+    try:
+        outer()
+    except RuntimeError as exc:
+        page = middleware.generate_html(exc, request_)
+
+    outer_marker = '<span class="frame-function">outer</span>'
+    inner_marker = '<span class="frame-function">inner</span>'
+    assert page.index(outer_marker) < page.index(inner_marker)
+
+
 def test_html_for_an_exception_with_no_traceback(middleware, request_):
     """A never-raised exception has no frames and must still render."""
     assert "ValueError" in middleware.generate_html(ValueError("bare"), request_)

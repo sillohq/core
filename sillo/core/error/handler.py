@@ -1164,9 +1164,10 @@ class ServerErrorMiddleware:
         """Generate an HTML block representing a single traceback frame.
 
         Renders the frame's source code context with line numbers and optional
-        local variables into a collapsible HTML section. The first frame (most
-        recent) is typically shown expanded while subsequent frames are collapsed
-        to keep the error page readable for deep call stacks.
+        local variables into a collapsible HTML section. The final frame (the
+        point where the exception was raised) is shown expanded while earlier
+        calling frames are collapsed to keep the error page readable for deep
+        call stacks.
 
         Args:
             frame: An ``inspect.FrameInfo`` object containing the filename, line
@@ -1641,9 +1642,13 @@ class ServerErrorMiddleware:
         exc_traceback = exc.__traceback__
         if exc_traceback is not None:
             frames = inspect.getinnerframes(exc_traceback, limit)
-            for frame in reversed(frames):
-                exc_html += self.generate_frame_html(frame, is_collapsed)
-                is_collapsed = True
+            # `inspect.getinnerframes` already returns frames from the outer
+            # caller to the innermost frame where the exception was raised.
+            # Keep that order so the actionable frame is at the bottom, like
+            # Python's normal traceback. Expand only that final frame.
+            for index, frame in enumerate(frames):
+                is_last = index == len(frames) - 1
+                exc_html += self.generate_frame_html(frame, not is_last)
 
         # Get request information if available
         try:
