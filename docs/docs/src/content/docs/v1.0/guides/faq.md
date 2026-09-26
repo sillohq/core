@@ -21,14 +21,12 @@ marketing. Where an answer is unflattering it is still the answer.
 
 ###  Is Sillo production ready?
 
-The released line is 0.x, and the version number is not false modesty — the
-API still moves between minor releases, and 1.0 relocates several things that
-are in the framework today. Read [What changed in 1.0](#what-changed-in-10)
-before you start something you intend to keep.
+Sillo 1.0 is the stable release line. Read [What changed in
+1.0](#what-changed-in-10) if you are migrating from an older application.
 
 What *is* stable is the shape: routing, handlers, validation, dependency
 injection and the response layer have not changed conceptually since early
-0.x, and the [official starter](/v1.0/guides/start/) is booted and exercised
+1.0, and the [official starter](/v1.0/guides/start/) is booted and exercised
 route-by-route in CI on three Python versions on every push. Applications are
 running on it. It is a reasonable bet for a project you control the deployment
 of, and a poor bet for one where you cannot absorb a breaking change on your
@@ -170,11 +168,10 @@ Secrets come from the environment. See
 
 ##  Versions
 
-###  Should I install v0.x or v1.0?
+###  Which version should I install?
 
-Install 0.x — it is what `uv add sillo-framework` gives you, and it is what an
-unversioned documentation link lands on. The v1.0 manual describes an
-unreleased version and every page in it says so at the top.
+Install v1.0 with `uv add sillo-framework` or `pip install sillo-framework`.
+The unversioned documentation links now land on the stable v1.0 manual.
 
 The version switcher sits at the foot of the sidebar. The manual you are
 reading right now is v1.0.

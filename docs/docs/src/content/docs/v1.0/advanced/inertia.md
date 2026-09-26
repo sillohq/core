@@ -3,18 +3,13 @@ title: "sillo-inertia"
 description: "Adapter, HTML/JSON decision, props, Vite integration, version mismatch"
 ---
 
-> **Package**: `sillo-inertia` v0.0.1a4
+> **Package**: `sillo-inertia` v1.0.0
 > **Repository**: https://github.com/sillohq/inertia
 > **Source root**: `inertia/sillo_inertia/`
 > **Tests**: `inertia/tests/test_inertia.py`
 
-:::caution[Not yet on the v1 signature]
-`sillo-inertia` is a separate package and is still on `0.x`. It has not been
-ported to the context handler, so the signatures on this page are the ones it
-actually has — `(request, response, *rest)`, synthesised by
-`_endpoint_signature` — rather than the `(ctx)` the rest of this manual
-describes. It will not run against a v1 core until it is rewritten.
-:::
+`sillo-inertia` is a separate package. Install its stable 1.0 release alongside
+Sillo core when you need Inertia.js responses.
 
 ---
 

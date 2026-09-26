@@ -109,8 +109,7 @@ Breaking changes are sometimes correct. Breaking changes without a written path
 across them are not.
 
 Two versions of these docs exist side by side for exactly this reason: v0.x is
-what is released and what an unversioned link lands on, and v1.0 says at the
-top of every page that it describes something unreleased. Where 1.0 moves
+the legacy line, while v1.0 is the stable release. Where 1.0 moves
 something out of the framework — the admin, the HTML templating layer,
 WebSocket rooms — the page it moved to exists and says where it came from.
 

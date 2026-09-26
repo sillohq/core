@@ -23,7 +23,7 @@
   <a href="https://github.com/sillohq/core/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/sillo-framework?color=green" alt="License"></a>
 </p>
 
-<sub>`main` tracks Sillo 1.0, unreleased — `pip install sillo-framework` still gives you 0.x, from [`v0.x`](https://github.com/sillohq/core/tree/v0.x) ([docs](https://docs.sillo.build/v0.x/guides/introduction/)). Everything below is 1.0: install it with `pip install "git+https://github.com/sillohq/core.git@main"`, docs at [docs.sillo.build/v1.0](https://docs.sillo.build/v1.0/guides/introduction/).</sub>
+<sub>Sillo 1.0 is the stable release. Install it from PyPI with `pip install sillo-framework`, or add it with `uv add sillo-framework`. Read the [v1.0 docs](https://docs.sillo.build/v1.0/guides/introduction/).</sub>
 
 Sillo is the buildsmith framework for APIs, real-time systems, and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, queues, scheduler, and WebSockets already in place. The language does not change. You write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
 
@@ -63,15 +63,13 @@ never carries a templating engine for it.
 
 ## Installation
 
-**1.0 is not on PyPI yet.** `uv add sillo-framework` installs 0.x, which is a
-different API — see the note at the top. To build against this branch:
+Install the stable v1.0 release from PyPI:
 
 ```bash
-uv add "sillo-framework @ git+https://github.com/sillohq/core.git@main"
+uv add sillo-framework
 ```
 
-Everything below documents 1.0. For the released line, read
-[the v0.x branch](https://github.com/sillohq/core/tree/v0.x).
+Everything below documents the stable 1.0 API.
 
 ### Extras
 

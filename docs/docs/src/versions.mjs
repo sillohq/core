@@ -34,7 +34,7 @@ import { join } from 'node:path';
 
 /** @type {DocsVersion[]} */
 export const VERSIONS = [
-    { slug: 'v1.0', label: 'v1.0', note: 'preview', preview: true },
+    { slug: 'v1.0', label: 'v1.0', note: 'stable release' },
     { slug: 'v0.x', label: 'v0.x', note: 'stable release' },
 ];
 
@@ -42,21 +42,12 @@ export const VERSIONS = [
  * The version an unversioned URL lands on.
  *
  * `/guides/routing/` is what is linked from the marketing site and indexed by
- * search engines, and it now points at the v1.0 manual: that is the version
- * being written toward, even though `pip install sillo` still installs 0.x.
- * The v1.0 manual says at the top of its front door that it describes an
- * unreleased, preview version, and links back to the v0.x manual for anyone
- * who landed here with 0.x actually installed.
+ * search engines, and it points at the stable v1.0 manual.
  */
 export const DEFAULT_VERSION = 'v1.0';
 
 /**
- * The version that is actually on PyPI right now.
- *
- * Used by the preview notice (`MarkdownContent.astro`) to link a reader on
- * v1.0 back to the manual for what they likely have installed — distinct
- * from `DEFAULT_VERSION`, which is where unversioned URLs land and is now the
- * preview version itself.
+ * The version that is currently on PyPI.
  */
 export const STABLE_VERSION = VERSIONS.find((entry) => !entry.preview)?.slug ?? DEFAULT_VERSION;
 

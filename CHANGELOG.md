@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-26
+
+Sillo 1.0 is the stable release of the context-based framework API.
+
+### Added
+
+- Stable routing, dependency injection, middleware, queues, scheduler,
+  WebSockets, OpenAPI, records, authentication, storage, mail, and testing
+  integrations documented in the v1.0 manual.
+
+### Changed
+
+- The v1.0 handler and application APIs are now the supported public surface.
+- The package is published as a production/stable release for Python 3.10+.
+
 ## [1.0.0rc1] - 2026-09-22
 
 The first release candidate of 1.0.

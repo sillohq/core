@@ -31,7 +31,7 @@ exclude = [
 
 [project]
 name = "sillo-framework"
-version = "1.0.0rc1"
+version = "1.0.0"
 description = "Python with the pieces already in place: an async web framework whose ORM, auth, admin, queues, scheduler and WebSockets share one configuration model."
 authors = [
     {name = "Chidebele Dunamis", email = "techwithdunamix@gmail.com"}
@@ -62,7 +62,7 @@ requires-python = ">=3.10"
 # classifier belongs here. 3.15 joins the list once it ships a final release;
 # CI already runs it.
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Web Environment",
     "Framework :: AsyncIO",
     "Intended Audience :: Developers",
@@ -368,7 +368,7 @@ ignore = [
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "1.0.0rc1"
+version = "1.0.0"
 version_files = [
     "pyproject.toml:version",
     "sillo/__init__.py:__version__"
