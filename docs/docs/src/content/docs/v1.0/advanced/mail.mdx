@@ -3,6 +3,8 @@ title: "Mail"
 description: "MailClient, SMTP, templates, attachments, config"
 ---
 
+import { TabItem, Tabs } from '@astrojs/starlight/components';
+
 > Internal engineering reference for Sillo's email sending subsystem.
 >
 > Source: `core/sillo/mail/` (4 files, ~524 lines)
@@ -579,23 +581,29 @@ async def send_template_email(
 
 ## 7. Framework Integration
 
-### `setup_mail(app, config)`
+### Application setup
 
-**File:** `core/sillo/mail/client.py`, line 241
+<Tabs syncKey="setup-style">
+<TabItem label="Installable">
 
 ```python
-def setup_mail(app, config: MailConfig | None = None) -> MailClient:
-    if hasattr(app.state, "mail_client"):
-        return app.state.mail_client
+from sillo.mail import Mail, MailConfig
 
-    client = MailClient(config)
-    app.state.mail_client = client
-
-    app.on_startup(client.start)
-    app.on_shutdown(client.stop)
-
-    return client
+mail = app.install(Mail(MailConfig.for_gmail("user@gmail.com", "app-password")))
 ```
+</TabItem>
+<TabItem label="setup_*() (compatible)">
+```python
+from sillo.mail import MailConfig, setup_mail
+
+mail = setup_mail(app, MailConfig.for_gmail("user@gmail.com", "app-password"))
+```
+</TabItem>
+</Tabs>
+
+`Mail` is the recommended declarative form. Both forms put the same client in
+`app.state["mail_client"]`, register it for process-wide lookup, and connect
+and stop it with the application lifecycle.
 
 **Lifecycle integration:**
 
@@ -647,7 +655,7 @@ The client itself, for the two things `send_email(...)` doesn't cover:
 `send_email`'s `template_name=`/`template_context=` kwargs. Most code never
 needs this — `send_email(...)` already is `current_mail().send_email(...)`.
 
-`setup_mail` registers the client with `sillo._internals.registry`, the same
+`Mail` and `setup_mail` register the client with `sillo._internals.registry`, the same
 [instance registry](/v1.0/advanced/context-binding/) `sillo.storage` uses — a
 plain slot filled at startup, not scoped to a request, because mail is sent
 from queue jobs and scripts at least as often as from a handler. The trade
@@ -659,11 +667,11 @@ visible rather than implicit in a lookup key.
 ### Usage Pattern
 
 ```python
-from sillo.mail import setup_mail, send_email, MailConfig
+from sillo.mail import Mail, send_email, MailConfig
 
 # At startup
 config = MailConfig.for_gmail("user@gmail.com", "app-password")
-setup_mail(app, config)
+app.install(Mail(config))
 
 # In handler, a queue job, or a script
 async def send_welcome(user):

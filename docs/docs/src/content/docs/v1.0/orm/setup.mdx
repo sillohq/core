@@ -12,20 +12,42 @@ head:
       content: setup_record, DatabaseManager, and the connection lifecycle.
 ---
 
-One call wires a database into an application.
+import { TabItem, Tabs } from '@astrojs/starlight/components';
 
+One installation wires a database into an application. The object form is the
+recommended bootstrap style; the established function remains compatible.
+
+<Tabs syncKey="setup-style">
+<TabItem label="Installable">
+```python
+from sillo import SilloApp
+from sillo.record import DatabaseConfig, Record
+
+app = SilloApp()
+
+database = app.install(
+    Record(
+    DatabaseConfig.from_env(),
+    model_modules=("database.models",),
+    )
+)
+```
+</TabItem>
+<TabItem label="setup_*() (compatible)">
 ```python
 from sillo import SilloApp
 from sillo.record import DatabaseConfig, setup_record
 
 app = SilloApp()
 
-setup_record(
+database = setup_record(
     app,
     DatabaseConfig.from_env(),
     model_modules=["database.models"],
 )
 ```
+</TabItem>
+</Tabs>
 
 That does four things: builds a `DatabaseManager`, registers the model
 modules, connects on startup and disconnects on shutdown, and puts the manager
@@ -80,7 +102,7 @@ uv add "sillo-framework[record]"
 | Per request | `ensure_context` middleware makes the connection available |
 | Shutdown | `shutdown()` closes the connections |
 
-`setup_record` registers all three. You do not call them.
+`Record` and `setup_record` register all three. You do not call them.
 
 ### `ensure_context`
 
