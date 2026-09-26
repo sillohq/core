@@ -68,6 +68,37 @@ framework's number into a measurement of the database — but it also means thes
 results describe framework overhead and nothing else. See
 [What this does not tell you](#what-this-does-not-tell-you).
 
+## Latest measured speed
+
+The current local run measured Sillo at the following throughput and p99
+latency. The comparison rows are included for context; rerun the suite on your
+own hardware before treating any number as a deployment promise.
+
+**Throughput — requests per second, higher is better**
+
+| scenario | Sillo | FastAPI | Starlette | Django | Flask |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `plaintext` | **2,840** | 2,496 | 3,096 | 679 | 985 |
+| `json` | **2,728** | 2,470 | 2,997 | 634 | 857 |
+| `path-param` | **2,689** | 2,225 | 2,932 | 678 | 857 |
+| `query-param` | **2,373** | 1,964 | 2,509 | 655 | 831 |
+| `rows` | 1,395 | **1,486** | 1,405 | 529 | 652 |
+
+**Sillo p99 latency — milliseconds, lower is better**
+
+| scenario | Sillo p99 |
+| --- | ---: |
+| `plaintext` | **27.95 ms** |
+| `json` | **31.18 ms** |
+| `path-param` | **29.57 ms** |
+| `query-param` | **35.67 ms** |
+| `rows` | **48.09 ms** |
+
+Run configuration: Python 3.14.6, Intel i9-9980HK, one Uvicorn worker, 64
+connections, three five-second rounds, and `oha` 1.15.0. The `rows` scenario
+is the only one where FastAPI led Sillo, while Sillo remained close in
+throughput and had a lower p99 latency in that run.
+
 ---
 
 ## How it is kept fair
