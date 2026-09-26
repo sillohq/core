@@ -31,7 +31,7 @@ from .fields import (
 )
 from .helpers import FixtureLoader, MigrationHelper, Seeder
 from .logging import QueryLogEntry, QueryLogger
-from .manager import DatabaseManager, setup_record
+from .manager import DatabaseManager, Record, setup_record
 from .mixins import (
     CascadesDeletesMixin,
     HasUlidMixin,
@@ -67,6 +67,7 @@ __all__ = [
     "PaginatedResult",
     "QueryLogEntry",
     "QueryLogger",
+    "Record",
     "RecordManager",
     "RecordQuerySet",
     "ScopeRegistry",

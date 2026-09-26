@@ -1,0 +1,99 @@
+---
+title: "Application Installables"
+description: "Build a named subsystem that Sillo can install, inspect, and manage."
+---
+
+An **Installable** is a small object that wires one application subsystem into
+Sillo. It is the right boundary for a component that needs application state,
+request middleware, startup or shutdown work, or a combination of them.
+
+```python
+from sillo import SilloApp
+
+app = SilloApp()
+metrics = app.install(Metrics("https://metrics.example"))
+```
+
+Use `app.install()` for subsystems. Keep `app.use()` for HTTP middleware whose
+order matters, and `app.on_startup()` / `app.on_shutdown()` for one-off work
+owned by the application itself.
+
+## The contract
+
+An installable has a stable, non-empty `name` and an `install(app)` method.
+The method returns the service the application will use.
+
+```python
+from sillo.application import SilloApp
+
+
+class Metrics:
+    name = "metrics"
+
+    def __init__(self, endpoint: str) -> None:
+        self.endpoint = endpoint
+
+    def install(self, app: SilloApp) -> MetricsClient:
+        client = MetricsClient(self.endpoint)
+        app.state[self.name] = client
+        app.on_startup(client.connect)
+        app.on_shutdown(client.close)
+        return client
+```
+
+Install it during bootstrap:
+
+```python
+app = SilloApp()
+metrics = app.install(Metrics(settings.metrics_endpoint))
+```
+
+Sillo records the returned object in `app.installations` under the installable
+name. The view is read-only and is intended for diagnostics and tooling; use
+the subsystem's normal API in handlers rather than treating it as a general
+service locator.
+
+## Idempotency and names
+
+`app.install()` is idempotent by name. A second install with the same name
+returns the service from the first call and does not add duplicate middleware
+or lifecycle handlers.
+
+```python
+first = app.install(Metrics("https://metrics.example"))
+second = app.install(Metrics("https://other.example"))
+
+assert first is second
+```
+
+Choose a package-qualified name for reusable third-party integrations, such as
+`"acme.metrics"`, to avoid colliding with another installable. Treat the first
+configuration as authoritative; if configuration must change, create a new app
+for the new configuration rather than relying on a repeated installation.
+
+## Request middleware
+
+An installable may add its own middleware when that middleware is intrinsic to
+the subsystem:
+
+```python
+class TenantStore:
+    name = "tenant_store"
+
+    def install(self, app: SilloApp) -> Store:
+        store = Store()
+        app.state[self.name] = store
+        app.use(store.bind_request)
+        return store
+```
+
+`app.use()` retains its normal ordering rules. Installables should document any
+ordering requirement they introduce. Do not hide unrelated application
+middleware inside an installable merely to shorten bootstrap code.
+
+## Built-in installables
+
+Sillo provides `Record`, `Mail`, `StorageInstallable`, `Work`, and `Scheduler`.
+The existing `setup_record`, `setup_mail`, `setup_storage`, `setup_work`, and
+`setup_scheduler` helpers remain available and use the same installation path,
+so applications can adopt the object form gradually.

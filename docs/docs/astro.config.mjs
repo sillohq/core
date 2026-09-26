@@ -348,6 +348,7 @@ const MANUAL_GROUPS = [
         items: [
             { label: 'Architectural Decisions', link: '/advanced/decisions/' },
             { label: 'Debugging Guide', link: '/advanced/debugging/' },
+            { label: 'Application Installables', link: '/advanced/installables/' },
             { label: 'Extending Sillo', link: '/advanced/extending/' },
             { label: 'Change Impact Analysis', link: '/advanced/change-impact/' },
             { label: 'Glossary', link: '/advanced/glossary/' },

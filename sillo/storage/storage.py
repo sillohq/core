@@ -19,7 +19,7 @@ from .drivers import LocalDriver, MemoryDriver
 from .policies import Private
 from .signing import Signer
 
-__all__ = ["Storage", "bucket", "setup_storage"]
+__all__ = ["Storage", "StorageInstallable", "bucket", "setup_storage"]
 
 logger = logging.getLogger("sillo.storage")
 
@@ -142,8 +142,32 @@ def _build(name: str, settings: BucketConfig, secret: str, route: str) -> Any:
     )
 
 
+class StorageInstallable:
+    """Install :class:`Storage` without changing Storage's service API."""
+
+    name = "storage"
+
+    def __init__(self, config: StorageConfig, *, secret: str = "") -> None:
+        self.config = config
+        self.secret = secret
+
+    def install(self, app: Any) -> Storage:
+        storage = Storage(self.config, secret=self.secret or _app_secret(app))
+        app.state[self.name] = storage
+        app.on_shutdown(storage.close)
+        register(storage)
+
+        if self.config.serve:
+            from .routes import mount
+
+            mount(app, storage, self.config)
+
+        logger.debug("storage ready — %s", storage)
+        return storage
+
+
 def setup_storage(app: Any, config: StorageConfig, *, secret: str = "") -> Storage:
-    """Wire storage into an application.
+    """Install :class:`StorageInstallable`; kept as the functional API.
 
     Puts the :class:`Storage` on ``app.state["storage"]``, mounts the serving
     route when one is wanted, and registers a shutdown hook.
@@ -157,21 +181,7 @@ def setup_storage(app: Any, config: StorageConfig, *, secret: str = "") -> Stora
     Returns:
         The storage.
     """
-    if "storage" in app.state:
-        return app.state["storage"]
-
-    storage = Storage(config, secret=secret or _app_secret(app))
-    app.state["storage"] = storage
-    app.on_shutdown(storage.close)
-    register(storage)
-
-    if config.serve:
-        from .routes import mount
-
-        mount(app, storage, config)
-
-    logger.debug("storage ready — %s", storage)
-    return storage
+    return app.install(StorageInstallable(config, secret=secret))
 
 
 def bucket(name: str = "") -> Bucket:

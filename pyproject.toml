@@ -218,11 +218,10 @@ relative_files = true
 
 [tool.coverage.report]
 show_missing = true
-# Measured 90.04% locally with the Redis tests skipped (no server); CI runs
-# them against a real Redis, so the real figure is higher. The floor is set at
-# the local number rather than below it: a floor with slack in it is a floor
-# that quietly absorbs the next uncovered module.
-fail_under = 90
+# The complete suite, including the Redis-backed paths exercised in CI, must
+# maintain at least 97% line coverage.  The workflow runs `coverage report`
+# explicitly so this setting is a real gate rather than dashboard metadata.
+fail_under = 97
 
 [tool.mypy]
 python_version = "3.13"

@@ -9,7 +9,7 @@ Features:
 """
 
 from .jobs import JobStatus, ScheduledJob
-from .manager import SchedulerManager, SchedulerStats, setup_scheduler
+from .manager import Scheduler, SchedulerManager, SchedulerStats, setup_scheduler
 from .triggers import (
     CompoundLogic,
     CompoundTrigger,
@@ -27,6 +27,7 @@ __all__ = [
     "IntervalTrigger",
     "JobStatus",
     "ScheduledJob",
+    "Scheduler",
     "SchedulerManager",
     "SchedulerStats",
     "TriggerType",

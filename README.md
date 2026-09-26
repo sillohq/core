@@ -102,6 +102,36 @@ packages that import into the `sillo` namespace:
 uv add sillo-graphql     # imports as sillo.graphql
 ```
 
+## Application setup
+
+Use `app.install(...)` for subsystems that own application state, request
+middleware or lifespan work.  It keeps the application's wiring together while
+leaving `app.use(...)` for explicitly ordered HTTP middleware and
+`app.on_startup(...)` for application-specific jobs:
+
+```python
+from sillo import SilloApp
+from sillo.mail import Mail, MailConfig
+from sillo.record import DatabaseConfig, Record
+from sillo.storage import StorageConfig, StorageInstallable
+from sillo.work import Work
+
+app = SilloApp()
+
+database = app.install(Record(DatabaseConfig.sqlite("app.db"), ("myapp.models",)))
+mail = app.install(Mail(MailConfig(suppress_send=False)))
+storage = app.install(StorageInstallable(StorageConfig()))
+work = app.install(Work())
+```
+
+An installable is idempotent per application name.  Its returned service is
+available through `app.installations` for diagnostics, and remains in its
+documented `app.state` location for framework integrations.  Existing
+`setup_record`, `setup_mail`, `setup_storage`, `setup_work` and
+`setup_scheduler` functions remain supported and delegate to the same path.
+See [Application Installables](https://docs.sillo.build/v1.0/advanced/installables/)
+to build a subsystem of your own.
+
 ## Hello World
 
 A handler takes one argument — the context — plus any path parameters,

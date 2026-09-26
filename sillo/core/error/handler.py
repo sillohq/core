@@ -1638,7 +1638,6 @@ class ServerErrorMiddleware:
 
         # Generate traceback HTML
         exc_html = ""
-        is_collapsed = False
         exc_traceback = exc.__traceback__
         if exc_traceback is not None:
             frames = inspect.getinnerframes(exc_traceback, limit)

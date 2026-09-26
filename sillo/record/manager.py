@@ -295,6 +295,37 @@ class DatabaseManager:
         }
 
 
+class Record:
+    """Install Sillo Record and manage its database lifecycle.
+
+    ``Record`` is the declarative counterpart to :func:`setup_record`.  It
+    owns the same state, request context middleware and lifespan hooks, but
+    can now sit alongside other subsystems in one application bootstrap.
+    """
+
+    name = "record"
+
+    def __init__(
+        self, config: DatabaseConfig, model_modules: tuple[str, ...] = ()
+    ) -> None:
+        self.config = config
+        self.model_modules = model_modules
+
+    def install(self, app) -> DatabaseManager:
+        """Build the manager and register the work it needs from *app*."""
+
+        manager = DatabaseManager(self.config)
+        if self.model_modules:
+            manager.register_models(*self.model_modules)
+        app.state[self.name] = manager
+        # Context middleware must wrap requests; database connection opening
+        # itself belongs to lifespan, where failed startup reaches the server.
+        app.use(manager.ensure_context)
+        app.on_startup(manager.init)
+        app.on_shutdown(manager.shutdown)
+        return manager
+
+
 def setup_record(
     app,
     config: Annotated[DatabaseConfig, Doc("Database configuration.")],
@@ -303,7 +334,7 @@ def setup_record(
         list[str] | None, Doc("List of dotted model module paths.")
     ] = None,
 ) -> DatabaseManager:
-    """Wire database lifecycle into a sillo application.
+    """Install :class:`Record`; kept as the compatible functional API.
 
     Stores the manager in ``app.state["record"]`` and registers
     startup/shutdown hooks.
@@ -317,14 +348,4 @@ def setup_record(
         db = setup_record(app, DatabaseConfig.sqlite("myapp.db"),
                           model_modules=["myapp.models"])
     """
-    if "record" in app.state:
-        return app.state["record"]
-
-    manager = DatabaseManager(config)
-    if model_modules:
-        manager.register_models(*model_modules)
-    app.state["record"] = manager
-    app.use(manager.ensure_context)
-    app.on_startup(manager.init)
-    app.on_shutdown(manager.shutdown)
-    return manager
+    return app.install(Record(config, tuple(model_modules or ())))

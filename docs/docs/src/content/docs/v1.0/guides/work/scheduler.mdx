@@ -12,7 +12,7 @@ head:
       content: "Time-based execution: interval and cron triggers, the one-second tick, job lifecycle and overlap control, and the multi-process problem that makes nightly jobs run four times."
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
 
 #  Scheduler (`sillo.work.scheduler`)
 
@@ -39,6 +39,18 @@ immediately. Resolution is 1 second.
 
 ##  Setup
 
+<Tabs syncKey="setup-style">
+<TabItem label="Installable">
+```python
+from sillo import SilloApp
+from sillo.work.scheduler import Scheduler
+
+app = SilloApp()
+scheduler = app.install(Scheduler())
+# Auto-starts on app startup. Stores in app.state["scheduler"]
+```
+</TabItem>
+<TabItem label="setup_*() (compatible)">
 ```python
 from sillo import SilloApp
 from sillo.work.scheduler import setup_scheduler
@@ -47,6 +59,8 @@ app = SilloApp()
 scheduler = setup_scheduler(app)
 # Auto-starts on app startup. Stores in app.state["scheduler"]
 ```
+</TabItem>
+</Tabs>
 
 ---
 

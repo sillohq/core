@@ -12,7 +12,7 @@ head:
       content: "Choosing between background tasks, the queue, and the scheduler: durability guarantees, what setup_work actually wires up, and how the pieces fit together."
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
 
 #  Work (`sillo.work`)
 
@@ -73,6 +73,17 @@ skip those accounts until tomorrow.
 
 ##  Setting it up
 
+<Tabs syncKey="setup-style">
+<TabItem label="Installable">
+```python title="wiring the work subsystem"
+from sillo import SilloApp
+from sillo.work import Work
+
+app = SilloApp()
+work = app.install(Work())
+```
+</TabItem>
+<TabItem label="setup_*() (compatible)">
 ```python title="wiring the work subsystem"
 from sillo import SilloApp
 from sillo.work import setup_work
@@ -80,6 +91,8 @@ from sillo.work import setup_work
 app = SilloApp()
 work = setup_work(app)
 ```
+</TabItem>
+</Tabs>
 
 `setup_work` populates `app.state` and registers lifecycle hooks:
 
