@@ -12,7 +12,7 @@
  * version back off the URL). Keeping the list here rather than in the config
  * is what stops the three from disagreeing about which versions exist.
  *
- * The theme docs under `/showcase/` and `/reference/` are deliberately not
+ * The theme docs under `/showcase/` are deliberately not
  * versioned: they document lucode-starlight, not Sillo, and there is one of
  * them. Neither are the package manuals under `/packages/` — see PACKAGES
  * below for why.
