@@ -129,6 +129,8 @@ available through `app.installations` for diagnostics, and remains in its
 documented `app.state` location for framework integrations.  Existing
 `setup_record`, `setup_mail`, `setup_storage`, `setup_work` and
 `setup_scheduler` functions remain supported and delegate to the same path.
+See [Application Installables](https://docs.sillo.build/v1.0/advanced/installables/)
+to build a subsystem of your own.
 
 ## Hello World
 
