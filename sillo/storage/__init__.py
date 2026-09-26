@@ -49,7 +49,7 @@ from .errors import (
 from .paths import normalise
 from .policies import Owned, Private, Public, ReadOnly, Signed
 from .signing import SignedGrant, Signer
-from .storage import Storage, bucket, setup_storage
+from .storage import Storage, StorageInstallable, bucket, setup_storage
 from .uploads import stream_upload
 
 __all__ = [
@@ -76,6 +76,7 @@ __all__ = [
     "StorageConfig",
     "StorageError",
     "StorageEvent",
+    "StorageInstallable",
     "Stored",
     "UnsafeKey",
     "bucket",
