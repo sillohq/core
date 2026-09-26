@@ -32,7 +32,7 @@ from typing import Any, ClassVar
 
 from sillo.env import autoload
 
-from .console import Argument, Command, Console, Option
+from .console import Argument, Command, Console, Flag, Option
 
 __all__ = ["build_console", "discover_application", "main"]
 
@@ -348,8 +348,46 @@ class Routes(Command):
         return getattr(handler, "__name__", "") if handler else ""
 
 
+class Dev(Command):
+    """Start Sillo's local development server."""
+
+    name = "dev"
+    help = "Run the application locally with Sillo request logs"
+    arguments: ClassVar[list] = [
+        Argument("app", default=None, help="Import string. Defaults to the app found"),
+        Option("host", default="127.0.0.1", help="Interface to bind"),
+        Option("port", default=8000, type=int, help="Port to bind"),
+        Flag("reload", default=True, help="Restart when Python files change"),
+        Option(
+            "reload-dir",
+            type=Path,
+            multiple=True,
+            help="Directory to watch; may be repeated",
+        ),
+    ]
+
+    def handle(self) -> int:
+        target = self.argument("app") or discover_application_string()
+        if target is None:
+            self.fail(
+                "No application found. Name one as an argument, set "
+                f"{APP_VARIABLE}, or add [tool.sillo] app to pyproject.toml."
+            )
+
+        from .dev import DevReporter, run_dev
+
+        return run_dev(
+            target,
+            host=self.option("host"),
+            port=self.option("port"),
+            reload=self.flag("reload"),
+            reload_dirs=self.option("reload-dir"),
+            reporter=DevReporter(self.output),
+        )
+
+
 #: The commands that need no project.
-COMMANDS = [Version, Routes]
+COMMANDS = [Version, Routes, Dev]
 
 
 # -- assembling ---------------------------------------------------------

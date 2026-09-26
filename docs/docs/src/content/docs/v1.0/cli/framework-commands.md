@@ -12,7 +12,7 @@ head:
       content: version and routes, the commands available with or without a project.
 ---
 
-Two commands need no project. They are registered before discovery runs, so
+Three commands need no project. They are registered before discovery runs, so
 they work in an empty directory and survive an application that fails to
 import.
 
@@ -95,3 +95,30 @@ out.
 Paths are printed as declared, converters included, so
 `/api/posts/{id:int}` appears with its converter rather than as a resolved
 example. That is the pattern you would grep the codebase for.
+
+## `sillo dev`
+
+```bash
+sillo dev
+sillo dev app.worker:app --port 9000
+sillo dev --host 0.0.0.0 --reload-dir src
+sillo dev --no-reload
+```
+
+Starts a local development server at `http://127.0.0.1:8000`. It finds the
+application using the same rules as every other Sillo command, watches the
+current project directory for Python changes, and reloads by default. The
+server owns the terminal experience: startup links and each completed response
+use Sillo's compact log format rather than Uvicorn's access logger.
+
+| Parameter | Kind | Default | Meaning |
+| --- | --- | --- | --- |
+| `app` | argument | discovered | Import string for the application |
+| `--host` | option | `127.0.0.1` | Interface to bind |
+| `--port` | option | `8000` | Port to bind |
+| `--no-reload` | flag | reload on | Do not restart on source changes |
+| `--reload-dir` | option | current directory | A directory to watch; may be repeated |
+
+`sillo dev` is for local development. For a production deployment, run your
+chosen ASGI server directly and choose its workers, proxy settings, and process
+supervision deliberately.
