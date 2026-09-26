@@ -49,7 +49,10 @@ EXTRAS = {
     "record": "tortoise",
     "cache": "redis",
     "mail": "jinja2",
-    "graphql": "strawberry",
+    # GraphQL is a separate distribution and exposes this namespace when it
+    # is installed. Checking strawberry made `sillo version` report a feature
+    # that core no longer installs directly.
+    "graphql": "sillo.graphql",
     "bcrypt": "bcrypt",
     "argon2": "argon2",
 }
@@ -63,6 +66,22 @@ def _ensure_cwd_importable() -> None:
     """
     if str(Path.cwd()) not in sys.path:
         sys.path.insert(0, str(Path.cwd()))
+
+
+def _project_root() -> Path:
+    """Return the nearest directory containing ``pyproject.toml``."""
+    current = Path.cwd().resolve()
+    for directory in (current, *current.parents):
+        if (directory / "pyproject.toml").is_file():
+            return directory
+    return current
+
+
+def _ensure_project_importable() -> None:
+    """Put the discovered project root on ``sys.path`` before importing it."""
+    root = str(_project_root())
+    if root not in sys.path:
+        sys.path.insert(0, root)
 
 
 def _import_string(target: str) -> Any:
@@ -83,7 +102,7 @@ def _import_string(target: str) -> Any:
         )
 
     module_name, _, attribute = target.partition(":")
-    _ensure_cwd_importable()
+    _ensure_project_importable()
 
     from importlib import import_module
 
@@ -108,7 +127,7 @@ def _configured_app() -> str | None:
     if from_environment:
         return from_environment
 
-    config = Path.cwd() / "pyproject.toml"
+    config = _project_root() / "pyproject.toml"
     if not config.is_file():
         return None
 
@@ -117,18 +136,19 @@ def _configured_app() -> str | None:
     except OSError:
         return None
 
-    in_sillo = False
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("[") and stripped.endswith("]"):
-            in_sillo = stripped == "[tool.sillo]"
-            continue
-        if in_sillo and stripped.startswith("app = "):
-            value = stripped[len("app = ") :].strip()
-            if value.startswith('"') and value.endswith('"'):
-                return value[1:-1]
-            if value.startswith("'") and value.endswith("'"):
-                return value[1:-1]
+    try:
+        try:
+            import tomllib
+        except ModuleNotFoundError:  # Python 3.10
+            import tomli as tomllib  # type: ignore[no-redef]
+
+        document = tomllib.loads(text)
+    except (ModuleNotFoundError, OSError, ValueError):
+        return None
+
+    value = document.get("tool", {}).get("sillo", {}).get("app")
+    if isinstance(value, str) and value:
+        return value
     return None
 
 
@@ -148,7 +168,7 @@ def discover_application_string() -> str | None:
     if configured:
         return configured
 
-    _ensure_cwd_importable()
+    _ensure_project_importable()
     for candidate in DEFAULT_APPS:
         try:
             _import_string(candidate)
@@ -174,7 +194,7 @@ def discover_application() -> tuple[Any, str | None]:
         except ValueError as error:
             return None, f"{configured} could not be loaded: {error}"
 
-    _ensure_cwd_importable()
+    _ensure_project_importable()
     for candidate in DEFAULT_APPS:
         try:
             return _import_string(candidate), None
@@ -222,7 +242,8 @@ class Version(Command):
         """
         from importlib.util import find_spec
 
-        present, absent = [], []
+        present: list[str] = []
+        absent: list[str] = []
         for name, module in EXTRAS.items():
             try:
                 found = find_spec(module) is not None

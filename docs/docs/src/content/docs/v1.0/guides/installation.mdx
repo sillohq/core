@@ -102,31 +102,12 @@ as written.
 
 ## Add a development server
 
-Sillo is ASGI-based, so it needs a server. `uvicorn` is the usual choice:
+Sillo includes Uvicorn. No additional server package is needed; use the
+framework command so discovery, reload, and development logs are consistent:
 
-<Tabs syncKey="pkg">
-  <TabItem label="uv (recommended)">
-
-    ```bash
-    uv add uvicorn
-    ```
-
-  </TabItem>
-  <TabItem label="Poetry">
-
-    ```bash
-    poetry add uvicorn
-    ```
-
-  </TabItem>
-  <TabItem label="venv + pip">
-
-    ```bash
-    pip install uvicorn
-    ```
-
-  </TabItem>
-</Tabs>
+```bash
+sillo dev
+```
 
 ## Create your first app
 
@@ -146,7 +127,7 @@ async def home(ctx: HttpContext):
 Run it:
 
 ```bash
-uvicorn main:app --reload
+sillo dev
 ```
 
 Open:

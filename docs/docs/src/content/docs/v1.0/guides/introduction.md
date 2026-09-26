@@ -301,7 +301,7 @@ async def index(ctx: HttpContext):
 ```
 
 ```bash
-uvicorn main:app --reload
+sillo dev
 ```
 
 That is a complete ASGI application. Everything else in these guides

@@ -172,23 +172,25 @@ async def old(ctx: HttpContext):
 importable from `sillo` directly. There is no `response` object to thread
 through your call stack.
 
-Run it with uvicorn:
+Run the local development server with Sillo:
 
 ```bash
-uv run uvicorn app:app --reload
+sillo dev
 ```
 
-No import string is needed. `uvicorn` looks for `app.main:app`, `main:app`
+No import string is needed. `sillo dev` looks for `app.main:app`, `main:app`
 and `app:app`, and you can pin it with the `SILLO_APP` environment variable or
 a `[tool.sillo] app` entry in `pyproject.toml`. Pass one explicitly when you
 want something else:
 
 ```bash
-uv run uvicorn api.main:app --port 9000 --workers 4
+sillo dev api.main:app --port 9000
 ```
 
-`uvicorn` is built for development. For production, run the application
-under a process supervisor with a reverse proxy in front of it.
+Sillo uses Uvicorn as the development transport but owns discovery, reload,
+startup links, and request logs. Direct Uvicorn invocation remains supported
+for custom server deployments; for production, run the application under a
+process supervisor with a reverse proxy in front of it.
 
 ## Request Validation
 

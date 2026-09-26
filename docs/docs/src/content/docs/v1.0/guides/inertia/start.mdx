@@ -72,7 +72,7 @@ This page covers what is different.
 This is the part that catches everyone once.
 
 ```bash
-uvicorn app:app --reload     # the application, on :8000
+sillo dev                    # the application, on :8000
 npm run dev              # the Vite dev server, on :5173 — second terminal
 ```
 
@@ -99,7 +99,7 @@ Everything the project does is either the `sillo` command or an npm script.
 
 | | |
 | --- | --- |
-| `uvicorn app:app --reload` | The application, with reload. Needs `npm run dev` alongside |
+| `sillo dev` | The application, with reload. Needs `npm run dev` alongside |
 | `npm run dev` | The Vite dev server |
 | `sillo db:migrate` | Apply every pending migration |
 | `sillo db:make add_posts --apply` | Write a migration and apply it |

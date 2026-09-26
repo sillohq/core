@@ -1068,8 +1068,8 @@ class Router(BaseRouter):
 
         Constructs the full middleware chain by wrapping the provided ASGI
         application with all middleware components registered on this router.
-        Middleware is applied in reverse order so that the first middleware
-        added via ``use`` is the outermost wrapper in the call chain.
+        Middleware is applied in reverse order so that the most recently
+        added middleware is the outermost wrapper in the call chain.
 
         This method is called during request dispatch to ensure that all
         router-level middleware is properly applied before the request

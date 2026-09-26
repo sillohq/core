@@ -74,9 +74,9 @@ class BaseRouter(ABC):
         """Build the middleware stack for the given ASGI application.
 
         Constructs the full middleware chain by wrapping the provided ASGI
-        application with all registered middleware components. The middleware
-        is applied in reverse order so that the first middleware added is the
-        outermost wrapper in the call chain.
+        application with all registered middleware components. Middleware
+        registered later through ``use`` is the outermost wrapper and sees the
+        request first; this matches the application-level middleware contract.
 
         This method is typically called during request dispatch to ensure
         that all middleware is properly applied before the request reaches

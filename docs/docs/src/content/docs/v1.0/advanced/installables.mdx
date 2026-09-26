@@ -96,4 +96,6 @@ middleware inside an installable merely to shorten bootstrap code.
 Sillo provides `Record`, `Mail`, `StorageInstallable`, `Work`, and `Scheduler`.
 The existing `setup_record`, `setup_mail`, `setup_storage`, `setup_work`, and
 `setup_scheduler` helpers remain available and use the same installation path,
-so applications can adopt the object form gradually.
+so applications can adopt the object form gradually. New integrations should
+expose an `Installable` first; a `setup_*` helper is only a compatibility
+wrapper for projects using the older bootstrap style.
