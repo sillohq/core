@@ -8,8 +8,7 @@ actually deploy.
 
 from __future__ import annotations
 
-from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import HttpContext, SilloApp, json, text
 
 from sillo_bench.payloads import PLAINTEXT, ROWS_RESPONSE, SMALL_JSON
 
@@ -25,21 +24,21 @@ def create_app() -> SilloApp:
     app = SilloApp(debug=False, title="sillo-bench")
 
     @app.get("/plaintext")
-    async def plaintext(request: Request, response: Response):
-        return response.text(PLAINTEXT)
+    async def plaintext(ctx: HttpContext):
+        return text(PLAINTEXT)
 
     @app.get("/json")
-    async def json_small(request: Request, response: Response):
-        return response.json(SMALL_JSON)
+    async def json_small(ctx: HttpContext):
+        return json(SMALL_JSON)
 
     @app.get("/items/{item_id:int}")
-    async def item(request: Request, response: Response, item_id: int):
-        return response.json({"id": item_id})
+    async def item(ctx: HttpContext, item_id: int):
+        return json({"id": item_id})
 
     @app.get("/search")
-    async def search(request: Request, response: Response):
-        params = request.query_params
-        return response.json(
+    async def search(ctx: HttpContext):
+        params = ctx.query_params
+        return json(
             {
                 "q": params.get("q", ""),
                 "page": int(params.get("page", 1)),
@@ -48,8 +47,8 @@ def create_app() -> SilloApp:
         )
 
     @app.get("/rows")
-    async def rows(request: Request, response: Response):
-        return response.json(ROWS_RESPONSE)
+    async def rows(ctx: HttpContext):
+        return json(ROWS_RESPONSE)
 
     return app
 
