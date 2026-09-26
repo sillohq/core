@@ -101,7 +101,7 @@ def test_the_framework_commands_are_always_available(elsewhere):
     console, warning = build_console()
 
     assert warning is None
-    assert {"version", "routes"} <= set(console.commands)
+    assert {"version", "routes", "dev"} <= set(console.commands)
 
 
 def test_creating_a_project_is_not_one_of_them(elsewhere):
@@ -841,6 +841,61 @@ def test_the_string_is_a_candidate_rather_than_the_first_one(elsewhere, monkeypa
 
     assert found in DEFAULT_APPS
     assert _import_string(found) is not None
+
+
+# -- the development server -------------------------------------------
+
+
+def test_dev_hands_the_discovered_import_string_to_the_server(elsewhere, monkeypatch):
+    """Reload needs a string, rather than the application loaded for the CLI."""
+    write_app(elsewhere, PLAIN_APP)
+    monkeypatch.syspath_prepend(str(elsewhere))
+    received = {}
+
+    def fake_run(target, **options):
+        received["target"] = target
+        received.update(options)
+        return 0
+
+    monkeypatch.setattr("sillo.dev.run_dev", fake_run)
+    console, _ = build_console()
+
+    code, _ = run(console, ["dev", "--port", "9000", "--no-reload"])
+
+    assert code == 0
+    assert received["target"] == "main:app"
+    assert received["host"] == "127.0.0.1"
+    assert received["port"] == 9000
+    assert received["reload"] is False
+    assert received["reload_dirs"] == []
+
+
+def test_dev_accepts_a_target_and_directories_to_watch(elsewhere, monkeypatch):
+    received = {}
+    monkeypatch.setattr(
+        "sillo.dev.run_dev",
+        lambda target, **options: received.update(target=target, **options) or 0,
+    )
+    console, _ = build_console()
+
+    code, _ = run(
+        console,
+        ["dev", "worker:app", "--reload-dir", "src", "--reload-dir", "shared"],
+    )
+
+    assert code == 0
+    assert received["target"] == "worker:app"
+    assert received["reload"] is True
+    assert received["reload_dirs"] == [Path("src"), Path("shared")]
+
+
+def test_dev_explains_how_to_find_an_application(elsewhere):
+    console, _ = build_console()
+
+    code, written = run(console, ["dev"])
+
+    assert code == 1
+    assert "No application found" in written
 
 
 def test_an_explicit_configuration_wins(elsewhere, monkeypatch):
