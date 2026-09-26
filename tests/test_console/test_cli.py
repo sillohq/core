@@ -73,7 +73,7 @@ def write_app(directory, body: str, name: str = "main.py") -> None:
 
 
 PLAIN_APP = """
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
 
     app = SilloApp(title="Plain")
 
@@ -195,6 +195,25 @@ def test_pyproject_points_at_one(elsewhere, monkeypatch):
     assert application is not None
 
 
+def test_pyproject_and_imports_are_found_from_a_nested_directory(
+    elsewhere, monkeypatch
+):
+    """The CLI should work when launched below the project root."""
+    write_app(elsewhere, PLAIN_APP, name="configured.py")
+    (elsewhere / "pyproject.toml").write_text(
+        '[tool.sillo]\napp = "configured:app"\n'
+    )
+    nested = elsewhere / "src" / "feature"
+    nested.mkdir(parents=True)
+    monkeypatch.chdir(nested)
+
+    assert _configured_app() == "configured:app"
+    application, problem = discover_application()
+
+    assert problem is None
+    assert application is not None
+
+
 def test_the_environment_variable_wins_over_pyproject(elsewhere, monkeypatch):
     (elsewhere / "pyproject.toml").write_text('[tool.sillo]\napp = "from_file:app"\n')
     monkeypatch.setenv(APP_VARIABLE, "from_env:app")
@@ -238,7 +257,7 @@ def test_a_broken_application_leaves_the_framework_commands(elsewhere, monkeypat
 
 
 DATABASE_APP = """
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
     from sillo.record import DatabaseConfig, setup_record
 
     app = SilloApp(title="With database")
@@ -287,7 +306,7 @@ def test_the_queue_commands_are_offered_regardless(elsewhere, monkeypatch):
 
 
 SCHEDULER_APP = """
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
     from sillo.work.scheduler import setup_scheduler
 
     app = SilloApp()
@@ -353,7 +372,7 @@ def test_the_user_model_comes_from_the_application(elsewhere, monkeypatch):
 
 
 REGISTERED_APP = """
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
     from sillo.console import Argument, Command
 
     app = SilloApp()
@@ -451,7 +470,7 @@ def test_a_projects_name_wins_over_a_bundled_one(elsewhere, monkeypatch):
 
 
 def test_add_command_returns_the_class_so_it_can_decorate():
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
 
     app = SilloApp()
 
@@ -466,7 +485,7 @@ def test_add_command_returns_the_class_so_it_can_decorate():
 
 
 def test_a_command_without_a_name_is_refused():
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
 
     app = SilloApp()
 
@@ -478,7 +497,7 @@ def test_a_command_without_a_name_is_refused():
 
 
 def test_registering_the_same_name_twice_is_refused():
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
 
     app = SilloApp()
 
@@ -494,7 +513,7 @@ def test_registering_the_same_name_twice_is_refused():
 
 
 def test_the_decorator_builds_a_command_from_a_function():
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
 
     app = SilloApp()
 
@@ -508,7 +527,7 @@ def test_the_decorator_builds_a_command_from_a_function():
 
 
 def test_a_fresh_application_has_no_commands():
-    from sillo import SilloApp, HttpContext
+    from sillo import HttpContext, SilloApp
 
     assert SilloApp().commands == []
 

@@ -207,9 +207,10 @@ graph TB
     end
 ```
 
-**Key insight:** middleware added *first* via `app.use()` runs *outermost*
-(sees request first, response last). This is because `app.use()` inserts at
-position 0 of the middleware list, and chain construction iterates in reverse.
+**Key insight:** middleware added *last* via `app.use()` runs *outermost*
+(sees the request first, response last). Sillo inserts new middleware at
+position 0 and then builds the chain in reverse. Therefore, if you need `A`
+to run before `B`, register `B` first and `A` second.
 See §5.
 
 ---
@@ -1133,9 +1134,9 @@ rather than trying to construct a second one from it.
 
 ### 13.1 Inside-Out Insertion
 
-Inserting at position 0 means the most recently added middleware is the **outermost**
-layer. Combined with reverse iteration during chain construction (§5), this produces
-the intuitive "first added = first to execute" ordering.
+Inserting at position 0 means the most recently added middleware is the
+**outermost** layer. The request therefore enters middleware in reverse
+registration order.
 
 ```python
 app.use(A)  # http_middleware = [Bridge(A)]

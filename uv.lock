@@ -371,18 +371,6 @@ wheels = [
 ]
 
 [[package]]
-name = "cross-web"
-version = "0.7.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4a/a0/bdb8370215987cc5bde497cb8b976b17ab14841566ecef2aab6ae3e6c7b0/cross_web-0.7.0.tar.gz", hash = "sha256:15fbc8b9a824a055db8127fd6e43e0773074f620fdecb6b2b587d3d0a2bdd459", size = 332407, upload-time = "2026-05-19T14:18:48.849Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/4a/78b52ec2edcbd9b123638f4e0421fd8699ebe653ebf63ac5f82abd2665bc/cross_web-0.7.0-py3-none-any.whl", hash = "sha256:ddea9be3c68b48eaf16561847a5831a559786949c544b3701432e00a4e8d19d9", size = 25207, upload-time = "2026-05-19T14:18:47.614Z" },
-]
-
-[[package]]
 name = "cryptography"
 version = "49.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -565,15 +553,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9d/69/5906951d5961ccdda12544a722933d629b010fb7f59dce12e318be034cc8/granian-2.3.4-pp311-pypy311_pp73-musllinux_1_1_armv7l.whl", hash = "sha256:6d2032a331e833d3291597dcd7e926c4563b6fab110877d84aeadeed70ee0d23", size = 3512309, upload-time = "2025-06-14T13:10:20.087Z" },
     { url = "https://files.pythonhosted.org/packages/51/cd/502d8029384c49c21fe7738fa4d8b0c18b64584336023fbf2d3c5484c01d/granian-2.3.4-pp311-pypy311_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:89c44de0fbe705191107c8a87f9fb66af5be8125a82b6736af72ef81e2f991d6", size = 3275569, upload-time = "2025-06-14T13:10:21.431Z" },
     { url = "https://files.pythonhosted.org/packages/7d/06/2939db770247ba0b985f98b57ce587f74ec08cca688c4a80f5b8c71ac903/granian-2.3.4-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:ec793853e6dec77429ca551ce3028768225f93b569a9cda54bec9929797afb4a", size = 2787744, upload-time = "2025-06-14T13:10:23.203Z" },
-]
-
-[[package]]
-name = "graphql-core"
-version = "3.2.11"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4d/90/f2aff026ab4aebd80eb71905106a0885f4cfde85dcf965543f45bed0d9ee/graphql_core-3.2.11.tar.gz", hash = "sha256:e7e156d10beb127cab5c89ff0da71416fc73d27c484a4757d3b2d35633774802", size = 528407, upload-time = "2026-06-05T13:45:22.915Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/15/b92b4e1d88d02c6eff9733c9eea21846ab435cc4d813d84ccc5d335955df/graphql_core-3.2.11-py3-none-any.whl", hash = "sha256:0b3e35ff41e9adba53021ab0cef475eb18f57c7f53f0f2ca55567fbf3c537ea0", size = 214879, upload-time = "2026-06-05T13:45:21.245Z" },
 ]
 
 [[package]]
@@ -1045,18 +1024,6 @@ wheels = [
 ]
 
 [[package]]
-name = "python-dateutil"
-version = "2.9.0.post0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
-]
-
-[[package]]
 name = "python-multipart"
 version = "0.0.20"
 source = { registry = "https://pypi.org/simple" }
@@ -1147,12 +1114,13 @@ wheels = [
 
 [[package]]
 name = "sillo-framework"
-version = "0.3.1"
+version = "1.0.0rc1"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
     { name = "pydantic" },
     { name = "python-multipart" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
     { name = "uvicorn" },
 ]
@@ -1170,7 +1138,6 @@ all = [
     { name = "python-ulid" },
     { name = "redis" },
     { name = "scrypt" },
-    { name = "strawberry-graphql" },
     { name = "tortoise-orm" },
 ]
 cache = [
@@ -1191,6 +1158,7 @@ dev = [
     { name = "httpx" },
     { name = "jinja2" },
     { name = "mypy" },
+    { name = "passlib" },
     { name = "pyjwt" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1198,7 +1166,6 @@ dev = [
     { name = "redis" },
     { name = "ruff" },
     { name = "scrypt" },
-    { name = "strawberry-graphql" },
     { name = "tortoise-orm" },
     { name = "ty" },
     { name = "typing-extensions" },
@@ -1208,9 +1175,6 @@ events = [
 ]
 granian = [
     { name = "granian" },
-]
-graphql = [
-    { name = "strawberry-graphql" },
 ]
 hashing-all = [
     { name = "argon2-cffi" },
@@ -1230,14 +1194,17 @@ hashing-scrypt = [
 jwt = [
     { name = "pyjwt" },
 ]
+mail = [
+    { name = "jinja2" },
+]
 record = [
     { name = "tortoise-orm" },
 ]
 storage-s3 = [
     { name = "httpx" },
 ]
-templating = [
-    { name = "jinja2" },
+test = [
+    { name = "httpx" },
 ]
 
 [package.dev-dependencies]
@@ -1259,7 +1226,6 @@ dev = [
     { name = "redis" },
     { name = "ruff" },
     { name = "scrypt" },
-    { name = "strawberry-graphql" },
     { name = "tortoise-orm" },
     { name = "ty" },
     { name = "typing-extensions" },
@@ -1289,11 +1255,13 @@ requires-dist = [
     { name = "granian", marker = "extra == 'granian'", specifier = ">=1.2.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.23.3,<0.29.0" },
     { name = "httpx", marker = "extra == 'storage-s3'", specifier = ">=0.23.3" },
+    { name = "httpx", marker = "extra == 'test'", specifier = ">=0.23.3,<0.29.0" },
     { name = "jinja2", marker = "extra == 'all'", specifier = ">=3.1.6" },
     { name = "jinja2", marker = "extra == 'dev'", specifier = ">=3.1.6" },
-    { name = "jinja2", marker = "extra == 'templating'", specifier = ">=3.1.6" },
+    { name = "jinja2", marker = "extra == 'mail'", specifier = ">=3.1.6" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15.0" },
     { name = "passlib", marker = "extra == 'all'", specifier = ">=1.7.4" },
+    { name = "passlib", marker = "extra == 'dev'", specifier = ">=1.7.4" },
     { name = "passlib", marker = "extra == 'hashing-all'", specifier = ">=1.7.4" },
     { name = "pydantic", specifier = ">=2.0,<3.0" },
     { name = "pyjwt", marker = "extra == 'all'", specifier = ">=2.7.0" },
@@ -1313,9 +1281,7 @@ requires-dist = [
     { name = "scrypt", marker = "extra == 'dev'", specifier = ">=0.8.0" },
     { name = "scrypt", marker = "extra == 'hashing-all'", specifier = ">=0.8.0" },
     { name = "scrypt", marker = "extra == 'hashing-scrypt'", specifier = ">=0.8.0" },
-    { name = "strawberry-graphql", marker = "extra == 'all'", specifier = ">=0.219.0" },
-    { name = "strawberry-graphql", marker = "extra == 'dev'", specifier = ">=0.219.0" },
-    { name = "strawberry-graphql", marker = "extra == 'graphql'", specifier = ">=0.219.0" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.1" },
     { name = "tortoise-orm", marker = "extra == 'all'", specifier = ">=1.0" },
     { name = "tortoise-orm", marker = "extra == 'dev'", specifier = ">=1.0" },
     { name = "tortoise-orm", marker = "extra == 'record'", specifier = ">=1.0" },
@@ -1324,7 +1290,7 @@ requires-dist = [
     { name = "typing-extensions", marker = "extra == 'dev'", specifier = "==4.16.0" },
     { name = "uvicorn", specifier = ">=0.27.0" },
 ]
-provides-extras = ["jwt", "record", "crypto", "hashing-bcrypt", "hashing-argon2", "hashing-scrypt", "hashing-all", "cache", "storage-s3", "events", "templating", "graphql", "granian", "all", "dev"]
+provides-extras = ["test", "jwt", "record", "crypto", "hashing-bcrypt", "hashing-argon2", "hashing-scrypt", "hashing-all", "cache", "storage-s3", "events", "mail", "granian", "all", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1345,19 +1311,9 @@ dev = [
     { name = "redis", specifier = ">=5.0.0" },
     { name = "ruff", specifier = ">=0.16.0,<0.17" },
     { name = "scrypt", specifier = ">=0.8.0" },
-    { name = "strawberry-graphql", specifier = ">=0.219.0" },
     { name = "tortoise-orm", specifier = ">=1.0" },
     { name = "ty", specifier = ">=0.0.63,<0.1" },
     { name = "typing-extensions", specifier = ">=4.12.2" },
-]
-
-[[package]]
-name = "six"
-version = "1.17.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
 ]
 
 [[package]]
@@ -1367,22 +1323,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e8/c4/ba2f8066cceb6f23394729afe52f3bf7adec04bf9ed2c820b39e19299111/sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88", size = 30594, upload-time = "2021-05-16T22:03:42.897Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/32/46/9cb0e58b2deb7f82b84065f37f3bffeb12413f947f9388e4cac22c4621ce/sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0", size = 29575, upload-time = "2021-05-16T22:03:41.177Z" },
-]
-
-[[package]]
-name = "strawberry-graphql"
-version = "0.322.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cross-web" },
-    { name = "graphql-core" },
-    { name = "packaging" },
-    { name = "python-dateutil" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/47/45/0036c5be11d5a66bcaddc242d6c7255270edf8646ff14e330a205a49307c/strawberry_graphql-0.322.0.tar.gz", hash = "sha256:48b33ce1253c29da1bb6778ea7688f849d03822c8919ac5668cd1980e64384c3", size = 233437, upload-time = "2026-07-18T10:36:12.866Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/6f/7996d66a0afdcfda3f68787a3a77f9bc3ed0e503664b0e7302ffcf09a980/strawberry_graphql-0.322.0-py3-none-any.whl", hash = "sha256:601c0bfb49099b55325bc2f4298bd88860ebaa0af6134ffdf342a129c382626d", size = 336881, upload-time = "2026-07-18T10:36:11.198Z" },
 ]
 
 [[package]]

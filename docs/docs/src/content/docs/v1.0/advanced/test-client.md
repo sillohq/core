@@ -87,6 +87,12 @@ sequenceDiagram
 
 ## 2. TestClient
 
+Install the optional client dependency when using a production Sillo install:
+
+```bash
+uv add "sillo-framework[test]"
+```
+
 **File:** `core/sillo/testclient/base.py`, line 49
 
 ```python

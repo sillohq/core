@@ -66,7 +66,7 @@ The directory served must be the `assets` folder **inside** the build output,
 not the output itself. Mount one level up and every script 404s against a
 manifest that is perfectly correct.
 
-The mount is skipped when nothing is built, so `pytest` and `uvicorn app:app --reload` do
+The mount is skipped when nothing is built, so `pytest` and `sillo dev` do
 not require `npm run build` first.
 
 In production, put nginx or Caddy in front and let it serve
