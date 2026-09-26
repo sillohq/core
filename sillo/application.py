@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Iterator, Sequence
+from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
+from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -62,6 +63,7 @@ if TYPE_CHECKING:
     from sillo.auth.backend import AuthenticationBackend
     from sillo.console import Command
     from sillo.core.http import HttpContext
+    from sillo.installables import Installable
     from sillo.users import BaseUser
 
 import json
@@ -493,6 +495,11 @@ class SilloApp:
         self.lifespan_context: lifespan_manager | None = lifespan
         self.state: dict[str, Any] = {}
 
+        # ``state`` remains the service's runtime home for compatibility.  The
+        # separate registry answers a different question: which named systems
+        # did this application intentionally install?
+        self._installations: dict[str, Any] = {}
+
         #: Console commands this application registers. The ``sillo`` command
         #: reads them after importing the app, which is how a project's own
         #: commands reach the command line without a file of its own.
@@ -538,6 +545,34 @@ class SilloApp:
         self.events = EventEmitter()
         self.title = title or "sillo API"
         self.setup()
+
+    @property
+    def installations(self) -> Mapping[str, Any]:
+        """Read-only view of the services installed with :meth:`install`.
+
+        This is not an alternative service locator.  Handlers should continue
+        to use their subsystem's normal API; the view is for diagnostics,
+        tooling and a clear application bootstrap.
+        """
+
+        return MappingProxyType(self._installations)
+
+    def install(self, installable: Installable[Any]) -> Any:
+        """Install one named application subsystem and return its service.
+
+        Installables may register state, middleware and lifecycle hooks.  A
+        second installation of the same name returns the first service, which
+        makes setup code safe to compose and preserves legacy ``setup_*``
+        helper idempotency.
+        """
+
+        name = installable.name
+        if not isinstance(name, str) or not name:
+            raise ValueError("an Installable needs a non-empty string name")
+
+        if name not in self._installations:
+            self._installations[name] = installable.install(self)
+        return self._installations[name]
 
     def _register_auth(self, user_model: type[BaseUser] | None) -> None:
         """Mount the authentication middleware and publish its schemes.
