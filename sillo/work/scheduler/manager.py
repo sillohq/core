@@ -229,8 +229,27 @@ class SchedulerManager:
             logger.exception("Job %s failed", job.name)
 
 
+class Scheduler:
+    """Install a scheduler when an application does not already have one."""
+
+    name = "scheduler"
+
+    def install(self, app) -> SchedulerManager:
+        # Work installs a scheduler as part of its larger subsystem.  Reuse it
+        # rather than creating a second ticker when a project later asks for a
+        # standalone Scheduler installable as well.
+        if "scheduler" in app.state:
+            return app.state["scheduler"]
+
+        scheduler = SchedulerManager()
+        app.state["scheduler"] = scheduler
+        app.on_startup(scheduler.start)
+        app.on_shutdown(scheduler.stop)
+        return scheduler
+
+
 def setup_scheduler(app) -> SchedulerManager:
-    """Wire a SchedulerManager into the app lifecycle.
+    """Install :class:`Scheduler`; kept as the compatible functional API.
 
     Stores in ``app.state["scheduler"]``.  Call ``scheduler.start()``
     manually or use the auto-start feature.
@@ -241,10 +260,4 @@ def setup_scheduler(app) -> SchedulerManager:
         scheduler = setup_scheduler(app)
         scheduler.every(3600)(my_cleanup_task)
     """
-    if "scheduler" in app.state:
-        return app.state["scheduler"]
-    s = SchedulerManager()
-    app.state["scheduler"] = s
-    app.on_startup(s.start)
-    app.on_shutdown(s.stop)
-    return s
+    return app.install(Scheduler())
