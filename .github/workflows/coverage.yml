@@ -61,6 +61,9 @@ jobs:
       - name: Run tests under coverage
         run: uv run coverage run -m pytest tests
 
+      - name: Enforce coverage floor
+        run: uv run coverage report --fail-under=97
+
       - name: Emit coverage.xml
         run: uv run coverage xml -o coverage.xml
 
