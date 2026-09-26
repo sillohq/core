@@ -239,16 +239,29 @@ class MailClient:
             raise
 
 
+class Mail:
+    """Install the mail client and its application lifecycle hooks."""
+
+    name = "mail"
+
+    def __init__(self, config: MailConfig | None = None) -> None:
+        self.config = config
+
+    def install(self, app) -> MailClient:
+        client = MailClient(config=self.config)
+        # The client is intentionally retained under its historical state key
+        # so `get_mail_client(ctx)` and existing applications keep working.
+        app.state["mail_client"] = client
+        app.on_startup(client.start)
+        app.on_shutdown(client.stop)
+        register(client)
+        return client
+
+
 def setup_mail(app, config: MailConfig | None = None) -> MailClient:
-    """Setup Mail"""
-    if "mail_client" in app.state:
-        return app.state["mail_client"]
-    client = MailClient(config=config)
-    app.state["mail_client"] = client
-    app.on_startup(client.start)
-    app.on_shutdown(client.stop)
-    register(client)
-    return client
+    """Install :class:`Mail`; kept as the compatible functional API."""
+
+    return app.install(Mail(config))
 
 
 def get_mail_client(ctx) -> MailClient:
