@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 
 import anyio
 import httpx
-from anyio.abc import ObjectReceiveStream, ObjectSendStream, TaskStatus
+from anyio.abc import ObjectReceiveStream, ObjectSendStream
 from anyio.streams.stapled import StapledObjectStream
 from httpx import USE_CLIENT_DEFAULT
 from httpx._client import UseClientDefault
@@ -27,6 +27,11 @@ from httpx._types import (
 from httpx._urls import URL
 from typing_extensions import Self
 
+from sillo.testclient._internal.lifespan import (
+    run_shutdown_handshake,
+    run_startup_handshake,
+    start_detached_task,
+)
 from sillo.testclient._internal.transport import AsyncTestClientTransport
 from sillo.testclient._internal.types import ASGI2App, RequestData
 from sillo.testclient._internal.utils import AsyncBackend, WrapASGI2, is_asgi3
@@ -204,7 +209,6 @@ class AsyncTestClient(httpx.AsyncClient):
 
     async def __aenter__(self) -> Self:
         """Aenter"""
-        self._tg = await anyio.create_task_group().__aenter__()
         send1: ObjectSendStream[Any]
         receive1: ObjectReceiveStream[Any]
         send2: ObjectSendStream[Any]
@@ -214,8 +218,13 @@ class AsyncTestClient(httpx.AsyncClient):
         send2, receive2 = anyio.create_memory_object_stream[Any](math.inf)
         self.stream_send = StapledObjectStream(send1, receive1)
         self.stream_receive = StapledObjectStream(send2, receive2)
-        self.task = await self._tg.start(self._lifespan_runner)
-        await self.wait_startup()
+        # The lifespan runs in a detached supervisor task rather than a task
+        # group entered here and exited in __aexit__: pytest-asyncio drives
+        # async fixture setup and teardown from different tasks, and anyio
+        # forbids exiting a cancel scope from a task other than the one that
+        # entered it.
+        self.task = start_detached_task(self.lifespan())
+        await run_startup_handshake(self.task, self.wait_startup)
         return self
 
     async def __aexit__(
@@ -225,15 +234,7 @@ class AsyncTestClient(httpx.AsyncClient):
         traceback: TracebackType | None = None,
     ) -> None:
         """Aexit"""
-        await self.wait_shutdown()
-        await self._tg.__aexit__(exc_type, exc_value, traceback)
-
-    async def _lifespan_runner(
-        self, *, task_status: TaskStatus = anyio.TASK_STATUS_IGNORED
-    ) -> None:
-        """Lifespan Runner"""
-        task_status.started()
-        await self.lifespan()
+        await run_shutdown_handshake(self.task, self.wait_shutdown)
 
     async def lifespan(self) -> None:
         """Lifespan"""

@@ -19,6 +19,7 @@ import pytest
 from anyio.streams.stapled import StapledObjectStream
 
 from sillo.testclient import AsyncTestClient, TestClient
+from sillo.testclient._internal.lifespan import LifespanTaskHandle
 
 
 class _DummyTask:
@@ -52,11 +53,13 @@ async def test_sync_client_wait_startup_failure_then_none():
     assert startup_msg == {"type": "lifespan.startup"}
 
 
-async def test_sync_client_wait_shutdown_failure_then_none_no_tg():
+async def test_sync_client_wait_shutdown_failure_then_none_sync_mode():
     client = TestClient(_noop_app)
     client.stream_receive, client.stream_send = _make_streams()
     client.task = _DummyTask()
-    assert not hasattr(client, "_tg")
+    # wait_shutdown() picks its message-handling branch from the task type:
+    # a DummyTask stands in for the sync portal future.
+    assert not isinstance(client.task, LifespanTaskHandle)
 
     await client.stream_send.send({"type": "lifespan.shutdown.failed", "message": "x"})
     await client.stream_send.send(None)
@@ -64,11 +67,12 @@ async def test_sync_client_wait_shutdown_failure_then_none_no_tg():
     await client.wait_shutdown()
 
 
-async def test_sync_client_wait_shutdown_failure_then_none_with_tg():
+async def test_sync_client_wait_shutdown_failure_then_none_async_ctx_mode():
     client = TestClient(_noop_app)
     client.stream_receive, client.stream_send = _make_streams()
-    client.task = _DummyTask()
-    client._tg = object()  # only hasattr() is checked by wait_shutdown
+    # The detached-supervisor handle selects wait_shutdown()'s async-context
+    # branch, as `async with TestClient(...)` does.
+    client.task = LifespanTaskHandle()
 
     await client.stream_send.send({"type": "lifespan.shutdown.failed", "message": "x"})
     await client.stream_send.send(None)
