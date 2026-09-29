@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 import anyio
 import anyio.from_thread
 import httpx
-from anyio.abc import BlockingPortal, ObjectReceiveStream, ObjectSendStream, TaskStatus
+from anyio.abc import BlockingPortal, ObjectReceiveStream, ObjectSendStream
 from anyio.streams.stapled import StapledObjectStream
 from httpx._client import UseClientDefault
 from httpx._types import (
@@ -28,6 +28,12 @@ from httpx._types import (
 from typing_extensions import Self
 
 from sillo.testclient._internal.inputs import RequestInputsDefaultValues
+from sillo.testclient._internal.lifespan import (
+    LifespanTaskHandle,
+    run_shutdown_handshake,
+    run_startup_handshake,
+    start_detached_task,
+)
 from sillo.testclient._internal.transport import TestClientTransport
 from sillo.testclient._internal.types import ASGI2App, RequestData
 from sillo.testclient._internal.utils import AsyncBackend, WrapASGI2, is_asgi3
@@ -64,7 +70,9 @@ class TestClient(httpx.Client):
     """
 
     __test__ = False
-    task: Future[None]
+    # Sync context managers hold the portal's Future here; async ones hold
+    # the detached lifespan supervisor's handle instead.
+    task: Future[None] | LifespanTaskHandle
     portal: BlockingPortal | None = None
 
     def __init__(
@@ -420,19 +428,19 @@ class TestClient(httpx.Client):
             async with create_client(...) as client:
                 response = await client.get("/")
         """
-        # Use a native AnyIO TaskGroup instead of blocking portals
-        self._tg = anyio.create_task_group()
-        await self._tg.__aenter__()  # manually enter group
-
         # setup streams (same as sync path)
         send1, receive1 = anyio.create_memory_object_stream(math.inf)
         send2, receive2 = anyio.create_memory_object_stream(math.inf)
         self.stream_send = StapledObjectStream(send1, receive1)
         self.stream_receive = StapledObjectStream(send2, receive2)
 
-        # Run the lifespan coroutine as a background task
-        self.task = await self._tg.start(self._lifespan_runner)
-        await self.wait_startup()
+        # The lifespan runs in a detached supervisor task rather than a task
+        # group entered here and exited in __aexit__: pytest-asyncio drives
+        # async fixture setup and teardown from different tasks, and anyio
+        # forbids exiting a cancel scope from a task other than the one that
+        # entered it.
+        self.task = start_detached_task(self.lifespan())
+        await run_startup_handshake(self.task, self.wait_startup)
         return self
 
     def __exit__(
@@ -450,15 +458,11 @@ class TestClient(httpx.Client):
         """
         Exit the asynchronous context, performing a graceful shutdown.
         """
-        await self.wait_shutdown()
-        await self._tg.__aexit__(None, None, None)
-
-    async def _lifespan_runner(
-        self, *, task_status: TaskStatus = anyio.TASK_STATUS_IGNORED
-    ) -> None:
-        """Helper task running the ASGI lifespan inside async context."""
-        task_status.started()
-        await self.lifespan()
+        # Only __aenter__ (the async-context path) assigns self.task, and it
+        # always assigns a LifespanTaskHandle there — never the sync portal's
+        # Future, which is __enter__'s exclusive path.
+        assert isinstance(self.task, LifespanTaskHandle)
+        await run_shutdown_handshake(self.task, self.wait_shutdown)
 
     async def lifespan(self) -> None:
         """
@@ -504,7 +508,7 @@ class TestClient(httpx.Client):
                 self.task.result()
             return message
 
-        async_mode = hasattr(self, "_tg")
+        async_mode = isinstance(self.task, LifespanTaskHandle)
 
         if async_mode:
             await self.stream_receive.send({"type": "lifespan.shutdown"})
