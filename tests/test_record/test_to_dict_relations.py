@@ -13,6 +13,7 @@ from tortoise import Tortoise, fields
 from tortoise.exceptions import ConfigurationError
 
 from sillo.record import Model
+from sillo.record.mixins import SerializesToDictMixin
 
 _has_global_fallback = (
     "_enable_global_fallback" in inspect.signature(Tortoise.init).parameters
@@ -38,12 +39,21 @@ class ToDictBook(Model):
         table = "to_dict_books"
 
 
+class ToDictMixedBook(SerializesToDictMixin, Model):
+    id = fields.IntField(primary_key=True)
+    title = fields.CharField(max_length=50)
+    author = fields.ForeignKeyField("models.ToDictAuthor", related_name="mixed_books")
+
+    class Meta:
+        table = "to_dict_mixed_books"
+
+
 @pytest.fixture(autouse=True)
 async def record_db():
-    init_kwargs = dict(
-        db_url="sqlite://:memory:",
-        modules={"models": ["tests.test_record.test_to_dict_relations"]},
-    )
+    init_kwargs = {
+        "db_url": "sqlite://:memory:",
+        "modules": {"models": ["tests.test_record.test_to_dict_relations"]},
+    }
     if _has_global_fallback:
         init_kwargs["_enable_global_fallback"] = True
     await Tortoise.init(**init_kwargs)
@@ -206,3 +216,36 @@ class TestOptInRelations:
         await book.fetch_related("author")
 
         assert json.loads(book.to_json(relations=True))["author"]["name"] == "Ada"
+
+
+class TestEveryPathThatSerializes:
+    """Collections, pagination and the mixin all route through ``to_dict``."""
+
+    async def test_a_collection_of_unfetched_models_encodes(self):
+        await _book()
+        books = await ToDictBook.all()
+
+        from sillo.record import Collection
+
+        assert json.loads(Collection(books).to_json())[0]["title"] == "Notes"
+
+    async def test_a_paginated_page_of_unfetched_models_encodes(self):
+        await _book()
+        from sillo.record import paginate
+
+        page = await paginate(ToDictBook.all(), page=1, page_size=10)
+
+        assert json.loads(json.dumps(page.to_dict()))["items"][0]["title"] == "Notes"
+
+    async def test_the_mixin_behaves_the_same(self):
+        author = await ToDictAuthor.create(name="Ada")
+        await ToDictMixedBook.create(title="Notes", author=author)
+        book = await ToDictMixedBook.first()
+
+        data = book.to_dict()
+
+        assert "author" not in data
+        assert data["author_id"] == author.id
+        json.dumps(data)
+        await book.fetch_related("author")
+        assert book.to_dict(relations=["author"])["author"]["name"] == "Ada"
