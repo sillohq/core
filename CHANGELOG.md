@@ -9,12 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `Model.get_or_none()` can be chained (`await Model.get_or_none(...)
+  .select_related(...)`), as in Tortoise (#464). It was a coroutine, so the
+  chained method was looked up on the coroutine and raised `AttributeError`.
 - `Model.to_dict()` no longer fails JSON encoding on models that have relations
   (#465). Relations that were not fetched are lazy query handles, and they were
   being placed in the dict.
 
 ### Changed
 
+- `Model.get_or_none()` now returns `None` only when no row matches. It used to
+  catch every exception, so database errors and two matching rows also came back
+  as `None`; they now raise (`MultipleObjectsReturned` for the latter). This
+  also stops `get_or_create()` from inserting a duplicate when its lookup is
+  ambiguous.
 - `Model.to_dict()` and `SerializesToDictMixin.to_dict()` serialize columns
   only by default. A foreign key's `<name>_id` column is still included; the
   relation itself (`author`) is not, even when it was fetched. Pass
