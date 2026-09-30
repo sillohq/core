@@ -107,11 +107,16 @@ class SerializesToDictMixin:
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        relations: bool | list[str] = False,
         max_depth: int = 3,
     ) -> dict:
         """To Dict"""
         return model_to_dict(
-            self, exclude=exclude, include=include, max_depth=max_depth
+            self,
+            exclude=exclude,
+            include=include,
+            relations=relations,
+            max_depth=max_depth,
         )
 
     def to_json(self, *, indent: int | None = None, **kwargs) -> str:

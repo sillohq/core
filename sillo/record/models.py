@@ -241,13 +241,28 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         include: Annotated[
             list[str] | None, Doc("If set, ONLY include these fields.")
         ] = None,
+        relations: Annotated[
+            bool | Sequence[str],
+            Doc(
+                "True, or names of relations, to include the ones already "
+                "fetched. Relations are left out by default."
+            ),
+        ] = False,
         max_depth: Annotated[
             int, Doc("How many levels of nested models to expand.")
         ] = 3,
     ) -> dict[str, Any]:
-        """Serialize the model to a plain dict."""
+        """Serialize the model to a plain dict.
+
+        Only columns are included unless ``relations`` asks for more; a
+        foreign key's ``<name>_id`` is a column and is always there.
+        """
         return model_to_dict(
-            self, exclude=exclude, include=include, max_depth=max_depth
+            self,
+            exclude=exclude,
+            include=include,
+            relations=relations,
+            max_depth=max_depth,
         )
 
     def to_json(self, *, indent: int | None = None, **kwargs) -> str:
