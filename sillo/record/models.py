@@ -354,14 +354,6 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         return cls.filter(deleted_at__isnull=False)
 
     @classmethod
-    async def get_or_none(cls, **kwargs) -> Self | None:  # ty: ignore[invalid-method-override]
-        """Return the first matching row, or None."""
-        try:
-            return await cls.get(**kwargs)
-        except Exception:
-            return None
-
-    @classmethod
     async def get_or_create(
         cls,
         defaults: Annotated[
