@@ -29,6 +29,7 @@ from typing_extensions import Doc, Self
 from .casting import HasCasts
 from .fields import CreatedAtField, SoftDeleteField, UpdatedAtField
 from .scopes import HasScopes, RecordManager
+from .serialization import model_to_dict
 
 T = TypeVar("T", bound="Model")
 
@@ -240,21 +241,14 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         include: Annotated[
             list[str] | None, Doc("If set, ONLY include these fields.")
         ] = None,
+        max_depth: Annotated[
+            int, Doc("How many levels of nested models to expand.")
+        ] = 3,
     ) -> dict[str, Any]:
         """Serialize the model to a plain dict."""
-        data = {}
-        for field_name in self._meta.fields:
-            if exclude and field_name in exclude:
-                continue
-            if include and field_name not in include:
-                continue
-            value = getattr(self, field_name, None)
-            if isinstance(value, datetime):
-                value = value.isoformat()
-            elif isinstance(value, Model):
-                value = value.to_dict()
-            data[field_name] = value
-        return data
+        return model_to_dict(
+            self, exclude=exclude, include=include, max_depth=max_depth
+        )
 
     def to_json(self, *, indent: int | None = None, **kwargs) -> str:
         """Serialize to JSON string."""
