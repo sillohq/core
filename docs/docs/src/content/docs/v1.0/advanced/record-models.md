@@ -658,17 +658,33 @@ def deleted(cls):
 
 ### 11.1 `get_or_none`
 
+`Model.get_or_none` is Tortoise's own. It returns a query you `await` for the
+row, or `None` when nothing matches, and you can chain query methods onto it
+first:
+
 ```python
-@classmethod
-async def get_or_none(cls, **kwargs) -> Self | None:
-    try:
-        return await cls.get(**kwargs)
-    except Exception:
-        return None
+user = await User.get_or_none(email=email)
+
+# Chain before awaiting, exactly as with any Tortoise query:
+order = await Order.get_or_none(id=order_id).select_related("customer")
+team = await Team.get_or_none(slug="core").prefetch_related("members")
+row = await Post.get_or_none(Q(slug="a") | Q(slug="b"))
 ```
 
-Returns the first matching row or `None`. Catches *any* exception (including
-`DoesNotExist`) so callers never need to handle the error.
+- Only "no matching row" is `None`. Two matching rows raise
+  `MultipleObjectsReturned`, and database errors (a bad filter, a missing
+  table, a dropped connection) are raised rather than hidden.
+- It does not exclude soft-deleted rows, like every other lookup. Chain
+  `.filter(deleted_at__isnull=True)`, or start from `active()`, to skip them.
+
+:::note[Upgrading]
+Earlier versions defined `get_or_none` as a coroutine that caught every
+exception and returned `None`. That made `await Model.get_or_none(...)
+.select_related(...)` fail, and it turned real errors into `None`. If you relied
+on an ambiguous lookup or a database error coming back as `None`, catch
+`MultipleObjectsReturned` / the error where you call it. The workaround
+`filter(...).select_related(...).first()` still works but is no longer needed.
+:::
 
 ### 11.2 `get_or_create`
 
@@ -682,6 +698,8 @@ async def get_or_create(cls, defaults=None, **kwargs) -> tuple[Self, bool]:
 ```
 
 - Returns `(instance, created)`.
+- The lookup is `get_or_none`, so it raises `MultipleObjectsReturned` if
+  `kwargs` match more than one row instead of creating another.
 - `defaults` are merged into the create payload but not used for the lookup.
 - **Race condition note:** two concurrent calls can both see `None` and both
   create. Use `upsert()` with `conflict_fields` when the database supports
