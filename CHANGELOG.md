@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-30
+
+Fixes two record-model bugs found while building on Sillo 1.0. Both change a
+default, so read the notes under Changed before upgrading.
+
 ### Fixed
 
 - `Model.get_or_none()` can be chained (`await Model.get_or_none(...)
