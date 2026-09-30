@@ -614,7 +614,7 @@ Enhanced Tortoise ORM base model.  Inherits `_TortoiseModel`, `HasCasts`,
 **Methods:** `to_dict(exclude, include)`, `to_json(indent, ...)`,
 `update_from_dict(data)`, `save(*args, **kwargs)`, `soft_delete()`,
 `restore()`, `active()` (classmethod, filters out soft-deleted), `deleted()`
-(classmethod, filters to soft-deleted only), `get_or_none(**kwargs)`,
+(classmethod, filters to soft-deleted only), `get_or_none(**kwargs)` (Tortoise's, chainable),
 `get_or_create(defaults, **kwargs)`, `bulk_create(items, batch_size, ...)`,
 `bulk_upsert(items, conflict_fields, ...)`, `upsert(values, conflict_fields,
 ...)`, `count_active()`.
