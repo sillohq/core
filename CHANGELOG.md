@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `Model.to_dict()` no longer fails JSON encoding on models that have relations
+  (#465). Relations that were not fetched are lazy query handles, and they were
+  being placed in the dict.
+
+### Changed
+
+- `Model.to_dict()` and `SerializesToDictMixin.to_dict()` serialize columns
+  only by default. A foreign key's `<name>_id` column is still included; the
+  relation itself (`author`) is not, even when it was fetched. Pass
+  `relations=True` (or the relation names) to include relations that were
+  already fetched with `fetch_related()` / `prefetch_related()`.
+
+### Added
+
+- `to_dict(relations=...)` and `to_json(relations=...)`: `True` or a list of
+  relation names. Only fetched relations are included, nesting is bounded by
+  `max_depth`, and an unknown name raises `ValueError`.
+- `Model.to_dict()` accepts `max_depth`, as the mixin already did.
+
 ## [1.0.0] - 2026-09-26
 
 Sillo 1.0 is the stable release of the context-based framework API.
