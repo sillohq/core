@@ -22,9 +22,18 @@ def model_to_dict(
 
     ``datetime`` values become ISO 8601 strings. A value that has its own
     ``to_dict`` is expanded while ``max_depth`` allows, receiving one less.
+
+    Relations (foreign keys, one-to-one, reverse and many-to-many) are left
+    out. On an instance that has not fetched them they are lazy query handles
+    that no encoder can serialize, and a foreign key's ``<name>_id`` column is
+    already in the result. A relation is a field the model *has*, not a value
+    it holds, so it should not decide whether the dict encodes.
     """
     data: dict[str, Any] = {}
+    relations = instance._meta.fetch_fields
     for field_name in instance._meta.fields:
+        if field_name in relations:
+            continue
         if exclude and field_name in exclude:
             continue
         if include and field_name not in include:
