@@ -53,7 +53,7 @@ classDiagram
         +created_at: CreatedAtField
         +updated_at: UpdatedAtField
         +deleted_at: SoftDeleteField
-        +to_dict()
+        +to_dict(relations, max_depth)
         +to_json()
         +update_from_dict()
         +save() override
@@ -531,26 +531,69 @@ async def save(self, *args, **kwargs) -> None:
 ### 9.1 `to_dict`
 
 ```python
-def to_dict(self, *, exclude=None, include=None) -> dict[str, Any]:
-    data = {}
-    for field_name in self._meta.fields:
-        if exclude and field_name in exclude:
-            continue
-        if include and field_name not in include:
-            continue
-        value = getattr(self, field_name, None)
-        if isinstance(value, datetime):
-            value = value.isoformat()
-        elif isinstance(value, Model):
-            value = value.to_dict()
-        data[field_name] = value
-    return data
+def to_dict(
+    self,
+    *,
+    exclude=None,
+    include=None,
+    relations=False,
+    max_depth=3,
+) -> dict[str, Any]: ...
 ```
 
-- Iterates `_meta.fields` (the set of all field names declared on the model).
+```python
+book = await Book.get(id=1)
+book.to_dict()
+# {"id": 1, "title": "Notes", "author_id": 7, "created_at": "...", ...}
+```
+
+- Serializes the model's **columns**. A foreign key's `<name>_id` column is a
+  column, so it is always present; the relation itself (`author`) is not.
 - `datetime` values are converted to ISO 8601 strings.
-- Nested `Model` instances (FK relations) are recursively serialized.
 - `exclude` / `include` allow surgical control over which fields appear.
+- Values that have their own `to_dict` are expanded while `max_depth` allows,
+  each level receiving one less.
+
+#### Relations
+
+Relations (foreign keys, one-to-one, reverse and many-to-many) are **left out by
+default**. On an instance that has not fetched them, a relation is a lazy query
+handle that nothing can JSON-encode, so including it made `to_json()` and
+`json.dumps(model.to_dict())` fail with "not JSON serializable".
+
+Ask for them with `relations=`. Only relations that are **already fetched**
+are included; serializing never runs a query, and a relation you did not fetch
+is skipped.
+
+```python
+book = await Book.get(id=1)
+await book.fetch_related("author")
+
+book.to_dict(relations=["author"])
+# {..., "author_id": 7, "author": {"id": 7, "name": "Ada", ...}}
+
+author = await Author.get(id=7).prefetch_related("books")
+author.to_dict(relations=True)
+# {..., "books": [{"id": 1, "title": "Notes", ...}, ...]}
+```
+
+| `relations=` | Includes |
+|---|---|
+| `False` (default) | Columns only |
+| `["author", ...]` | Those relations on this model, if fetched |
+| `True` | Every fetched relation, and on into the related models down to `max_depth` |
+
+- A fetched foreign key that is null is `None`; a fetched reverse or
+  many-to-many relation with no rows is `[]`.
+- Names apply to this model only. Use `True` to follow relations into related
+  models; models that point back at each other stop at `max_depth`.
+- A name that is not a relation on the model raises `ValueError`.
+
+:::note[Upgrading]
+Before this change `to_dict()` nested a relation whenever it had been fetched.
+That is now opt-in: add `relations=True` (or the relation names) where you relied
+on it. `<name>_id` was always included and still is.
+:::
 
 ### 9.2 `to_json`
 
@@ -778,9 +821,10 @@ class SerializesToDictMixin:
         ...
 ```
 
-Like the base `Model.to_dict` but adds `max_depth` to prevent infinite
-recursion on deeply nested relations. Each nested `to_dict` call decrements
-the depth; at 0, relations are serialized as their string representation.
+Gives a model `to_dict` / `to_json` with the same behaviour as the base
+`Model.to_dict` (see section 9.1): columns only by default, `relations=` to
+include fetched relations, and `max_depth` to bound nesting. Each nested
+`to_dict` call decrements the depth; at 0 nothing further is expanded.
 
 ### 12.5 ValidatesBeforeSaveMixin
 

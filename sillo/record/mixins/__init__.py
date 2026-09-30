@@ -7,6 +7,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import ClassVar, Dict, List, Optional
 
+from ..serialization import model_to_dict
+
 try:  # pragma: no cover - depends on whether an optional extra is installed
     import ulid
 except ImportError:  # pragma: no cover
@@ -105,22 +107,17 @@ class SerializesToDictMixin:
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        relations: bool | list[str] = False,
         max_depth: int = 3,
     ) -> dict:
         """To Dict"""
-        data = {}
-        for field_name in self._meta.fields:  # ty: ignore[unresolved-attribute]
-            if exclude and field_name in exclude:
-                continue
-            if include and field_name not in include:
-                continue
-            value = getattr(self, field_name, None)
-            if isinstance(value, datetime):
-                value = value.isoformat()
-            elif max_depth > 0 and hasattr(value, "to_dict"):
-                value = value.to_dict(max_depth=max_depth - 1)
-            data[field_name] = value
-        return data
+        return model_to_dict(
+            self,
+            exclude=exclude,
+            include=include,
+            relations=relations,
+            max_depth=max_depth,
+        )
 
     def to_json(self, *, indent: int | None = None, **kwargs) -> str:
         """To Json"""
