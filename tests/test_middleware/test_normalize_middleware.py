@@ -59,6 +59,11 @@ def test_tuple_forms(spec, args, kwargs):
     assert result.kwargs == kwargs
 
 
+def test_tuple_refuses_extra_arguments():
+    with pytest.raises(TypeError, match="already carries its own arguments"):
+        normalize_middleware((RawFactory, (), {}), tag="a")
+
+
 @pytest.mark.parametrize("bad", [(), (1,), (RawFactory, (), {}, "extra")])
 def test_bad_tuples_are_refused(bad):
     with pytest.raises(TypeError, match="middleware tuple"):
