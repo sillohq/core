@@ -204,6 +204,35 @@ async def dashboard(ctx: HttpContext):
 
 The same `middleware=[...]` keyword works on `app.route(...)`, `Route(...)`, and the router decorators (`@router.get(..., middleware=[...])`).
 
+`middleware=[...]` takes every form `app.use(...)` takes, so a middleware written once works app-wide, per router and per route:
+
+| You pass | Treated as |
+| --- | --- |
+| a function or instance taking `(ctx, call_next)`, including a `BaseMiddleware` | dispatch middleware |
+| a class taking the next app as its first argument and `__call__(scope, receive, send)` | raw ASGI middleware, built once per route |
+| an already-built raw instance, such as `RateLimit(limit=5, window=60)` | raw ASGI middleware, bound to this route |
+| a `(factory, args, kwargs)` tuple (`args` and `kwargs` optional), or a `DefineMiddleware` | raw ASGI factory built with those arguments |
+
+The list is outermost first, and the forms can be mixed:
+
+```python
+from sillo.security import RateLimit
+
+@app.post(
+    "/login",
+    middleware=[
+        RateLimit(limit=5, window=60, key_func=lambda ctx: ctx.get_client_ip()),
+        require_json,                               # (ctx, call_next) function
+        (RequestIdHeader, (), {"header": "x-trace-id"}),  # raw factory + options
+    ],
+)
+async def login(ctx: HttpContext): ...
+```
+
+One built instance can guard several routes. Each route gets its own binding, while the instance's configuration and counters stay shared, so a single `RateLimit` named on two routes enforces one limit across both. Create one instance per route when the limits should be independent.
+
+Unlike `app.use(...)`, a route's `middleware=[...]` list has no place for extra arguments, so a class that needs options goes in as a tuple (or `DefineMiddleware`), and a built instance already carries its own. Arguments handed to a dispatch middleware or a built instance are an error rather than being dropped.
+
 ##  Router-scoped middleware
 
 A `Router` has its own `use` method. Middleware added there runs for every route mounted under that router, after app-level middleware:
@@ -229,7 +258,11 @@ async def list_users(ctx: HttpContext):
 app.mount_router(api)
 ```
 
-`Router` also accepts `middleware=[...]` in its constructor, applying to all routes added to it.
+`Router` also accepts `middleware=[...]` in its constructor, applying to all routes added to it. Both `Router(middleware=[...])` and `router.use(...)` take the same forms as a route: dispatch functions, raw ASGI classes, built instances like `RateLimit(...)`, tuples and `DefineMiddleware`.
+
+```python
+api = Router(prefix="/api", middleware=[RateLimit(limit=100, window=60)])
+```
 
 ##  Raw ASGI middleware
 

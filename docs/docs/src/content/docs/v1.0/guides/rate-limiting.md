@@ -185,6 +185,24 @@ async def login(ctx: HttpContext):
 
 Keyed by IP, the limit applies across every login attempt from that address. Swap `backend="redis"` and the same counter is shared across all app instances behind a load balancer.
 
+##  Limiting one route or one router
+
+You do not have to rate-limit the whole application. Give `RateLimit` to the route that needs it with `middleware=[...]`, and every other route is untouched:
+
+```python
+from sillo import HttpContext
+from sillo.security import RateLimit
+
+login_limit = RateLimit(limit=5, window=60, namespace="login")
+
+@app.post("/login", middleware=[login_limit])
+async def login(ctx: HttpContext): ...
+```
+
+An over-limit request gets the same `429` body and `Retry-After` / `X-RateLimit-*` headers as with `app.use`. The same works on a router, `Router(prefix="/api", middleware=[RateLimit(...)])` or `router.use(RateLimit(...))`, to cover a group of routes.
+
+Naming one instance on several routes shares a single counter across them. Use a separate `RateLimit` (and `namespace`) per route for independent limits.
+
 ##  Works with
 
 - **`sillo.security` Shield/CSRF/CORS**: rate limiting is a sibling middleware;
