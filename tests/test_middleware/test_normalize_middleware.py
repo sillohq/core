@@ -124,8 +124,7 @@ def test_raw_flag_overrides_inference():
         def __init__(self, app, **kw):
             self.app = app
 
-        async def __call__(self, *args):
-            ...
+        async def __call__(self, *args): ...
 
     result = normalize_middleware(Odd, raw=True, tag="z")
     assert result.cls is Odd and result.kwargs == {"tag": "z"}

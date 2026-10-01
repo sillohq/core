@@ -147,7 +147,9 @@ def _is_prebuilt_raw_instance(
     return _required_positional_count(middleware) == 3
 
 
-def _rebinding_factory(instance: ASGIApp, *, copy_instance: bool = False) -> MiddlewareFactory:
+def _rebinding_factory(
+    instance: ASGIApp, *, copy_instance: bool = False
+) -> MiddlewareFactory:
     """Wrap an already-constructed raw ASGI middleware as a one-shot factory.
 
     `_build_request_chain` calls every raw entry as `cls(next_app, *args,

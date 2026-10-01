@@ -453,8 +453,7 @@ class Route(BaseRoute):
                 process incoming requests.
             """
             middleware: list[Middleware] = [
-                normalize_middleware(mdw, copy_instance=True)
-                for mdw in self.middleware
+                normalize_middleware(mdw, copy_instance=True) for mdw in self.middleware
             ]
             for cls, args, kwargs in reversed(middleware):
                 app = cls(app, *args, **kwargs)
