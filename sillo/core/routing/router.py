@@ -304,8 +304,14 @@ class Route(BaseRoute):
                 the generated OpenAPI documentation.
             parameters: Additional OpenAPI parameter definitions beyond
                 those extracted from the path pattern.
-            middleware: List of route-specific middleware callables or
-                middleware tuples to apply before the handler.
+            middleware: Route-specific middleware to apply before the
+                handler, outermost first. Accepts everything
+                ``SilloApp.use`` does: ``(ctx, call_next)`` functions and
+                ``BaseMiddleware`` instances, raw ASGI middleware classes,
+                built raw instances such as ``RateLimit(...)``,
+                ``DefineMiddleware`` and ``(factory, args, kwargs)`` tuples.
+                A built instance may be shared by several routes; each gets
+                its own binding while the instance's state stays shared.
             exclude_from_schema: When True, this route is omitted from
                 OpenAPI documentation generation entirely.
             auth: Optional authentication gate instance for route-level
@@ -876,8 +882,10 @@ class Router(BaseRouter):
                 with a ``version=<value>`` parameter). Lets ``v1`` and ``v2``
                 routers share the same paths and be selected by the client.
             middleware: Middleware to register on this router at construction,
-                each passed to :meth:`use` in order. Equivalent to calling
-                ``router.use(m)`` for each afterwards.
+                outermost first. Takes the same forms as route-level
+                ``middleware=`` and :meth:`use`: dispatch functions, raw ASGI
+                classes, built instances such as ``RateLimit(...)``,
+                ``DefineMiddleware`` and ``(factory, args, kwargs)`` tuples.
             trailing_slash: What to do when a path matches only once its
                 trailing slash is toggled. ``"strict"`` (the default) treats
                 ``/x`` and ``/x/`` as different paths. ``"redirect"`` answers
@@ -1160,8 +1168,12 @@ class Router(BaseRouter):
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cache_control('public')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -1690,8 +1702,12 @@ class Router(BaseRouter):
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [rate_limit(10), validate_content_type('json')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -1886,8 +1902,12 @@ class Router(BaseRouter):
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [admin_required, confirm_action]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2081,8 +2101,12 @@ class Router(BaseRouter):
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [owner_required, validate_etag]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2290,8 +2314,12 @@ class Router(BaseRouter):
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [owner_required, validate_patch]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2496,8 +2524,12 @@ class Router(BaseRouter):
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cors_middleware]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2691,8 +2723,12 @@ class Router(BaseRouter):
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cache_control('public')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[

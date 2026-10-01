@@ -1788,8 +1788,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [rate_limit(10), validate_content_type('json')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -1962,8 +1966,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [admin_required, confirm_action]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2134,8 +2142,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [owner_required, validate_etag]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2323,8 +2335,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [owner_required, validate_patch]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2509,8 +2525,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cors_middleware]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2678,8 +2698,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cache_control('public')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2870,8 +2894,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cache_control('public')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
