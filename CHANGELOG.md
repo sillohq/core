@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Route-level and router-level `middleware=` accept every form `app.use()`
+  does (#463): raw ASGI middleware classes, already-built instances such as
+  `RateLimit(limit=5, window=60)`, `DefineMiddleware`, and
+  `(factory, args, kwargs)` tuples, alongside `(ctx, call_next)` functions and
+  `BaseMiddleware`. This applies to `Route(middleware=...)`, the verb
+  decorators on the app and on routers, `Router(middleware=...)` and
+  `Router.use()`. Previously a route raised `TypeError` at request time for
+  anything but a dispatch function.
+- `sillo.middleware.define.normalize_middleware()`, the single reading of what
+  a middleware is, now shared by `SilloApp.use`, `Router.use` and routes.
+
+### Changed
+
+- One built middleware instance can be attached to several routes or routers.
+  Each attachment binds a shallow copy, so the copies keep their own `.app`
+  while sharing the instance's configuration, strategy and backend (one
+  `RateLimit` on two routes enforces one limit across both).
+- A route's `middleware=` list now rejects a malformed `(factory, ...)` tuple
+  when the route is created, instead of failing on the first request.
+
 ## [1.0.1] - 2026-09-30
 
 Fixes two record-model bugs found while building on Sillo 1.0. Both change a

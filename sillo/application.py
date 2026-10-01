@@ -10,7 +10,6 @@ from typing import (
     AsyncContextManager,
     ContextManager,
     Literal,
-    cast,
 )
 
 from typing_extensions import Doc
@@ -29,14 +28,8 @@ from sillo.env import autoload as _autoload_env
 from sillo.events import EventEmitter
 from sillo.exception_handler import ExceptionMiddleware
 from sillo.logging import create_logger
-from sillo.middleware.bridge import ASGIRequestResponseBridge
 from sillo.middleware.define import DefineMiddleware as Middleware
-from sillo.middleware.define import (
-    MiddlewareFactory,
-    _is_prebuilt_raw_instance,
-    _is_raw_asgi_middleware,
-    _rebinding_factory,
-)
+from sillo.middleware.define import MiddlewareFactory, normalize_middleware
 from sillo.objects import URLPath
 from sillo.openapi import Contact, License
 from sillo.openapi._builder import APIDocumentation
@@ -1131,31 +1124,7 @@ class SilloApp:
             app.use(RequestId, header="x-trace-id")
             ```
         """
-        if raw is None:
-            raw = _is_raw_asgi_middleware(middleware)
-
-        if not raw and (args or kwargs):
-            raise TypeError(
-                "use() forwards extra arguments only to raw ASGI middleware. "
-                "This middleware's __call__ was read as the dispatch form "
-                "(ctx, call_next), so pass raw=True if it is meant to be a "
-                "raw ASGI factory, or configure the middleware before "
-                "registering it."
-            )
-
-        if raw and _is_prebuilt_raw_instance(middleware):
-            if args or kwargs:
-                raise TypeError(
-                    "use() forwards extra arguments only when constructing a "
-                    "raw ASGI middleware, and this one is already "
-                    "constructed. Pass its options to the instance itself, "
-                    f"not to use(): {middleware!r}"
-                )
-            raw_factory: MiddlewareFactory = _rebinding_factory(
-                cast(ASGIApp, middleware)
-            )
-        else:
-            raw_factory = cast(MiddlewareFactory, middleware)
+        definition = normalize_middleware(middleware, *args, raw=raw, **kwargs)
 
         # Authentication can be configured two ways: SilloApp(auth_user_model=…)
         # or AuthenticationMiddleware(user_model=…) passed to use(). Both name
@@ -1165,21 +1134,7 @@ class SilloApp:
         if self.auth_user_model is None:
             self.auth_user_model = getattr(middleware, "user_model", None)
 
-        self.http_middleware.insert(
-            0,
-            # Raw middleware is the factory itself: the chain builder calls
-            # `cls(next_app, *args, **kwargs)`, which is exactly the ASGI
-            # convention, so no wrapper is involved at all -- an
-            # already-constructed instance is wrapped in a one-shot factory
-            # above so the same call still works. `raw` is the caller's (or
-            # the inference's) claim about which half of the union
-            # `middleware` is, and nothing in the type system carries that
-            # from the flag to the value, so the cast is where that claim is
-            # recorded.
-            Middleware(raw_factory, *args, **kwargs)
-            if raw
-            else Middleware(ASGIRequestResponseBridge, dispatch=middleware),
-        )
+        self.http_middleware.insert(0, definition)
         self._build_request_chain()
 
     def add_encoder(
@@ -1833,8 +1788,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [rate_limit(10), validate_content_type('json')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2007,8 +1966,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [admin_required, confirm_action]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2179,8 +2142,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [owner_required, validate_etag]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2368,8 +2335,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [owner_required, validate_patch]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2554,8 +2525,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cors_middleware]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2723,8 +2698,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cache_control('public')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
@@ -2915,8 +2894,12 @@ class SilloApp:
         middleware: Annotated[
             list[Any],
             Doc("""
-                Route-specific middleware.
-                Example: [cache_control('public')]
+                Route-specific middleware, outermost first. Each entry is a
+                ``(ctx, call_next)`` function or ``BaseMiddleware``, a raw
+                ASGI middleware class or built instance such as
+                ``RateLimit(limit=5, window=60)``, or a
+                ``(factory, args, kwargs)`` tuple.
+                Example: [RateLimit(limit=5, window=60), require_json]
             """),
         ] = [],
         tags: Annotated[
