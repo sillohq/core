@@ -14,6 +14,7 @@ kind of middleware left to think about.
 
 from __future__ import annotations
 
+import copy
 import inspect
 from collections.abc import Callable, Iterator
 from typing import Any, cast
@@ -146,7 +147,7 @@ def _is_prebuilt_raw_instance(
     return _required_positional_count(middleware) == 3
 
 
-def _rebinding_factory(instance: ASGIApp) -> MiddlewareFactory:
+def _rebinding_factory(instance: ASGIApp, *, copy_instance: bool = False) -> MiddlewareFactory:
     """Wrap an already-constructed raw ASGI middleware as a one-shot factory.
 
     `_build_request_chain` calls every raw entry as `cls(next_app, *args,
@@ -165,11 +166,19 @@ def _rebinding_factory(instance: ASGIApp) -> MiddlewareFactory:
     attribute access because nothing in the `ASGIApp` shape (just `(scope,
     receive, send) -> Awaitable`) promises that attribute exists; the
     `AttributeError` this raises when it does not is the point.
+
+    With `copy_instance=True` every build binds a shallow copy instead of the
+    instance itself. A route-level middleware is the case for it: one
+    configured instance, say a rate limiter, may be attached to several routes,
+    and each of them needs its own `.app`. A shallow copy keeps sharing
+    everything the instance holds -- its configuration, strategy and backend --
+    so a limit declared once still counts across every route it guards.
     """
 
     def factory(app: ASGIApp) -> ASGIApp:
-        setattr(instance, "app", app)  # noqa: B010
-        return instance
+        target = copy.copy(instance) if copy_instance else instance
+        setattr(target, "app", app)  # noqa: B010
+        return target
 
     return cast(MiddlewareFactory, factory)
 
@@ -262,3 +271,99 @@ def wrap_middleware(middleware_function: MiddlewareType) -> DefineMiddleware:
         bound as the ``dispatch`` keyword argument.
     """
     return DefineMiddleware(ASGIRequestResponseBridge, dispatch=middleware_function)
+
+
+def normalize_middleware(
+    middleware: Any,
+    *args: Any,
+    raw: bool | None = None,
+    copy_instance: bool = False,
+    **kwargs: Any,
+) -> DefineMiddleware:
+    """Turn any accepted middleware spelling into one :class:`DefineMiddleware`.
+
+    This is the single place that decides what a middleware *is*, shared by
+    ``SilloApp.use``, ``Router.use``, the ``middleware=`` argument of a
+    ``Router`` and of every route, so a middleware written once works at every
+    level. Accepted forms:
+
+    * a :class:`DefineMiddleware`, used as it is;
+    * a ``(factory, args, kwargs)`` tuple or list (``args`` and ``kwargs``
+      optional), which names a raw ASGI factory and what to build it with;
+    * a dispatch function or instance taking ``(ctx, call_next)``, such as a
+      :class:`~sillo.middleware.base.BaseMiddleware`;
+    * a raw ASGI factory (usually a class) called as
+      ``factory(next_app, *args, **kwargs)``;
+    * an already-configured raw ASGI instance such as ``RateLimit(...)``.
+
+    Args:
+        middleware: The middleware, in any form above.
+        *args: Positional arguments for a raw ASGI factory.
+        raw: Force the raw (``True``) or dispatch (``False``) reading. ``None``
+            infers it from the number of required positional parameters:
+            three is ASGI's ``(scope, receive, send)``, two is dispatch.
+        copy_instance: Bind a shallow copy of an already-configured raw
+            instance on every build, so one instance can be shared by several
+            routes. ``use()`` leaves this off.
+        **kwargs: Keyword arguments for a raw ASGI factory.
+
+    Returns:
+        The descriptor the chain builders consume.
+
+    Raises:
+        TypeError: If arguments are passed for something that takes none -- a
+            dispatch middleware, an already-built instance, or a
+            :class:`DefineMiddleware` -- since dropping them silently would
+            leave the middleware running on its defaults.
+    """
+    if isinstance(middleware, DefineMiddleware):
+        if args or kwargs:
+            raise TypeError(
+                "A DefineMiddleware already carries its own arguments; "
+                f"pass them to it, not alongside it: {middleware!r}"
+            )
+        return middleware
+
+    if isinstance(middleware, (tuple, list)):
+        if args or kwargs:
+            raise TypeError(
+                "A (factory, args, kwargs) middleware tuple already carries "
+                f"its own arguments; got extra arguments for {middleware!r}"
+            )
+        if not middleware or not callable(middleware[0]) or len(middleware) > 3:
+            raise TypeError(
+                "A middleware tuple must be (factory,), (factory, args) or "
+                f"(factory, args, kwargs); got {middleware!r}"
+            )
+        factory = middleware[0]
+        tuple_args = tuple(middleware[1]) if len(middleware) > 1 else ()
+        tuple_kwargs = dict(middleware[2]) if len(middleware) > 2 else {}
+        return DefineMiddleware(factory, *tuple_args, **tuple_kwargs)
+
+    if raw is None:
+        raw = _is_raw_asgi_middleware(middleware)
+
+    if not raw and (args or kwargs):
+        raise TypeError(
+            "use() forwards extra arguments only to raw ASGI middleware. "
+            "This middleware's __call__ was read as the dispatch form "
+            "(ctx, call_next), so pass raw=True if it is meant to be a "
+            "raw ASGI factory, or configure the middleware before "
+            "registering it."
+        )
+
+    if not raw:
+        return wrap_middleware(middleware)
+
+    if _is_prebuilt_raw_instance(middleware):
+        if args or kwargs:
+            raise TypeError(
+                "use() forwards extra arguments only when constructing a "
+                "raw ASGI middleware, and this one is already "
+                "constructed. Pass its options to the instance itself, "
+                f"not to use(): {middleware!r}"
+            )
+        return DefineMiddleware(
+            _rebinding_factory(cast(ASGIApp, middleware), copy_instance=copy_instance)
+        )
+    return DefineMiddleware(cast(MiddlewareFactory, middleware), *args, **kwargs)
