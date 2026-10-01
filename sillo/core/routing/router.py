@@ -32,16 +32,12 @@ from sillo.core.http.response import BaseResponse, JSONResponse, RedirectRespons
 from sillo.events import EventEmitter
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.helpers.concurrency import run_in_threadpool
-from sillo.middleware.bridge import ASGIRequestResponseBridge
 from sillo.middleware.define import (
     DefineMiddleware as Middleware,
 )
 from sillo.middleware.define import (
     MiddlewareFactory,
-    _is_prebuilt_raw_instance,
-    _is_raw_asgi_middleware,
-    _rebinding_factory,
-    wrap_middleware,
+    normalize_middleware,
 )
 from sillo.objects import RouteParam, URLPath
 from sillo.openapi.models import Parameter
@@ -443,8 +439,8 @@ class Route(BaseRoute):
 
             Wraps the provided ASGI application with all route-specific
             middleware registered on this route. Each middleware is first
-            normalized through ``wrap_middleware`` to ensure a consistent
-            interface, then applied in reverse order so that the first
+            normalized through ``normalize_middleware``, so dispatch
+            functions, raw ASGI factories and built instances all work, then applied in reverse order so that the first
             middleware in the list becomes the outermost layer.
 
             Args:
@@ -456,9 +452,10 @@ class Route(BaseRoute):
                 middleware, forming a complete middleware chain ready to
                 process incoming requests.
             """
-            middleware: list[Middleware] = []
-            for mdw in self.middleware:
-                middleware.append(wrap_middleware(mdw))
+            middleware: list[Middleware] = [
+                normalize_middleware(mdw, copy_instance=True)
+                for mdw in self.middleware
+            ]
             for cls, args, kwargs in reversed(middleware):
                 app = cls(app, *args, **kwargs)
             return app
@@ -925,17 +922,9 @@ class Router(BaseRouter):
 
         # Build them in list order: the first entry ends up the outermost
         # layer (it runs first), which is what a reader of the list expects.
-        constructor_mw: list[Middleware] = []
-        for mw in middleware or []:
-            if isinstance(mw, Middleware):
-                constructor_mw.append(mw)
-            elif isinstance(mw, (tuple, list)):
-                cls = mw[0]
-                args = tuple(mw[1]) if len(mw) > 1 else ()
-                kwargs = dict(mw[2]) if len(mw) > 2 else {}
-                constructor_mw.append(Middleware(cls, *args, **kwargs))
-            else:
-                constructor_mw.append(wrap_middleware(mw))
+        constructor_mw: list[Middleware] = [
+            normalize_middleware(mw, copy_instance=True) for mw in middleware or []
+        ]
         self.middleware = constructor_mw + self.middleware
 
         self._refresh_route_dependencies()
@@ -1397,42 +1386,11 @@ class Router(BaseRouter):
                 for them to go and silently dropping them would leave the
                 middleware running on its defaults.
         """
-        if raw is None:
-            raw = _is_raw_asgi_middleware(middleware)
-
-        if not raw and (args or kwargs):
-            raise TypeError(
-                "use() forwards extra arguments only to raw ASGI middleware. "
-                "This middleware's __call__ was read as the dispatch form "
-                "(ctx, call_next), so pass raw=True if it is meant to be a "
-                "raw ASGI factory, or configure the middleware before "
-                "registering it."
-            )
-
-        if raw and _is_prebuilt_raw_instance(middleware):
-            if args or kwargs:
-                raise TypeError(
-                    "use() forwards extra arguments only when constructing a "
-                    "raw ASGI middleware, and this one is already "
-                    "constructed. Pass its options to the instance itself, "
-                    f"not to use(): {middleware!r}"
-                )
-            raw_factory: MiddlewareFactory = _rebinding_factory(
-                cast(ASGIApp, middleware)
-            )
-        else:
-            raw_factory = cast(MiddlewareFactory, middleware)
-
         self.middleware.insert(
             0,
-            # Raw middleware is the factory itself: the chain builder calls
-            # `cls(next_app, *args, **kwargs)`, which is exactly the ASGI
-            # convention, so no wrapper is involved at all -- an
-            # already-constructed instance is wrapped in a one-shot factory
-            # above so the same call still works.
-            Middleware(raw_factory, *args, **kwargs)
-            if raw
-            else Middleware(ASGIRequestResponseBridge, dispatch=middleware),
+            normalize_middleware(
+                middleware, *args, raw=raw, copy_instance=True, **kwargs
+            ),
         )
 
     def get(
