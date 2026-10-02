@@ -75,6 +75,15 @@ class HTTPClient:
             user = await client.get("/users/1", response_model=User)
         ```
 
+    Without a base URL, when every request supplies an absolute URL:
+        ```python
+        async with HTTPClient() as client:
+            await client.get("https://api.example.com/users/1")
+            await client.get("https://api.internal.example/status")
+        ```
+    A relative URL with no base URL is an error at request time, as it is
+    with httpx directly.
+
     With caching and retry:
         ```python
         from sillo.cache import MemoryCache
@@ -157,8 +166,17 @@ class HTTPClient:
         if self._config.user_agent:
             headers["user-agent"] = self._config.user_agent
 
+        # httpx has no base_url default to fall back on: passing "" or None
+        # is a TypeError ("Invalid type for url"), not a no-op. Omit the
+        # argument entirely when no base URL is configured, which is the one
+        # thing httpx does accept, and leaves absolute per-request URLs
+        # working for a client that talks to several hosts.
+        base_url_kwargs: dict[str, Any] = (
+            {"base_url": self._config.base_url} if self._config.base_url else {}
+        )
+
         self._state.client = httpx.AsyncClient(
-            base_url=self._config.base_url or None,  # ty: ignore[invalid-argument-type]
+            **base_url_kwargs,
             timeout=timeout,
             limits=pool_config.build_limits(),
             verify=self._config.verify_ssl,

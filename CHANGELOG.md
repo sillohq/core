@@ -20,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sillo.middleware.define.normalize_middleware()`, the single reading of what
   a middleware is, now shared by `SilloApp.use`, `Router.use` and routes.
 
+### Fixed
+
+- `HTTPClient()` can now be started without a base URL (#456). An empty
+  `base_url` was passed to `httpx.AsyncClient(base_url=None)`, which raises
+  `TypeError: Invalid type for url`, so a base-URL-less client could not be
+  constructed at all -- even though httpx itself is happy without one as long
+  as every request URL is absolute. `start()` now omits the argument when no
+  base URL is configured, which is what makes a client that talks to several
+  hosts with absolute URLs possible. Supplying a base URL is unchanged: the
+  client never had this bug when one was given.
+
 ### Changed
 
 - One built middleware instance can be attached to several routes or routers.
