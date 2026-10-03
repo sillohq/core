@@ -9,6 +9,12 @@ Provides a production-grade HTTP client with:
 - Connection pooling and granular timeout management
 - Request statistics tracking
 
+Every method returns the decoded body. Pass ``with_response=True`` to get a
+:class:`~sillo.http.client.models.ClientResponse` carrying the status code and
+headers alongside it -- needed to branch on the status, read a signature
+header, or follow a ``Link`` header. The body is decoded identically either
+way.
+
 Quick start:
     ```python
     from pydantic import BaseModel
@@ -60,7 +66,7 @@ from sillo.http.client.middleware import (
     LoggingMiddleware,
     MiddlewareChain,
 )
-from sillo.http.client.models import CachedResponse, ResponseValidator
+from sillo.http.client.models import CachedResponse, ClientResponse, ResponseValidator
 from sillo.http.client.retry import RetryMode, RetryStrategy
 from sillo.http.client.transport import ConnectionPoolConfig
 from sillo.http.client.utils import (
@@ -75,6 +81,7 @@ __all__ = [
     "CacheConfig",
     "CachePolicy",
     "CachedResponse",
+    "ClientResponse",
     "ConnectionPoolConfig",
     "HTTPCache",
     "HTTPCacheError",

@@ -47,7 +47,7 @@ from sillo.http.client.middleware import (
     LoggingMiddleware,
     MiddlewareChain,
 )
-from sillo.http.client.models import CachedResponse, ResponseValidator
+from sillo.http.client.models import CachedResponse, ClientResponse, ResponseValidator
 from sillo.http.client.retry import RetryMode, RetryStrategy
 from sillo.http.client.transport import ConnectionPoolConfig
 from sillo.http.client.utils import (
@@ -808,6 +808,244 @@ class TestHTTPClientPydanticValidation:
                 assert result == "plain text"
 
 
+class TestClientResponse:
+    """Test the with_response=True option on the request methods."""
+
+    @staticmethod
+    def _response(status_code=200, **kwargs):
+        """Build a Response with a request attached, as _send would return."""
+        req = Request("GET", "https://example.com/data")
+        return Response(status_code, request=req, **kwargs)
+
+    async def test_returns_client_response_with_status_and_headers(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(201, json={"id": 1}, headers={"etag": '"a1b2c3"'})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/data", with_response=True)
+
+        assert isinstance(result, ClientResponse)
+        assert result.status_code == 201
+        assert result.headers["etag"] == '"a1b2c3"'
+        assert result.body == {"id": 1}
+
+    async def test_body_matches_the_value_returned_without_the_flag(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={"key": "value"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                with_flag = await client.get("/data", with_response=True)
+            resp = self._response(200, json={"key": "value"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                without_flag = await client.get("/data")
+
+        assert with_flag.body == without_flag
+
+    async def test_error_status_is_reported_rather_than_raised(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(404, json={"error": "missing"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/missing", with_response=True)
+
+        assert result.status_code == 404
+        assert result.is_error
+        assert not result.is_success
+        assert result.body == {"error": "missing"}
+
+    async def test_non_json_body_is_preserved_as_text(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, text="plain text")
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/text", with_response=True)
+
+        assert result.body == "plain text"
+
+    async def test_json_on_non_json_body_raises_decode_error(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, text="plain text")
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/text", with_response=True)
+
+        with pytest.raises(HTTPDecodeError):
+            result.json()
+
+class TestClientResponseModels:
+    """Test with_response=True alongside response_model validation."""
+
+    @staticmethod
+    def _response(status_code=200, **kwargs):
+        req = Request("GET", "https://example.com/data")
+        return Response(status_code, request=req, **kwargs)
+
+    async def test_response_model_body_is_validated_and_exposed(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={"id": 1, "name": "Alice", "email": "a@b.com"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/users/1", response_model=User, with_response=True)
+
+        assert isinstance(result.body, User)
+        assert result.body.name == "Alice"
+        assert result.status_code == 200
+
+    async def test_json_returns_an_already_parsed_body_unchanged(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json=[{"id": 1}, {"id": 2}])
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/data", with_response=True)
+
+        # The body arrived parsed, so json() hands back that same value.
+        assert result.json() == [{"id": 1}, {"id": 2}]
+
+    async def test_json_returns_content_for_a_validated_model(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={"id": 1, "name": "Alice", "email": "a@b.com"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get(
+                    "/users/1", response_model=User, with_response=True
+                )
+
+        assert result.json() == {"id": 1, "name": "Alice", "email": "a@b.com"}
+
+    async def test_many_models_are_wrapped_as_a_list(self):
+        from sillo.http.client.client import HTTPClient
+
+        body = [
+            {"id": 1, "name": "A", "email": "a@b.com"},
+            {"id": 2, "name": "B", "email": "b@c.com"},
+        ]
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json=body)
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get(
+                    "/users", response_model=User, many=True, with_response=True
+                )
+
+        assert len(result.body) == 2
+        assert all(isinstance(u, User) for u in result.body)
+
+    async def test_validation_errors_still_raise(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={"id": "not-an-int"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                with pytest.raises(HTTPValidationError):
+                    await client.get("/users/1", response_model=User, with_response=True)
+
+class TestClientResponseTransport:
+    """Test the flag across verbs, and the metadata it exposes."""
+
+    @staticmethod
+    def _response(status_code=200, **kwargs):
+        req = Request("GET", "https://example.com/data")
+        return Response(status_code, request=req, **kwargs)
+
+    async def test_raw_response_is_available(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={"key": "value"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/data", with_response=True)
+
+        assert isinstance(result.raw, httpx.Response)
+        assert result.raw is resp
+
+    async def test_headers_are_a_plain_dict(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={}, headers={"retry-after": "30"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/data", with_response=True)
+
+        assert isinstance(result.headers, dict)
+        assert result.headers.get("retry-after") == "30"
+        assert result.headers.get("absent") is None
+
+    async def test_url_is_reported(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/data", with_response=True)
+
+        assert result.url == "https://example.com/data"
+
+    @pytest.mark.parametrize("method", ["get", "post", "put", "patch", "delete"])
+    async def test_supported_on_every_verb(self, method):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={"ok": True})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await getattr(client, method)("/data", with_response=True)
+
+        assert isinstance(result, ClientResponse)
+        assert result.body == {"ok": True}
+
+    async def test_supported_on_request(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={"ok": True})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.request("GET", "/data", with_response=True)
+
+        assert isinstance(result, ClientResponse)
+        assert result.status_code == 200
+
+    async def test_defaults_to_the_bare_body(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com") as client:
+            resp = self._response(200, json={"key": "value"})
+            with patch.object(client, "_send", new=AsyncMock(return_value=resp)):
+                result = await client.get("/data")
+
+        assert result == {"key": "value"}
+        assert not isinstance(result, ClientResponse)
+
+    async def test_raise_for_status_still_raises_with_the_flag(self):
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://example.com", raise_for_status=True) as client:
+            # raise_for_status is enforced in _send, so patch the transport
+            # beneath it rather than _send itself.
+            req = client._http_client.build_request("GET", "https://example.com/missing")
+            resp = Response(404, json={"error": "not found"}, request=req)
+            with patch.object(
+                client._http_client, "send", new=AsyncMock(return_value=resp)
+            ):
+                with pytest.raises(HTTPStatusError) as exc_info:
+                    await client.get("/missing", with_response=True)
+
+        assert exc_info.value.status_code == 404
+
+    async def test_repr_shows_status_url_and_body(self):
+        result = ClientResponse(
+            status_code=201, headers={}, body={"id": 1}, url="https://example.com/x"
+        )
+        text = repr(result)
+        assert "status_code=201" in text
+        assert "https://example.com/x" in text
+
+
 class TestHTTPClientErrorCases:
     """Test error handling in HTTPClient communications."""
 
@@ -1026,7 +1264,7 @@ class TestHTTPClientMethods:
         c = await self._make_client()
         with patch.object(c, "request", new=AsyncMock(return_value={"ok": True})) as m:
             result = await c.get("/test")
-            m.assert_called_once_with("GET", "/test", response_model=None, many=False, strict=False)
+            m.assert_called_once_with("GET", "/test", response_model=None, many=False, strict=False, with_response=False)
             assert result == {"ok": True}
         await c.stop()
 
@@ -1034,7 +1272,7 @@ class TestHTTPClientMethods:
         c = await self._make_client()
         with patch.object(c, "request", new=AsyncMock(return_value={"ok": True})) as m:
             result = await c.post("/test", json={"key": "val"})
-            m.assert_called_once_with("POST", "/test", json={"key": "val"}, data=None, response_model=None, many=False, strict=False)
+            m.assert_called_once_with("POST", "/test", json={"key": "val"}, data=None, response_model=None, many=False, strict=False, with_response=False)
             assert result == {"ok": True}
         await c.stop()
 
@@ -1058,7 +1296,7 @@ class TestHTTPClientMethods:
         c = await self._make_client()
         with patch.object(c, "request", new=AsyncMock(return_value={"ok": True})) as m:
             result = await c.delete("/test/1")
-            m.assert_called_once_with("DELETE", "/test/1", response_model=None, many=False, strict=False)
+            m.assert_called_once_with("DELETE", "/test/1", response_model=None, many=False, strict=False, with_response=False)
             assert result == {"ok": True}
         await c.stop()
 
