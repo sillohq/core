@@ -99,15 +99,6 @@ class HTTPClient:
             retry_strategy=RetryStrategy(max_attempts=3),
         )
         ```
-
-    To read the status code or headers of a response:
-        ```python
-        async with HTTPClient("https://api.example.com") as client:
-            res = await client.post("/hooks", json=payload, with_response=True)
-            res.status_code          # 201
-            res.headers.get("etag")  # '"a1b2c3"'
-            res.body                 # the same value the call returns without the flag
-        ```
     """
 
     def __init__(
@@ -435,12 +426,9 @@ class HTTPClient:
         else:
             response = await _send(method, url, **kwargs)
 
-        # The body is decoded here exactly as it always was: parsed JSON when
-        # there is no model, validated model instances when there is. The
-        # response object is dropped either way, so `with_response` wraps what
-        # this call already produced rather than re-decoding it -- a second
-        # read of an already-consumed stream would fail, and re-validating
-        # would change what a caller with a response_model receives.
+        # `with_response` wraps the value this call already decoded rather than
+        # re-decoding it: a second read of a consumed stream fails, and
+        # re-validating would change what a response_model caller receives.
         if response_model is None:
             try:
                 decoded = response.json()
@@ -452,21 +440,18 @@ class HTTPClient:
                 raw_body.decode("utf-8") if isinstance(raw_body, bytes) else raw_body
             )
             decoded = ResponseValidator.validate(
-                body_text,
-                response_model=response_model,
-                many=many,
-                strict=strict,
+                body_text, response_model, many=many, strict=strict
             )
 
         if not with_response:
             return decoded
 
         return ClientResponse(
-            status_code=response.status_code,
-            headers=dict(response.headers),
-            body=decoded,
-            url=str(response.url),
-            raw=response,
+            response.status_code,
+            dict(response.headers),
+            decoded,
+            str(response.url),
+            response,
         )
 
     # ---- HTTP method shorthands --------------------------------------
