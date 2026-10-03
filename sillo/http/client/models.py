@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Generic, TypeVar, cast
 
 from httpx import Response as HttpxResponse
 from pydantic import BaseModel
+
+T = TypeVar("T")
 
 
 class CachedResponse(BaseModel):
@@ -48,6 +50,105 @@ class CachedResponse(BaseModel):
     def from_json_dict(cls, data: dict[str, Any]) -> CachedResponse:
         """Reconstruct from a JSON-compatible dict retrieved from cache."""
         return cls.model_validate(data)
+
+
+class ClientResponse(Generic[T]):
+    """An HTTP response whose body is decoded exactly as before.
+
+    :meth:`HTTPClient.request` returns the decoded body and nothing else, so a
+    caller cannot see the status code or headers of a response it already has
+    in hand. That makes the common integrations impossible to build against
+    this client -- a webhook sender has to classify the delivery by status and
+    read ``Retry-After``; a webhook receiver has to read the signature header
+    the sender wrote; a paged collection is only reachable through the ``Link``
+    header.
+
+    Passing ``with_response=True`` returns one of these instead. ``body`` holds
+    precisely what the call would have returned without the flag -- the parsed
+    JSON, the raw text, or the validated model -- so opting in changes what is
+    wrapped, never how the body is decoded.
+
+    Usage:
+        ```python
+        async with HTTPClient("https://api.example.com") as client:
+            res = await client.post("/hooks", json=payload, with_response=True)
+            if res.is_success:
+                log(res.status_code, res.headers.get("retry-after"))
+        ```
+
+    The underlying :class:`httpx.Response` is available as ``raw`` for anything
+    this does not surface. Reading a header is why this exists, so ``headers``
+    is a plain ``dict`` and works with ``.get()`` without importing httpx.
+    """
+
+    __slots__ = ("_body", "_raw", "headers", "status_code", "url")
+
+    def __init__(
+        self,
+        status_code: int,
+        headers: dict[str, str],
+        body: T,
+        url: str,
+        raw: HttpxResponse | None = None,
+    ) -> None:
+        self.status_code = status_code
+        self.headers = headers
+        self.url = url
+        self._body = body
+        self._raw = raw
+
+    @property
+    def body(self) -> T:
+        """The decoded body -- identical to this call's return without the flag."""
+        return self._body
+
+    @property
+    def raw(self) -> HttpxResponse | None:
+        """The underlying httpx response, for metadata not surfaced here."""
+        return self._raw
+
+    @property
+    def is_success(self) -> bool:
+        """Whether the status code is 2xx."""
+        return 200 <= self.status_code < 300
+
+    @property
+    def is_error(self) -> bool:
+        """Whether the status code is 4xx or 5xx."""
+        return self.status_code >= 400
+
+    def json(self) -> Any:
+        """The body as JSON, whether or not a ``response_model`` was used.
+
+        A body already validated into a model is dumped back to plain JSON
+        rather than re-parsed, which is the same content the caller received.
+        A body that is not JSON at all -- a plain-text or HTML error page --
+        raises :class:`~sillo.http.client.errors.HTTPDecodeError`, the error
+        the client already raises for an undecodable body, rather than the
+        ``json.JSONDecodeError`` that decoding one would otherwise surface.
+        """
+        if isinstance(self._body, (dict, list, int, float, bool)):
+            return self._body
+        if isinstance(self._body, BaseModel):
+            return self._body.model_dump(mode="json")
+
+        import json as _json
+
+        from sillo.http.client.errors import HTTPDecodeError
+
+        try:
+            # The body is a str here: _send decodes text, and the JSON-shaped
+            # and model cases are already handled above. `body` is typed as an
+            # unconstrained T, so narrow it for the checker.
+            return _json.loads(cast("str | bytes | bytearray", self._body))
+        except (TypeError, ValueError) as exc:
+            raise HTTPDecodeError(f"Response body is not valid JSON: {exc}") from exc
+
+    def __repr__(self) -> str:
+        return (
+            f"ClientResponse(status_code={self.status_code}, url={self.url!r}, "
+            f"body={self._body!r})"
+        )
 
 
 class ResponseValidator:
@@ -116,5 +217,6 @@ CachedResponse.model_rebuild()
 
 __all__ = [
     "CachedResponse",
+    "ClientResponse",
     "ResponseValidator",
 ]

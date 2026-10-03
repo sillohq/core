@@ -16,7 +16,7 @@ from sillo.http.client.errors import (
     HTTPTimeoutError,
 )
 from sillo.http.client.middleware import MiddlewareChain
-from sillo.http.client.models import ResponseValidator
+from sillo.http.client.models import ClientResponse, ResponseValidator
 from sillo.http.client.transport import ConnectionPoolConfig
 
 if typing.TYPE_CHECKING:
@@ -353,6 +353,7 @@ class HTTPClient:
         response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
+        with_response: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Send an HTTP request with optional response validation.
@@ -368,11 +369,18 @@ class HTTPClient:
             response_model: Optional Pydantic model for response validation.
             many: When True, validates a JSON array against ``response_model``.
             strict: When True, enables Pydantic strict mode.
+            with_response: When True, return a
+                :class:`~sillo.http.client.models.ClientResponse` carrying the
+                status code, headers and decoded body, instead of the body
+                alone. The body is decoded exactly as it would be without the
+                flag.
             **kwargs: Additional arguments forwarded to the httpx request.
 
         Returns:
             The validated Pydantic model instance, a list of model instances,
             the raw parsed JSON, or the raw httpx.Response depending on input.
+            With ``with_response=True``, a ClientResponse whose ``body`` is
+            that same value.
         """
         retry_strategy = self._config.retry_strategy
         _send = self._send
@@ -418,22 +426,32 @@ class HTTPClient:
         else:
             response = await _send(method, url, **kwargs)
 
+        # `with_response` wraps the value this call already decoded rather than
+        # re-decoding it: a second read of a consumed stream fails, and
+        # re-validating would change what a response_model caller receives.
         if response_model is None:
             try:
-                return response.json()
+                decoded = response.json()
             except Exception:
-                return response.text
+                decoded = response.text
+        else:
+            raw_body = await response.aread()
+            body_text = (
+                raw_body.decode("utf-8") if isinstance(raw_body, bytes) else raw_body
+            )
+            decoded = ResponseValidator.validate(
+                body_text, response_model, many=many, strict=strict
+            )
 
-        raw_body = await response.aread()
-        body_text = (
-            raw_body.decode("utf-8") if isinstance(raw_body, bytes) else raw_body
-        )
+        if not with_response:
+            return decoded
 
-        return ResponseValidator.validate(
-            body_text,
-            response_model=response_model,
-            many=many,
-            strict=strict,
+        return ClientResponse(
+            response.status_code,
+            dict(response.headers),
+            decoded,
+            str(response.url),
+            response,
         )
 
     # ---- HTTP method shorthands --------------------------------------
@@ -445,6 +463,7 @@ class HTTPClient:
         response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
+        with_response: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Send a GET request."""
@@ -454,6 +473,7 @@ class HTTPClient:
             response_model=response_model,
             many=many,
             strict=strict,
+            with_response=with_response,
             **kwargs,
         )
 
@@ -466,6 +486,7 @@ class HTTPClient:
         response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
+        with_response: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Send a POST request."""
@@ -477,6 +498,7 @@ class HTTPClient:
             response_model=response_model,
             many=many,
             strict=strict,
+            with_response=with_response,
             **kwargs,
         )
 
@@ -489,6 +511,7 @@ class HTTPClient:
         response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
+        with_response: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Send a PUT request."""
@@ -500,6 +523,7 @@ class HTTPClient:
             response_model=response_model,
             many=many,
             strict=strict,
+            with_response=with_response,
             **kwargs,
         )
 
@@ -512,6 +536,7 @@ class HTTPClient:
         response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
+        with_response: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Send a PATCH request."""
@@ -523,6 +548,7 @@ class HTTPClient:
             response_model=response_model,
             many=many,
             strict=strict,
+            with_response=with_response,
             **kwargs,
         )
 
@@ -533,6 +559,7 @@ class HTTPClient:
         response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
+        with_response: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Send a DELETE request."""
@@ -542,6 +569,7 @@ class HTTPClient:
             response_model=response_model,
             many=many,
             strict=strict,
+            with_response=with_response,
             **kwargs,
         )
 
