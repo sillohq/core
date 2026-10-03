@@ -627,6 +627,47 @@ class TestHTTPClientLifecycle:
         with pytest.raises(RuntimeError, match="not started"):
             _ = client._http_client
 
+    async def test_starts_without_base_url(self):
+        """An empty base URL must not be passed to httpx as None.
+
+        Regression test for issue #456. `httpx.AsyncClient(base_url=None)`
+        raises TypeError ("Invalid type for url"), which made HTTPClient()
+        impossible to construct at all -- even though httpx is happy without a
+        base URL as long as every request URL is absolute.
+        """
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient() as client:
+            assert client._state.client is not None
+            assert str(client._state.client.base_url) == ""
+
+    async def test_absolute_url_works_without_base_url(self):
+        """The point of #456: absolute URLs need no base URL at all."""
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient() as client:
+            request = client._http_client.build_request(
+                "GET", "https://api.example.com/users/1"
+            )
+            assert str(request.url) == "https://api.example.com/users/1"
+
+    async def test_empty_base_url_config_is_accepted(self):
+        """The same must hold when the config object is built directly."""
+        from sillo.http.client.client import HTTPClient
+
+        client = HTTPClient(config=HTTPClientConfig(base_url=""))
+        await client.start()
+        assert client._state.client is not None
+        await client.stop()
+
+    async def test_base_url_still_resolves_relative_urls(self):
+        """Supplying a base URL keeps behaving exactly as before the fix."""
+        from sillo.http.client.client import HTTPClient
+
+        async with HTTPClient("https://api.example.com") as client:
+            request = client._http_client.build_request("GET", "/users/1")
+            assert str(request.url) == "https://api.example.com/users/1"
+
     async def test_double_start(self):
         from sillo.http.client.client import HTTPClient
 
