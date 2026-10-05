@@ -150,6 +150,29 @@ class TestCrashedWorkerKeepsTheJob:
 
         run(main())
 
+    def test_releasing_a_job_replaces_its_claim_with_a_delayed_retry(self, conn):
+        """A retry must not leave the original delivery to be redelivered."""
+
+        async def main():
+            await conn.push("emails", '{"job":"Welcome"}')
+            job_id, _ = await conn.pop("emails")
+
+            released = await conn.release(
+                "emails", job_id, '{"job":"Welcome","attempts":1}', delay=60
+            )
+
+            assert released is True
+            assert await conn.in_flight("emails") == 0
+            assert await expire_all_claims(conn) == 0
+            assert await conn.pop("emails") is None
+
+            _, delayed, _, _ = conn._keys("emails")
+            scheduled = await conn._server.zrange(delayed, 0, -1)  # type: ignore[attr-defined]
+            assert len(scheduled) == 1
+            assert scheduled[0].endswith(':{"job":"Welcome","attempts":1}')
+
+        run(main())
+
     def test_ack_of_an_unknown_id_is_harmless(self, conn):
         async def main():
             await conn.push("emails", '{"job":"Welcome"}')
