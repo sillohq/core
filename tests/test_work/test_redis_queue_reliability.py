@@ -21,6 +21,10 @@ import time
 import pytest
 
 from sillo.work.queue.connection import RedisConnection
+from sillo.work.queue.failed import MemoryFailedRepository
+from sillo.work.queue.payloads import PayloadSerializer
+from sillo.work.queue.workers import QueueWorker
+from tests.test_work.work_jobs import FAILED_CALLBACKS, RETRY_ATTEMPTS
 
 fakeredis = pytest.importorskip(
     "fakeredis", reason="fakeredis provides the in-process Redis these tests need"
@@ -180,6 +184,38 @@ class TestCrashedWorkerKeepsTheJob:
             await conn.ack("emails", "not-a-real-job-id")
 
             assert await conn.in_flight("emails") == 1, "the real claim survives"
+
+        run(main())
+
+    def test_worker_settles_a_job_after_its_final_failed_attempt(self, conn):
+        """A final failure must not wait for Redis visibility recovery."""
+
+        async def main():
+            RETRY_ATTEMPTS.clear()
+            FAILED_CALLBACKS.clear()
+            repo = MemoryFailedRepository()
+            worker = QueueWorker(
+                manager=None,  # _process_job receives the connection directly.
+                serializer=PayloadSerializer(),
+                failed_repo=repo,
+            )
+            payload = (
+                '{"job":"tests.test_work.work_jobs.AlwaysFails",'
+                '"args":["redis"]}'
+            )
+            await conn.push("emails", payload)
+
+            for _ in range(2):
+                job_id, raw_payload = await conn.pop("emails")
+                job_data = PayloadSerializer().deserialize(raw_payload)
+                job_data["_job_id"] = job_id
+                await worker._process_job(conn, "emails", job_data, worker_id=0)
+
+            assert RETRY_ATTEMPTS == ["redis", "redis"]
+            assert FAILED_CALLBACKS == ["redis:permanent failure"]
+            assert len(await repo.all()) == 1
+            assert await conn.in_flight("emails") == 0
+            assert await conn.pop("emails") is None
 
         run(main())
 

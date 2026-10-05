@@ -11,7 +11,13 @@ from sillo.work.queue.connection import ConnectionManager, SyncConnection
 from sillo.work.queue.failed import FailedJob, MemoryFailedRepository
 from sillo.work.queue.payloads import PayloadSerializer
 from sillo.work.queue.workers import QueueWorker, WorkerOptions, WorkerPool
-from tests.test_work.work_jobs import FLIGHTS, SENT_EMAILS, SendEmail
+from tests.test_work.work_jobs import (
+    FAILED_CALLBACKS,
+    FLIGHTS,
+    RETRY_ATTEMPTS,
+    SENT_EMAILS,
+    SendEmail,
+)
 
 
 async def test_worker_consumes_job_and_runs_handle():
@@ -81,6 +87,69 @@ async def test_worker_logs_failed_jobs():
     assert failed.job_class == "tests.test_work.work_jobs.NoSuchJob"
     assert failed.exception
     assert isinstance(failed.id, str) and failed.id
+
+
+async def test_worker_retries_a_job_until_it_succeeds():
+    RETRY_ATTEMPTS.clear()
+    mgr = ConnectionManager()
+    conn = SyncConnection()
+    mgr.add("default", conn)
+    repo = MemoryFailedRepository()
+    worker = QueueWorker(
+        mgr,
+        PayloadSerializer(),
+        repo,
+        options=WorkerOptions(concurrency=1, sleep=0.01, queues=["default"]),
+    )
+    await conn.push(
+        "default",
+        json.dumps(
+            {"job": "tests.test_work.work_jobs.FailsThenSucceeds", "args": ["retry"]}
+        ),
+    )
+
+    task = asyncio.create_task(worker.run())
+    for _ in range(100):
+        if len(RETRY_ATTEMPTS) == 3:
+            break
+        await asyncio.sleep(0.02)
+    worker.stop()
+    await task
+
+    assert RETRY_ATTEMPTS == ["retry", "retry", "retry"]
+    assert await repo.all() == []
+
+
+async def test_worker_calls_failed_and_settles_after_final_attempt():
+    RETRY_ATTEMPTS.clear()
+    FAILED_CALLBACKS.clear()
+    mgr = ConnectionManager()
+    conn = SyncConnection()
+    mgr.add("default", conn)
+    repo = MemoryFailedRepository()
+    worker = QueueWorker(
+        mgr,
+        PayloadSerializer(),
+        repo,
+        options=WorkerOptions(concurrency=1, sleep=0.01, queues=["default"]),
+    )
+    await conn.push(
+        "default",
+        json.dumps({"job": "tests.test_work.work_jobs.AlwaysFails", "args": ["final"]}),
+    )
+
+    task = asyncio.create_task(worker.run())
+    for _ in range(100):
+        if len(await repo.all()) == 1:
+            break
+        await asyncio.sleep(0.02)
+    worker.stop()
+    await task
+
+    assert RETRY_ATTEMPTS == ["final", "final"]
+    assert FAILED_CALLBACKS == ["final:permanent failure"]
+    assert len(await repo.all()) == 1
+    assert await conn.size("default") == 0
 
 
 async def test_worker_pause_resume_stops_consumption():
