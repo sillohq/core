@@ -239,7 +239,11 @@ class QueueWorker:
                     job_id=job_id,
                     job_class=job_class_name,
                     payload=json.dumps(
-                        {key: value for key, value in job_data.items() if key != "_job_id"}
+                        {
+                            key: value
+                            for key, value in job_data.items()
+                            if key != "_job_id"
+                        }
                     ),
                     exception=tb,
                 )
