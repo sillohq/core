@@ -173,11 +173,14 @@ class QueueWorker:
         """Process Job"""
         job_id = job_data.get("_job_id", "unknown")
         job_class_name = job_data.get("job", "unknown")
+        job_instance: Any | None = None
+        attempt = int(job_data.get("attempts", 0)) + 1
 
         try:
             job_cls = self._resolve_job_class(job_class_name)
             job_instance = self._build_job(job_cls, job_data)
             job_instance._job_id = job_id
+            job_instance._attempts = attempt
 
             await job_instance.fire()
             await conn.ack(queue_name, job_id)
@@ -188,16 +191,80 @@ class QueueWorker:
             tb = traceback.format_exc()
             logger.error("[worker-%d] ✗ %s: %s", worker_id, job_class_name, exc)
 
+            if job_instance is not None and attempt < job_instance.max_tries():
+                retry_data = {
+                    key: value for key, value in job_data.items() if key != "_job_id"
+                }
+                retry_data["attempts"] = attempt
+                released = await conn.release(
+                    queue_name,
+                    job_id,
+                    json.dumps(retry_data),
+                    delay=max(job_instance.retry_after(), 0),
+                )
+                if released:
+                    logger.info(
+                        "[worker-%d] ↻ %s (attempt %d/%d)",
+                        worker_id,
+                        job_class_name,
+                        attempt,
+                        job_instance.max_tries(),
+                    )
+                    return
+
+                # A lost claim means the visibility reaper owns recovery. Do
+                # not log a permanent failure or call failed() while another
+                # worker might already hold the original delivery.
+                logger.warning(
+                    "[worker-%d] could not release %s for retry; "
+                    "waiting for visibility recovery",
+                    worker_id,
+                    job_class_name,
+                )
+                return
+
+            if job_instance is not None:
+                try:
+                    await job_instance.failed(exc)
+                except Exception:
+                    logger.exception(
+                        "[worker-%d] failed() callback raised for %s",
+                        worker_id,
+                        job_class_name,
+                    )
+
             try:
                 await self.failed_repo.log(
                     queue=queue_name,
                     job_id=job_id,
                     job_class=job_class_name,
-                    payload=json.dumps(job_data.get("data", {})),
+                    payload=json.dumps(
+                        {
+                            key: value
+                            for key, value in job_data.items()
+                            if key != "_job_id"
+                        }
+                    ),
                     exception=tb,
                 )
             except Exception:
                 logger.exception("Failed to log failed job")
+            finally:
+                try:
+                    await conn.fail(
+                        queue_name,
+                        job_id,
+                        json.dumps(
+                            {
+                                key: value
+                                for key, value in job_data.items()
+                                if key != "_job_id"
+                            }
+                        ),
+                        tb,
+                    )
+                except Exception:
+                    logger.exception("Failed to settle failed job")
 
     @staticmethod
     def _build_job(job_cls: type, job_data: dict[str, Any]) -> Any:

@@ -65,6 +65,24 @@ class QueueConnection(ABC):
     ) -> None:
         """Mark a job as successfully processed."""
 
+    async def release(
+        self,
+        queue_name: Annotated[str, Doc("Queue name.")],
+        job_id: Annotated[str, Doc("ID of the in-flight job.")],
+        payload: Annotated[str, Doc("Serialised payload for the next attempt.")],
+        *,
+        delay: Annotated[int, Doc("Seconds before the next attempt is available.")] = 0,
+    ) -> bool:
+        """Requeue an in-flight job and release its existing claim.
+
+        Backends with durable in-flight state should override this method to
+        make the handoff atomic.  The default is sufficient for connections
+        whose ``pop`` removes a job outright, such as :class:`SyncConnection`.
+        """
+        await self.push(queue_name, payload, delay=delay)
+        await self.ack(queue_name, job_id)
+        return True
+
     async def fail(
         self,
         queue_name: Annotated[str, Doc("Queue name.")],
@@ -223,6 +241,30 @@ return 0
 """
 
 
+#: Atomically replace an in-flight job with its next attempt.
+#:
+#: Retrying with ``push`` followed by ``ack`` risks duplicate work if the
+#: worker dies between calls.  Doing the handoff in Redis means a retry is
+#: either wholly scheduled or the original claim remains for recovery.
+_RELEASE_LUA = """
+local held = redis.call('LRANGE', KEYS[1], 0, -1)
+local prefix = ARGV[1] .. ':'
+for i = 1, #held do
+    if string.sub(held[i], 1, string.len(prefix)) == prefix then
+        if redis.call('LREM', KEYS[1], 1, held[i]) == 0 then return 0 end
+        redis.call('ZREM', KEYS[2], held[i])
+        if tonumber(ARGV[3]) > 0 then
+            redis.call('ZADD', KEYS[4], ARGV[3], ARGV[2])
+        else
+            redis.call('LPUSH', KEYS[3], ARGV[2])
+        end
+        return 1
+    end
+end
+return 0
+"""
+
+
 class RedisConnection(QueueConnection):
     """Redis-backed persistent queue connection.
 
@@ -351,6 +393,28 @@ class RedisConnection(QueueConnection):
         r = await self._r()
         _, _, processing, claims = self._keys(queue_name)
         await r.eval(_ACK_LUA, 2, processing, claims, job_id)
+
+    async def release(
+        self, queue_name: str, job_id: str, payload: str, *, delay: int = 0
+    ) -> bool:
+        """Atomically schedule a retry and release the current claim."""
+        r = await self._r()
+        ready, delayed, processing, claims = self._keys(queue_name)
+        next_job_id = uuid.uuid4().hex
+        raw = f"{next_job_id}:{payload}"
+        available_at = time.time() + delay if delay > 0 else 0
+        released = await r.eval(
+            _RELEASE_LUA,
+            4,
+            processing,
+            claims,
+            ready,
+            delayed,
+            job_id,
+            raw,
+            available_at,
+        )
+        return bool(released)
 
     async def fail(
         self, queue_name: str, job_id: str, payload: str, exception: str
