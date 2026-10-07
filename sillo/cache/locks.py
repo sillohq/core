@@ -68,7 +68,9 @@ class Lock:
                 return True
             if deadline is None or time.monotonic() >= deadline:
                 return False
-            await asyncio.sleep(min(self.retry_interval, max(0, deadline - time.monotonic())))
+            await asyncio.sleep(
+                min(self.retry_interval, max(0, deadline - time.monotonic()))
+            )
 
     async def extend(self, lease: float | None = None) -> bool:
         """Renew this owner's lease; return ``False`` if ownership was lost."""

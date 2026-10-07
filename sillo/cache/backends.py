@@ -600,7 +600,9 @@ class RedisCache(BaseCache):
     async def _acquire_lock(self, name: str, token: str, lease: float) -> bool:
         redis = await self._redis()
         return bool(
-            await redis.set(self._lock_key(name), token, nx=True, px=max(1, round(lease * 1000)))
+            await redis.set(
+                self._lock_key(name), token, nx=True, px=max(1, round(lease * 1000))
+            )
         )
 
     async def _extend_lock(self, name: str, token: str, lease: float) -> bool:
