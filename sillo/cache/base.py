@@ -638,6 +638,38 @@ class BaseCache(abc.ABC):
         """
         return ttl if ttl is not None else self.default_ttl
 
+    def lock(
+        self,
+        name: str,
+        *,
+        lease: float = 30,
+        blocking_timeout: float | None = None,
+        retry_interval: float = 0.1,
+    ):
+        """Create an owner-safe lease lock backed by this cache backend.
+
+        Memory locks coordinate one process; Redis locks coordinate all
+        processes using the same Redis database.
+        """
+        from .locks import Lock
+
+        return Lock(
+            self,
+            name,
+            lease=lease,
+            blocking_timeout=blocking_timeout,
+            retry_interval=retry_interval,
+        )
+
+    async def _acquire_lock(self, name: str, token: str, lease: float) -> bool:
+        raise NotImplementedError("this cache backend does not support locks")
+
+    async def _extend_lock(self, name: str, token: str, lease: float) -> bool:
+        raise NotImplementedError("this cache backend does not support locks")
+
+    async def _release_lock(self, name: str, token: str) -> bool:
+        raise NotImplementedError("this cache backend does not support locks")
+
 
 __all__ = [
     "_MISSING",

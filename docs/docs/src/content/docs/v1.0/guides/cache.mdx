@@ -360,7 +360,33 @@ easier to reason about across multiple processes.
 
 **Stampede.** A popular key expires and a thousand concurrent requests
 all miss and all recompute. The fix is a lock so one request recomputes
-while the others wait or serve stale.
+while the others wait or serve stale. Use a `RedisCache` when the work spans
+multiple processes; `MemoryCache` locks coordinate only one process.
+
+```python
+from sillo.cache import RedisCache
+
+cache = RedisCache(url="redis://localhost:6379/0", namespace="myapp")
+
+async with cache.lock("refresh:catalog", lease=30, blocking_timeout=2):
+    await rebuild_catalog()
+```
+
+Every lock has a lease, so a crashed worker cannot hold it indefinitely.
+Release and renewal are owner-safe: a process whose lease expires cannot delete
+or extend a later owner's lock. For long work, renew before the lease expires:
+
+```python
+lock = cache.lock("scheduler:nightly", lease=60)
+if await lock.acquire():
+    try:
+        await run_first_part()
+        if not await lock.extend(lease=60):
+            return  # the lease was lost; do not continue as leader
+        await run_second_part()
+    finally:
+        await lock.release()
+```
 
 **Penetration.** Repeated requests for something that does not exist miss
 every time and hit the database every time. Cache the negative result,

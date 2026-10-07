@@ -35,12 +35,15 @@ from .config import (
     reset_cache_config,
 )
 from .decorator import cache
+from .locks import Lock, LockNotAcquiredError
 
 __all__ = [
     "BaseCache",
     "CacheError",
     "CacheSettings",
     "CacheStats",
+    "Lock",
+    "LockNotAcquiredError",
     "MemoryCache",
     "RedisCache",
     "SerializationError",
