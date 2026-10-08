@@ -353,6 +353,12 @@ class Route(BaseRoute):
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
         self._literal_prefix: str = self.route_info.literal_prefix
+        # Whether the handler is a coroutine function never changes for a
+        # given handler, and working it out inspects the callable. Remembered
+        # with the handler it was worked out for, so replacing `route.handler`
+        # simply recomputes it.
+        self._async_handler: Any = self.handler
+        self._handler_is_async: bool = is_async_callable(self.handler)
         # What the router's scan may test before calling ``match`` at all. Only
         # a route that still uses the stock ``match`` can promise that a path
         # outside its prefix is a non-match; a subclass that overrides it opts
@@ -729,9 +735,13 @@ class Route(BaseRoute):
             kwargs = {k: v for k, v in kwargs.items() if k not in injected}
 
         try:
-            if is_async_callable(self.handler):
-                return await self.handler(ctx, **kwargs, **injected)
-            return await run_in_threadpool(self.handler, ctx, **kwargs, **injected)
+            handler = self.handler
+            if handler is not self._async_handler:
+                self._async_handler = handler
+                self._handler_is_async = is_async_callable(handler)
+            if self._handler_is_async:
+                return await handler(ctx, **kwargs, **injected)
+            return await run_in_threadpool(handler, ctx, **kwargs, **injected)
         finally:
             for cleanup in reversed(cleanup_callbacks):
                 result = cleanup()
