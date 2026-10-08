@@ -25,7 +25,7 @@ import anyio
 import anyio.to_thread
 from anyio import AsyncFile
 
-from sillo.core.encoding import jsonable_encoder
+from sillo.core.encoding import CUSTOM_ENCODERS, encode_node, jsonable_encoder
 from sillo.core.http.context import ClientDisconnect
 from sillo.objects import MutableHeaders
 
@@ -744,20 +744,35 @@ class JSONResponse(BaseResponse):
             )
 
         if custom_encoder is None:
+            # One pass with `encode_node` as the C encoder's `default=` hook:
+            # it walks the structure at native speed and is asked about only
+            # the values it cannot write itself (datetimes, UUIDs, Decimals,
+            # models), instead of the whole payload being rebuilt in Python
+            # first. For plain data the hook is never called, so this is the
+            # same work as no hook. It is off while any custom encoder is
+            # registered: one may apply to a type the C encoder handles itself
+            # (a `str` subclass, say), which the hook would never be asked
+            # about.
+            #
+            # Whatever goes wrong — an unencodable value, NaN, a circular
+            # reference, a key type JSON has no form for — is left to the full
+            # conversion below, so its result and its errors are exactly what
+            # they always were.
+            hook = None if CUSTOM_ENCODERS else encode_node
             try:
                 return json.dumps(
                     content,
                     indent=indent,
                     ensure_ascii=ensure_ascii,
                     allow_nan=False,
+                    default=hook,
                     separators=separators,
                 )
             except (TypeError, ValueError):
-                # Something in there needs converting — or the content is
-                # unserializable for a reason the encoder cannot fix either, in
-                # which case the second attempt raises the same thing and the
-                # caller sees the error it would always have seen.
                 pass
+            except RecursionError:
+                if hook is None:
+                    raise
 
         return json.dumps(
             jsonable_encoder(content, custom_encoder=custom_encoder),
