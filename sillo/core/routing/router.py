@@ -28,7 +28,12 @@ from sillo.core.dependencies import (
 from sillo.core.encoding import jsonable_encoder
 from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.core.http import HttpContext
-from sillo.core.http.response import BaseResponse, JSONResponse, RedirectResponse
+from sillo.core.http.response import (
+    BaseResponse,
+    JSONResponse,
+    RedirectResponse,
+    native_json,
+)
 from sillo.events import EventEmitter
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.helpers.concurrency import run_in_threadpool
@@ -427,6 +432,16 @@ class Route(BaseRoute):
                     content=self.response_validator.validate(func_result),
                     use_encoder=False,
                 )
+            elif (
+                type(func_result) in (dict, list)
+                and (body := native_json(func_result)) is not None
+            ):
+                # A plain dict or list is serialized by the C encoder directly;
+                # see ``native_json`` for when this declines and the full
+                # conversion below runs as it always did. Only exact ``dict``
+                # and ``list`` qualify: the conversion can turn other types
+                # into a string, which is sent as text, not JSON.
+                response = JSONResponse._prerendered(body)
             else:
                 encoded = jsonable_encoder(func_result)
                 if isinstance(encoded, str):

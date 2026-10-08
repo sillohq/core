@@ -654,6 +654,40 @@ class PlainTextResponse(BaseResponse):
         super().__init__(body, status_code, headers, content_type)
 
 
+def native_json(content: Any) -> str | None:
+    """Serialize a handler's plain ``dict`` or ``list`` without converting it first.
+
+    A handler that returns a dict has always been run through
+    ``jsonable_encoder`` and then ``json.dumps``, which rebuilds the whole
+    structure in Python before the C encoder sees it. This hands the C encoder
+    the original and lets it ask :func:`encode_node` about only the values it
+    cannot serialize itself.
+
+    It answers ``None`` — and the caller does exactly what it always did — when
+    a custom encoder is registered, or when anything at all goes wrong: NaN, a
+    key type JSON cannot represent, a value nothing can encode, a circular
+    reference. So the result is either the same JSON the full conversion would
+    produce or no result at all.
+
+    Args:
+        content: The handler's return value, a ``dict`` or a ``list``.
+
+    Returns:
+        Compact JSON text, or ``None`` when the full conversion is needed.
+    """
+    if CUSTOM_ENCODERS:
+        return None
+    try:
+        # One pass. The hook is only ever called for a value the C encoder
+        # cannot write, so for a payload of plain data this is the same work
+        # as having no hook at all.
+        return json.dumps(
+            content, allow_nan=False, separators=(",", ":"), default=encode_node
+        )
+    except (TypeError, ValueError, RecursionError):
+        return None
+
+
 class JSONResponse(BaseResponse):
     """
     Response subclass for JSON content.
@@ -682,6 +716,19 @@ class JSONResponse(BaseResponse):
             headers=headers,
             content_type="application/json",
         )
+
+    @classmethod
+    def _prerendered(cls, body: str) -> JSONResponse:
+        """A 200 JSON response around text that is already serialized."""
+        response = cls.__new__(cls)
+        BaseResponse.__init__(
+            response,
+            body=body,
+            status_code=200,
+            headers=None,
+            content_type="application/json",
+        )
+        return response
 
     @staticmethod
     def _serialize(
