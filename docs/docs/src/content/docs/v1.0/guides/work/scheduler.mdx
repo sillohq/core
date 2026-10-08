@@ -441,16 +441,26 @@ enabled and no HTTP traffic, and leave it out of the web deployment. The
 simplest option and the easiest to reason about.
 
 **A distributed lock per run.** Each tick tries to acquire a lock keyed by
-job name and the scheduled minute; the loser skips. Requires Redis or the
-database, and the lock must outlive the job.
+job name and the scheduled minute; the loser skips. Sillo's `RedisCache` lock
+coordinates all scheduler processes that share Redis. Its lease must outlive
+the job (or be renewed while the job runs).
 
 ```python
+from sillo.cache import LockNotAcquiredError, RedisCache
+
+locks = RedisCache(url="redis://localhost:6379/0", namespace="myapp")
+
 async def run_once(job_name: str, when: str, coro):
-    key = f"lock:{job_name}:{when}"
-    if not await redis.set(key, "1", nx=True, ex=3600):
-        return          # another process got there first
-    await coro()
+    try:
+        async with locks.lock(f"scheduler:{job_name}:{when}", lease=3600):
+            await coro()
+    except LockNotAcquiredError:
+        return  # another process got there first
 ```
+
+See [distributed locks](/v1.0/guides/cache/#distributed-locks) for waiting,
+renewing a long-running lease, and the difference between Redis and in-memory
+locks.
 
 **Leader election.** One process holds a renewable lease and runs the
 scheduler; the others idle. More moving parts than most applications
