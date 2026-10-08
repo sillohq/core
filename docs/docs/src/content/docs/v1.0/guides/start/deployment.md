@@ -21,6 +21,14 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 Under a process manager, behind a reverse proxy. Everything else on this page
 is what to change before that is a good idea.
 
+:::tip[Two settings worth making before anything else]
+`pip install "uvicorn[standard]"` installs `uvloop` and `httptools`, which
+uvicorn then uses on its own. On simple routes that nearly tripled throughput
+per worker in our tests. Then run **one worker per CPU core**. The
+[Performance guide](/guides/performance/) has the numbers and the
+trade-offs, including Granian as an alternative server.
+:::
+
 :::caution[Not `uvicorn app:app`]
 `uvicorn app:app` is the **development** server. It is a single process by default,
 its `--reload` restarts on any file change, and its access log is formatted for
