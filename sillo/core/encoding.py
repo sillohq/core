@@ -222,6 +222,52 @@ def generate_encoders_by_class_tuples(
 encoders_by_class_tuples = generate_encoders_by_class_tuples(ENCODERS_BY_TYPE)
 
 
+#: Exact types ``jsonable_encoder`` reaches only at its very last step, the
+#: ``ENCODERS_BY_TYPE`` lookup: nothing earlier in its dispatch (custom
+#: encoders aside) can claim them. :func:`encode_node` may therefore go straight
+#: to the table for these and still produce exactly what the full dispatch would.
+_TABLE_ONLY_TYPES = frozenset(
+    {
+        datetime.datetime,
+        datetime.date,
+        datetime.time,
+        datetime.timedelta,
+        Decimal,
+        UUID,
+        bytes,
+        IPv4Address,
+        IPv6Address,
+    }
+)
+
+
+def encode_node(obj: typing.Any) -> typing.Any:
+    """Encode one value the standard library's JSON encoder cannot, as ``jsonable_encoder`` would.
+
+    This is the ``default=`` hook for ``json.dumps``. The C encoder walks the
+    structure at native speed and calls this only for the nodes it does not
+    understand, so a payload of two hundred rows with a datetime and a UUID in
+    each costs four hundred small calls here instead of a Python call for
+    every one of the thousands of nodes ``jsonable_encoder`` would visit.
+
+    Callers must not use it while :data:`CUSTOM_ENCODERS` is populated: a
+    registered encoder may apply to a type the C encoder handles itself (a
+    ``str`` subclass, say), which this hook would never be asked about.
+
+    Args:
+        obj: A value ``json.dumps`` could not serialize.
+
+    Returns:
+        The same JSON-safe value ``jsonable_encoder(obj)`` returns.
+    """
+    kind = type(obj)
+    if kind in _TABLE_ONLY_TYPES:
+        encoder = ENCODERS_BY_TYPE.get(kind)
+        if encoder is not None:
+            return encoder(obj)
+    return jsonable_encoder(obj)
+
+
 def jsonable_encoder(
     obj: typing.Any,
     include: set[str] | None = None,
