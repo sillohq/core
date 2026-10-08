@@ -356,25 +356,43 @@ migration script will not.
 entries age out naturally. This survives missed invalidations and is much
 easier to reason about across multiple processes.
 
-##  The failure modes worth designing for
+## Distributed locks
 
-**Stampede.** A popular key expires and a thousand concurrent requests
-all miss and all recompute. The fix is a lock so one request recomputes
-while the others wait or serve stale. Use a `RedisCache` when the work spans
-multiple processes; `MemoryCache` locks coordinate only one process.
+Use `cache.lock()` when exactly one owner must perform work. `MemoryCache`
+locks coordinate coroutines in one process; `RedisCache` locks coordinate every
+process using the same Redis database. Install the cache extra before using
+Redis:
+
+```bash
+uv add "sillo-framework[cache]"
+```
+
+Every lock has a lease, so a crashed worker cannot hold it forever. Redis uses
+an owner token for renewal and release: an expired owner cannot delete or
+extend a later owner's lock.
+
+| Argument | Meaning |
+| --- | --- |
+| `name` | A stable, application-specific lock name. |
+| `lease` | Seconds before the lock expires. Defaults to `30`. |
+| `blocking_timeout` | Seconds to poll for ownership. Omit it to try once. |
+| `retry_interval` | Seconds between attempts while waiting. Defaults to `0.1`. |
+
+Use the context manager when another owner should cause the work to be skipped:
 
 ```python
-from sillo.cache import RedisCache
+from sillo.cache import LockNotAcquiredError, RedisCache
 
 cache = RedisCache(url="redis://localhost:6379/0", namespace="myapp")
 
-async with cache.lock("refresh:catalog", lease=30, blocking_timeout=2):
-    await rebuild_catalog()
+try:
+    async with cache.lock("refresh:catalog", lease=30, blocking_timeout=2):
+        await rebuild_catalog()
+except LockNotAcquiredError:
+    pass  # another worker is already refreshing the catalog
 ```
 
-Every lock has a lease, so a crashed worker cannot hold it indefinitely.
-Release and renewal are owner-safe: a process whose lease expires cannot delete
-or extend a later owner's lock. For long work, renew before the lease expires:
+For long work, acquire explicitly and renew before the lease expires:
 
 ```python
 lock = cache.lock("scheduler:nightly", lease=60)
@@ -387,6 +405,12 @@ if await lock.acquire():
     finally:
         await lock.release()
 ```
+
+##  The failure modes worth designing for
+
+**Stampede.** A popular key expires and a thousand concurrent requests
+all miss and all recompute. Use a distributed lock so one request recomputes
+while the others wait or serve stale.
 
 **Penetration.** Repeated requests for something that does not exist miss
 every time and hit the database every time. Cache the negative result,
