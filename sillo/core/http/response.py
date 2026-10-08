@@ -275,7 +275,14 @@ class BaseResponse:
             and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
             content_length = str(len(body))
-            self.set_header("content-length", content_length, override=True)
+            if self.raw_headers:
+                self.set_header("content-length", content_length, override=True)
+            else:
+                # Nothing to replace yet, which is always the case when a
+                # response is first built: skip the scan `override` does.
+                self.raw_headers.append(
+                    (b"content-length", content_length.encode("latin-1"))
+                )
         content_type: str | None = self.content_type
         if content_type is not None and populate_content_type:
             if (

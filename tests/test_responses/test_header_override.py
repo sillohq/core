@@ -114,3 +114,14 @@ class TestTheSourceUsesTheCorrectSpelling:
 
         package = Path(__file__).resolve().parents[2] / "sillo"
         assert len(list(package.rglob("*.py"))) > 50
+
+
+def test_content_length_is_replaced_not_duplicated_when_headers_already_exist():
+    """A new response skips the scan; one that already has headers must still replace the old length."""
+    from sillo.core.http.response import BaseResponse
+
+    response = BaseResponse("hello", content_type="text/plain")
+    assert [v for k, v in response.raw_headers if k == b"content-length"] == [b"5"]
+    response._body = b"hello world"
+    response._init_headers()
+    assert [v for k, v in response.raw_headers if k == b"content-length"] == [b"11"]
