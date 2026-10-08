@@ -188,6 +188,7 @@ class WebsocketRoute(BaseRoute):
         self.dependant: Dependant = get_dependant(handler)
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern = self.route_info.pattern
+        self._literal_prefix = self.route_info.literal_prefix
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
         self.router_middleware = None
@@ -223,6 +224,8 @@ class WebsocketRoute(BaseRoute):
             return MatchStatus.NONE, {}
 
         path = get_route_path(scope)
+        if not path.startswith(self._literal_prefix):
+            return MatchStatus.NONE, {}
         match = self.pattern.match(path)
         if match:
             matched_params = match.groupdict()

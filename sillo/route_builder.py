@@ -193,6 +193,11 @@ class RoutePattern:
         convertor: A dictionary mapping parameter names to their corresponding
             ``Convertor`` instances, which handle type coercion between URL
             path segments and Python objects.
+        literal_prefix: The text of the path before its first parameter. The
+            compiled pattern escapes literal text, so every path it can match
+            starts with exactly this string; the router checks that first with
+            ``str.startswith``, which costs a fraction of a regex match, and
+            runs the regex only for paths that could match.
     """
 
     pattern: Pattern[str]
@@ -200,6 +205,7 @@ class RoutePattern:
     param_names: list[str]
     route_type: RouteType
     convertor: dict[str, Convertor[typing.Any]]
+    literal_prefix: str = ""
 
 
 class RouteBuilder:
@@ -243,10 +249,17 @@ class RouteBuilder:
             # pattern.param_names == ["user_id", "post_id"]
         """
         path_regex, path_format, param_convertors, param_names = compile_path(path)
+        literal_prefix = ""
+        if path.startswith("/"):
+            # The same scan `compile_path` used to build the regex, so the
+            # prefix is the literal text the regex starts with, and no more.
+            first_param = PARAM_REGEX.search(path)
+            literal_prefix = path[: first_param.start()] if first_param else path
         return RoutePattern(
             pattern=path_regex,
             raw_path=path,
             param_names=param_names,
             route_type=path_format,
             convertor=param_convertors,
+            literal_prefix=literal_prefix,
         )

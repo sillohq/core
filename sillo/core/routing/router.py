@@ -352,6 +352,7 @@ class Route(BaseRoute):
 
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
+        self._literal_prefix: str = self.route_info.literal_prefix
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
         self.middleware: list[MiddlewareType] = list(middleware) if middleware else []
@@ -595,6 +596,11 @@ class Route(BaseRoute):
             return MatchStatus.NONE, {}
         path = get_route_path(scope)
         method = scope["method"]
+        # Every path this route's pattern matches starts with its literal
+        # prefix, so a path that does not is rejected without the regex. The
+        # router tries each route in turn, which makes this the common case.
+        if not path.startswith(self._literal_prefix):
+            return MatchStatus.NONE, {}
         match = self.pattern.match(path)
         if match:
             matched_params = match.groupdict()
