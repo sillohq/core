@@ -353,6 +353,13 @@ class Route(BaseRoute):
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
         self._literal_prefix: str = self.route_info.literal_prefix
+        # What the router's scan may test before calling ``match`` at all. Only
+        # a route that still uses the stock ``match`` can promise that a path
+        # outside its prefix is a non-match; a subclass that overrides it opts
+        # out and is always asked.
+        self._scan_prefix: str | None = (
+            self._literal_prefix if type(self).match is Route.match else None
+        )
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
         self.middleware: list[MiddlewareType] = list(middleware) if middleware else []
@@ -3469,8 +3476,22 @@ class Router(BaseRouter):
         # across several Route objects, one per method.
         allowed: set[str] = set()
 
+        # The path is the same for every route, so it is worked out once here
+        # rather than inside each ``match``, and a route whose literal prefix
+        # the path does not start with is skipped without being called. That
+        # is the whole cost of a non-matching route in the common case, which
+        # is what keeps an app with hundreds of routes from paying for each
+        # one on every request. Routes are still tried in the same order and
+        # the first full match still wins.
+        route_path = get_route_path(scope)
         for route in self.routes:
+            prefix = getattr(route, "_scan_prefix", None)
+            if prefix is not None and not route_path.startswith(prefix):
+                continue
             match, matched_params = route.match(scope)
+            if prefix is None:
+                # A route with its own `match` may do anything to the scope.
+                route_path = get_route_path(scope)
             if match == MatchStatus.FULL:
                 scope["route_params"] = RouteParam(matched_params)
                 await route.handle(scope, receive, send)

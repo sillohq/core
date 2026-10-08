@@ -89,6 +89,10 @@ class Group(BaseRoute):
         )
         self.pattern = self.route_info.pattern
         self._literal_prefix = self.route_info.literal_prefix
+        # See `Route._scan_prefix`.
+        self._scan_prefix = (
+            self._literal_prefix if type(self).match is Group.match else None
+        )
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
         # A mount always consumes an open-ended suffix, so it ranks after any

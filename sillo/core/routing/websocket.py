@@ -189,6 +189,11 @@ class WebsocketRoute(BaseRoute):
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern = self.route_info.pattern
         self._literal_prefix = self.route_info.literal_prefix
+        # See `Route._scan_prefix`: the router skips this route outright when
+        # the path cannot start with it, unless `match` has been overridden.
+        self._scan_prefix = (
+            self._literal_prefix if type(self).match is WebsocketRoute.match else None
+        )
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
         self.router_middleware = None
