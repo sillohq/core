@@ -105,6 +105,37 @@ class MemoryCache(BaseCache):
             collections.OrderedDict()
         )
         self._tags: dict[str, set] = {}
+        self._locks: dict[str, tuple[str, float]] = {}
+
+    def _lock_key(self, name: str) -> str:
+        return f"{self.namespace}:lock:{name}" if self.namespace else f"lock:{name}"
+
+    async def _acquire_lock(self, name: str, token: str, lease: float) -> bool:
+        key = self._lock_key(name)
+        with self._lock:
+            existing = self._locks.get(key)
+            if existing and existing[1] > time.monotonic():
+                return False
+            self._locks[key] = (token, time.monotonic() + lease)
+            return True
+
+    async def _extend_lock(self, name: str, token: str, lease: float) -> bool:
+        key = self._lock_key(name)
+        with self._lock:
+            existing = self._locks.get(key)
+            if not existing or existing[0] != token or existing[1] <= time.monotonic():
+                return False
+            self._locks[key] = (token, time.monotonic() + lease)
+            return True
+
+    async def _release_lock(self, name: str, token: str) -> bool:
+        key = self._lock_key(name)
+        with self._lock:
+            existing = self._locks.get(key)
+            if not existing or existing[0] != token:
+                return False
+            del self._locks[key]
+            return True
 
     # ---- internal entry type ---------------------------------------
 
@@ -562,6 +593,38 @@ class RedisCache(BaseCache):
         self._password = password
         self._client = client
         self._owns_client = client is None
+
+    def _lock_key(self, name: str) -> str:
+        return f"{self.namespace}:lock:{name}" if self.namespace else f"lock:{name}"
+
+    async def _acquire_lock(self, name: str, token: str, lease: float) -> bool:
+        redis = await self._redis()
+        return bool(
+            await redis.set(
+                self._lock_key(name), token, nx=True, px=max(1, round(lease * 1000))
+            )
+        )
+
+    async def _extend_lock(self, name: str, token: str, lease: float) -> bool:
+        redis = await self._redis()
+        result = await redis.eval(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('pexpire', KEYS[1], ARGV[2]) else return 0 end",
+            1,
+            self._lock_key(name),
+            token,
+            max(1, round(lease * 1000)),
+        )
+        return bool(result)
+
+    async def _release_lock(self, name: str, token: str) -> bool:
+        redis = await self._redis()
+        result = await redis.eval(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+            1,
+            self._lock_key(name),
+            token,
+        )
+        return bool(result)
 
     # ---- lazy connection -------------------------------------------
 
