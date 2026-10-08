@@ -31,6 +31,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hosts with absolute URLs possible. Supplying a base URL is unchanged: the
   client never had this bug when one was given.
 
+### Performance
+
+None of these changes behaviour: each is checked against the code it
+replaces, on random inputs as well as fixed ones, and each falls back to the
+old path rather than guess.
+
+- A handler that returns a plain `dict` or `list` is serialized by the C JSON
+  encoder directly, instead of being rebuilt in Python by `jsonable_encoder`
+  first. Two hundred rows of plain data went from about 1.7 ms to 0.56 ms.
+  Any payload the shortcut cannot be sure of (NaN, a key type JSON has no form
+  for, a registered custom encoder) takes the old path and gets the old
+  result or the old error. Returning a bare string or an `Enum` is unchanged.
+- Payloads holding datetimes, UUIDs, Decimals and the like keep the C encoder
+  and hand it only the values it cannot write, through `encode_node`, a
+  `default=` hook that gives exactly what `jsonable_encoder` gives for each
+  value. Two hundred such rows went from about 3.6 ms to 1.9 ms, in both
+  `json(...)` and plain returns.
+- Routes carry the literal text their pattern begins with, and the router
+  skips a route whose prefix the request path does not start with, without
+  calling it. The scan is unchanged in order and in who wins; a route class
+  that overrides `match` is still always asked. A request matching the last of
+  300 routes went from about 390 µs to 150 µs.
+- Per request: the handler's sync-or-async check is remembered per handler,
+  `collapse_excgroups` is a small class instead of a generator, and a
+  response's `Content-Length` no longer scans an empty header list.
+  A route returning a string is about 15 % cheaper.
+
+### Documentation
+
+- A Performance guide: which server and worker settings matter most (with
+  measured numbers for `uvicorn`, `uvloop`, `httptools` and Granian), what a
+  request costs inside Sillo, and how to profile your own app.
+
 ### Changed
 
 - One built middleware instance can be attached to several routes or routers.
