@@ -11,7 +11,8 @@ import functools
 import inspect
 import sys
 import typing
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, ContextDecorator
+from types import TracebackType
 from typing import TypeGuard
 
 has_exceptiongroups = True
@@ -219,8 +220,42 @@ class AwaitableOrContextManagerWrapper(typing.Generic[SupportsAsyncCloseType]):
         return None
 
 
-@contextmanager
-def collapse_excgroups() -> typing.Generator[None, None, None]:
+class _CollapseExcGroups(ContextDecorator):
+    """Unwrap single-exception exception groups as they leave the ``with`` block.
+
+    A class rather than a ``@contextmanager`` generator: this runs twice for
+    every request, and building, entering and finishing a generator each time
+    is measurable next to the few nanoseconds of work it actually does. The
+    behaviour is the generator's, exactly: the exception that leaves the block
+    is the innermost one when a chain of one-element groups wraps it, and any
+    other exception propagates untouched.
+    """
+
+    def __enter__(self) -> None:
+        return None
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> bool:
+        if exc is None or not has_exceptiongroups:
+            return False
+        inner = exc
+        while isinstance(inner, BaseExceptionGroup) and len(inner.exceptions) == 1:  # ty: ignore[unresolved-attribute]
+            inner = inner.exceptions[0]  # ty: ignore[unresolved-attribute]  # pragma: no cover
+        if inner is not exc:
+            # `raise inner`, not a bare re-raise: the original is still the
+            # in-flight exception, and the point is to replace it.
+            raise inner
+        return False
+
+
+_COLLAPSE_EXCGROUPS = _CollapseExcGroups()
+
+
+def collapse_excgroups() -> AbstractContextManager[None]:
     """Context manager that unwraps single-exception exception groups on raise.
 
     When running on Python versions that support exception groups (3.11+),
@@ -230,27 +265,13 @@ def collapse_excgroups() -> typing.Generator[None, None, None]:
     ``exceptiongroup`` backport is not installed, exceptions pass through
     unchanged.
 
-    Args:
-        No arguments are accepted; this is a context manager that yields
-        ``None`` and does not accept any configuration.
-
     Returns:
-        A context manager generator that yields ``None``. The context
-        manager does not produce a value for use inside the ``with`` block.
+        A context manager that yields ``None``. It holds no state, so one
+        instance is shared and may be nested or used concurrently.
 
     Raises:
         BaseException: Re-raises whatever exception occurred inside the
         ``with`` block, potentially unwrapped from a single-element
         exception group if applicable.
     """
-    try:
-        yield
-    except BaseException as exc:
-        if has_exceptiongroups:
-            while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:  # ty: ignore[unresolved-attribute]
-                exc = exc.exceptions[0]  # ty: ignore[unresolved-attribute]  # pragma: no cover
-
-        # `raise exc`, not a bare `raise`: exc has been rebound to the unwrapped
-        # exception above, and a bare raise would re-raise the original group —
-        # which is the entire thing this context manager exists to undo.
-        raise exc  # noqa: TRY201
+    return _COLLAPSE_EXCGROUPS

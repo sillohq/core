@@ -131,3 +131,40 @@ def test_collapse_excgroups_plain_exception():
     with pytest.raises(KeyError):
         with collapse_excgroups():
             raise KeyError("missing")
+
+
+def test_collapse_excgroups_unwraps_nested_single_groups_to_the_innermost():
+    inner = ValueError("deep")
+    wrapped = BaseExceptionGroup("outer", [BaseExceptionGroup("middle", [inner])])
+    with pytest.raises(ValueError) as caught:
+        with collapse_excgroups():
+            raise wrapped
+    assert caught.value is inner
+
+
+def test_collapse_excgroups_keeps_the_same_exception_object_when_nothing_wraps_it():
+    error = KeyError("same")
+    with pytest.raises(KeyError) as caught:
+        with collapse_excgroups():
+            raise error
+    assert caught.value is error
+
+
+def test_collapse_excgroups_is_reentrant_and_usable_as_a_decorator():
+    @collapse_excgroups()
+    def wrapped():
+        raise BaseExceptionGroup("g", [RuntimeError("x")])
+
+    with pytest.raises(RuntimeError):
+        with collapse_excgroups():
+            with collapse_excgroups():
+                wrapped()
+
+    with collapse_excgroups():
+        pass
+
+
+def test_collapse_excgroups_does_not_swallow_base_exceptions():
+    with pytest.raises(KeyboardInterrupt):
+        with collapse_excgroups():
+            raise KeyboardInterrupt

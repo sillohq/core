@@ -457,6 +457,7 @@ const MANUAL_GROUPS = [
         items: [
             { label: 'Startup & Shutdown', link: '/guides/startups-and-shutdowns/' },
             { label: 'Concurrency & Thread Pool', link: '/guides/concurrency/' },
+            { label: 'Performance', link: '/guides/performance/' },
             { label: 'Caching', link: '/guides/cache/' },
             { label: 'Storage', link: '/guides/storage/' },
             { label: 'Event System', link: '/guides/events/' },

@@ -25,7 +25,7 @@ import anyio
 import anyio.to_thread
 from anyio import AsyncFile
 
-from sillo.core.encoding import jsonable_encoder
+from sillo.core.encoding import CUSTOM_ENCODERS, encode_node, jsonable_encoder
 from sillo.core.http.context import ClientDisconnect
 from sillo.objects import MutableHeaders
 
@@ -275,7 +275,14 @@ class BaseResponse:
             and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
             content_length = str(len(body))
-            self.set_header("content-length", content_length, override=True)
+            if self.raw_headers:
+                self.set_header("content-length", content_length, override=True)
+            else:
+                # Nothing to replace yet, which is always the case when a
+                # response is first built: skip the scan `override` does.
+                self.raw_headers.append(
+                    (b"content-length", content_length.encode("latin-1"))
+                )
         content_type: str | None = self.content_type
         if content_type is not None and populate_content_type:
             if (
@@ -654,6 +661,40 @@ class PlainTextResponse(BaseResponse):
         super().__init__(body, status_code, headers, content_type)
 
 
+def native_json(content: Any) -> str | None:
+    """Serialize a handler's plain ``dict`` or ``list`` without converting it first.
+
+    A handler that returns a dict has always been run through
+    ``jsonable_encoder`` and then ``json.dumps``, which rebuilds the whole
+    structure in Python before the C encoder sees it. This hands the C encoder
+    the original and lets it ask :func:`encode_node` about only the values it
+    cannot serialize itself.
+
+    It answers ``None`` — and the caller does exactly what it always did — when
+    a custom encoder is registered, or when anything at all goes wrong: NaN, a
+    key type JSON cannot represent, a value nothing can encode, a circular
+    reference. So the result is either the same JSON the full conversion would
+    produce or no result at all.
+
+    Args:
+        content: The handler's return value, a ``dict`` or a ``list``.
+
+    Returns:
+        Compact JSON text, or ``None`` when the full conversion is needed.
+    """
+    if CUSTOM_ENCODERS:
+        return None
+    try:
+        # One pass. The hook is only ever called for a value the C encoder
+        # cannot write, so for a payload of plain data this is the same work
+        # as having no hook at all.
+        return json.dumps(
+            content, allow_nan=False, separators=(",", ":"), default=encode_node
+        )
+    except (TypeError, ValueError, RecursionError):
+        return None
+
+
 class JSONResponse(BaseResponse):
     """
     Response subclass for JSON content.
@@ -682,6 +723,19 @@ class JSONResponse(BaseResponse):
             headers=headers,
             content_type="application/json",
         )
+
+    @classmethod
+    def _prerendered(cls, body: str) -> JSONResponse:
+        """A 200 JSON response around text that is already serialized."""
+        response = cls.__new__(cls)
+        BaseResponse.__init__(
+            response,
+            body=body,
+            status_code=200,
+            headers=None,
+            content_type="application/json",
+        )
+        return response
 
     @staticmethod
     def _serialize(
@@ -744,20 +798,35 @@ class JSONResponse(BaseResponse):
             )
 
         if custom_encoder is None:
+            # One pass with `encode_node` as the C encoder's `default=` hook:
+            # it walks the structure at native speed and is asked about only
+            # the values it cannot write itself (datetimes, UUIDs, Decimals,
+            # models), instead of the whole payload being rebuilt in Python
+            # first. For plain data the hook is never called, so this is the
+            # same work as no hook. It is off while any custom encoder is
+            # registered: one may apply to a type the C encoder handles itself
+            # (a `str` subclass, say), which the hook would never be asked
+            # about.
+            #
+            # Whatever goes wrong — an unencodable value, NaN, a circular
+            # reference, a key type JSON has no form for — is left to the full
+            # conversion below, so its result and its errors are exactly what
+            # they always were.
+            hook = None if CUSTOM_ENCODERS else encode_node
             try:
                 return json.dumps(
                     content,
                     indent=indent,
                     ensure_ascii=ensure_ascii,
                     allow_nan=False,
+                    default=hook,
                     separators=separators,
                 )
             except (TypeError, ValueError):
-                # Something in there needs converting — or the content is
-                # unserializable for a reason the encoder cannot fix either, in
-                # which case the second attempt raises the same thing and the
-                # caller sees the error it would always have seen.
                 pass
+            except RecursionError:
+                if hook is None:
+                    raise
 
         return json.dumps(
             jsonable_encoder(content, custom_encoder=custom_encoder),

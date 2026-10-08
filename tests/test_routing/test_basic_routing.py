@@ -255,3 +255,26 @@ def test_router_with_multiple_prefixes(
 
         resp_v2 = client.get("/api/v2/status")
         assert resp_v2.json() == {"version": "2.0"}
+
+
+def test_a_replaced_handler_is_inspected_again():
+    """The async check is remembered per handler, not per route."""
+    from sillo import HttpContext, SilloApp
+    from sillo.testclient import TestClient
+
+    app = SilloApp(debug=False)
+
+    @app.get("/swap")
+    async def original(ctx: HttpContext):
+        return {"kind": "async"}
+
+    client = TestClient(app)
+    assert client.get("/swap").json() == {"kind": "async"}
+
+    route = next(r for r in app.router.routes if getattr(r, "raw_path", "") == "/swap")
+
+    def replacement(ctx: HttpContext):
+        return {"kind": "sync"}
+
+    route.handler = replacement
+    assert client.get("/swap").json() == {"kind": "sync"}

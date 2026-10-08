@@ -28,7 +28,12 @@ from sillo.core.dependencies import (
 from sillo.core.encoding import jsonable_encoder
 from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.core.http import HttpContext
-from sillo.core.http.response import BaseResponse, JSONResponse, RedirectResponse
+from sillo.core.http.response import (
+    BaseResponse,
+    JSONResponse,
+    RedirectResponse,
+    native_json,
+)
 from sillo.events import EventEmitter
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.helpers.concurrency import run_in_threadpool
@@ -347,6 +352,20 @@ class Route(BaseRoute):
 
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
+        self._literal_prefix: str = self.route_info.literal_prefix
+        # Whether the handler is a coroutine function never changes for a
+        # given handler, and working it out inspects the callable. Remembered
+        # with the handler it was worked out for, so replacing `route.handler`
+        # simply recomputes it.
+        self._async_handler: Any = self.handler
+        self._handler_is_async: bool = is_async_callable(self.handler)
+        # What the router's scan may test before calling ``match`` at all. Only
+        # a route that still uses the stock ``match`` can promise that a path
+        # outside its prefix is a non-match; a subclass that overrides it opts
+        # out and is always asked.
+        self._scan_prefix: str | None = (
+            self._literal_prefix if type(self).match is Route.match else None
+        )
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
         self.middleware: list[MiddlewareType] = list(middleware) if middleware else []
@@ -427,6 +446,16 @@ class Route(BaseRoute):
                     content=self.response_validator.validate(func_result),
                     use_encoder=False,
                 )
+            elif (
+                type(func_result) in (dict, list)
+                and (body := native_json(func_result)) is not None
+            ):
+                # A plain dict or list is serialized by the C encoder directly;
+                # see ``native_json`` for when this declines and the full
+                # conversion below runs as it always did. Only exact ``dict``
+                # and ``list`` qualify: the conversion can turn other types
+                # into a string, which is sent as text, not JSON.
+                response = JSONResponse._prerendered(body)
             else:
                 encoded = jsonable_encoder(func_result)
                 if isinstance(encoded, str):
@@ -580,6 +609,11 @@ class Route(BaseRoute):
             return MatchStatus.NONE, {}
         path = get_route_path(scope)
         method = scope["method"]
+        # Every path this route's pattern matches starts with its literal
+        # prefix, so a path that does not is rejected without the regex. The
+        # router tries each route in turn, which makes this the common case.
+        if not path.startswith(self._literal_prefix):
+            return MatchStatus.NONE, {}
         match = self.pattern.match(path)
         if match:
             matched_params = match.groupdict()
@@ -701,9 +735,13 @@ class Route(BaseRoute):
             kwargs = {k: v for k, v in kwargs.items() if k not in injected}
 
         try:
-            if is_async_callable(self.handler):
-                return await self.handler(ctx, **kwargs, **injected)
-            return await run_in_threadpool(self.handler, ctx, **kwargs, **injected)
+            handler = self.handler
+            if handler is not self._async_handler:
+                self._async_handler = handler
+                self._handler_is_async = is_async_callable(handler)
+            if self._handler_is_async:
+                return await handler(ctx, **kwargs, **injected)
+            return await run_in_threadpool(handler, ctx, **kwargs, **injected)
         finally:
             for cleanup in reversed(cleanup_callbacks):
                 result = cleanup()
@@ -3448,8 +3486,22 @@ class Router(BaseRouter):
         # across several Route objects, one per method.
         allowed: set[str] = set()
 
+        # The path is the same for every route, so it is worked out once here
+        # rather than inside each ``match``, and a route whose literal prefix
+        # the path does not start with is skipped without being called. That
+        # is the whole cost of a non-matching route in the common case, which
+        # is what keeps an app with hundreds of routes from paying for each
+        # one on every request. Routes are still tried in the same order and
+        # the first full match still wins.
+        route_path = get_route_path(scope)
         for route in self.routes:
+            prefix = getattr(route, "_scan_prefix", None)
+            if prefix is not None and not route_path.startswith(prefix):
+                continue
             match, matched_params = route.match(scope)
+            if prefix is None:
+                # A route with its own `match` may do anything to the scope.
+                route_path = get_route_path(scope)
             if match == MatchStatus.FULL:
                 scope["route_params"] = RouteParam(matched_params)
                 await route.handle(scope, receive, send)
