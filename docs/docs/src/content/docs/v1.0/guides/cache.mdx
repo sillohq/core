@@ -154,20 +154,26 @@ returned **without** being stored.
 You don't need the decorator. The `BaseCache` API works as a key-value store:
 
 ```python
-from sillo.cache import MemoryCache
+from sillo.cache import MISSING, MemoryCache
 
 cache = MemoryCache(namespace="sessions", default_ttl=3600)
 
 await cache.set("token:abc", user_id, tags=["token:abc"])
-value = await cache.get("token:abc")      # returns _MISSING on miss
+value = await cache.get("token:abc")      # returns MISSING on miss
 exists = await cache.exists("token:abc")
 await cache.delete("token:abc")
 await cache.touch("token:abc", ttl=7200)  # extend lifetime
 await cache.clear()                        # drop keys in this namespace
 ```
 
-`get` returns the module-level sentinel `_MISSING` on a miss or expiry (not
-`None`), so caching `None` as a real value is safe.
+`get` returns the public `MISSING` sentinel on a miss or expiry (not `None`),
+so caching `None` as a real value is safe. Compare by identity when you need
+to branch on a miss:
+
+```python
+if value is MISSING:
+    value = await load_user()
+```
 
 ##  Advanced features
 
