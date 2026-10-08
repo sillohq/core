@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-08
+
+Faster JSON and routing with no change in behaviour, middleware on routes in
+every form `app.use()` accepts, distributed locks on the cache, response
+status and headers from `HTTPClient`, and failed queue jobs that retry and
+settle. Nothing here removes or renames a public name.
+
 ### Added
 
 - Route-level and router-level `middleware=` accept every form `app.use()`
@@ -19,9 +26,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   anything but a dispatch function.
 - `sillo.middleware.define.normalize_middleware()`, the single reading of what
   a middleware is, now shared by `SilloApp.use`, `Router.use` and routes.
+- `HTTPClient` calls take a keyword-only `with_response=True` (#475), which
+  returns a `ClientResponse` carrying `status_code`, `headers`, `is_success`,
+  the underlying `raw` httpx response and `body`, the same decoded value the
+  call returns without the flag. Callers that need a status code, a
+  `Retry-After` or a signature header no longer have to reach for the private
+  `_send`. The flag changes what wraps the result, never how the body is read.
+- Distributed lease locks (#461, #477): `cache.lock(name, lease=...,
+  blocking_timeout=...)` returns a `Lock` backed by `MemoryCache` (one process)
+  or `RedisCache` (every process sharing the Redis database). Every lock is a
+  lease, so a crashed owner cannot block work forever, and renewal and release
+  are tied to the owner's token. `Lock` and `LockNotAcquiredError` are
+  exported from `sillo.cache`.
+- `sillo.cache.MISSING` (#459, #479), the public cache-miss sentinel. Backends
+  return it on a miss or an expiry, so a miss can be told apart from a cached
+  `None` by identity. The internal `_MISSING` alias still works.
 
 ### Fixed
 
+- A queue worker now retries a failed job and settles it (#462, #476). It
+  persists the attempt count and, below the job's limit, puts the job back for
+  a delayed retry through an atomic Redis release that replaces the in-flight
+  claim. At the limit it calls the job's `failed()` and acknowledges the
+  message, so a job that keeps failing stops being redelivered.
 - `HTTPClient()` can now be started without a base URL (#456). An empty
   `base_url` was passed to `httpx.AsyncClient(base_url=None)`, which raises
   `TypeError: Invalid type for url`, so a base-URL-less client could not be
@@ -60,6 +87,7 @@ old path rather than guess.
 
 ### Documentation
 
+- The cache guide documents distributed locks (#478).
 - A Performance guide: which server and worker settings matter most (with
   measured numbers for `uvicorn`, `uvloop`, `httptools` and Granian), what a
   request costs inside Sillo, and how to profile your own app.
