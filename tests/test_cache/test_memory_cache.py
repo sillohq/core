@@ -5,6 +5,7 @@ import time
 
 import pytest
 
+from sillo.cache import MISSING
 from sillo.cache.backends import MemoryCache
 from sillo.cache.base import _MISSING
 
@@ -20,9 +21,17 @@ async def test_set_get_roundtrip(cache):
 
 
 async def test_get_missing_returns_missing(cache):
-    assert await cache.get("nope") is _MISSING
+    assert MISSING is _MISSING
+    assert await cache.get("nope") is MISSING
     assert cache.stats().misses == 1
     assert cache.stats().hits == 0
+
+
+async def test_public_missing_sentinel_is_distinct_from_a_cached_none(cache):
+    await cache.set("none", None)
+
+    assert await cache.get("absent") is MISSING
+    assert await cache.get("none") is None
 
 
 async def test_exists(cache):

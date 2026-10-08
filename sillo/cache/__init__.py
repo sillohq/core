@@ -21,6 +21,7 @@ pass ``backend=`` explicitly.
 
 from .backends import MemoryCache, RedisCache
 from .base import (
+    MISSING,
     BaseCache,
     CacheError,
     CacheStats,
@@ -38,6 +39,7 @@ from .decorator import cache
 from .locks import Lock, LockNotAcquiredError
 
 __all__ = [
+    "MISSING",
     "BaseCache",
     "CacheError",
     "CacheSettings",

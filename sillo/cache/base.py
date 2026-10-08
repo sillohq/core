@@ -21,8 +21,23 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Iterable
     from typing import Any
 
-# Sentinel for "no value / cache miss".
-_MISSING = object()
+
+class _CacheMiss:
+    """Identity-only marker for a cache miss.
+
+    The public instance is deliberately distinct from ``None`` because
+    ``None`` is a valid cache value.
+    """
+
+    def __repr__(self) -> str:
+        return "MISSING"
+
+
+# Public cache-miss marker. Compare results with ``is MISSING``.
+MISSING = _CacheMiss()
+
+# Compatibility alias for internal callers that predate the public API.
+_MISSING = MISSING
 
 
 class CacheError(Exception):
@@ -458,7 +473,7 @@ class BaseCache(abc.ABC):
 
         Looks up the given key in the cache backend and returns the
         deserialized value if found and not expired. On a cache miss or
-        when the entry has expired, returns the :data:`_MISSING` sentinel
+        when the entry has expired, returns the :data:`MISSING` sentinel
         object instead of raising an exception.
 
         Args:
@@ -467,7 +482,7 @@ class BaseCache(abc.ABC):
 
         Returns:
             The cached and deserialized value on a hit, or the
-            :data:`_MISSING` sentinel object on a miss or expiry.
+            :data:`MISSING` sentinel object on a miss or expiry.
         """
 
     @abc.abstractmethod
@@ -672,6 +687,7 @@ class BaseCache(abc.ABC):
 
 
 __all__ = [
+    "MISSING",
     "_MISSING",
     "BaseCache",
     "CacheError",
