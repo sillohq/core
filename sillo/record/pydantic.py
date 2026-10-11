@@ -9,9 +9,11 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Optional
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, JsonValue, create_model
 from tortoise import fields as f
 from typing_extensions import Doc
+
+from .fields import AnyJSONField
 
 
 def pydantic_model_from_tortoise(
@@ -78,7 +80,7 @@ def pydantic_model_from_tortoise(
     )
 
 
-def _tortoise_to_python_type(field_obj) -> type:
+def _tortoise_to_python_type(field_obj) -> Any:
     """Map a Tortoise ORM field type to the corresponding Python type.
 
     Looks up the field instance against a hardcoded mapping of common
@@ -93,6 +95,9 @@ def _tortoise_to_python_type(field_obj) -> type:
         ``float``, ``dict``) or ``str`` as a fallback for unrecognised
         field types.
     """
+    if isinstance(field_obj, AnyJSONField):
+        return JsonValue
+
     mapping = {
         f.IntField: int,
         f.SmallIntField: int,

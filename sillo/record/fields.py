@@ -2,15 +2,50 @@
 sillo.record.fields — Custom Tortoise field types.
 
 - CreatedAtField / UpdatedAtField / SoftDeleteField
+- AnyJSONField — stores every JSON-compatible Python value, including strings
 - SlugField — auto-generated URL-safe slug
 - ULIDField — sortable primary key
 """
 
 from __future__ import annotations
 
+from typing import Any
+
 from tortoise import fields as _fields
+from tortoise.exceptions import FieldError
 
 from sillo.helpers.hashing import hash_password, is_hashed
+
+
+class AnyJSONField(_fields.JSONField):
+    """A JSON field that treats strings as values, not serialized JSON.
+
+    Tortoise's :class:`~tortoise.fields.JSONField` assumes every ``str`` is
+    already JSON-encoded. That makes a normal Python string such as
+    ``"authenticated"`` fail validation unless the caller encodes it first.
+    This field encodes strings in the same way as dictionaries, lists and
+    other JSON-compatible values.
+
+    Use the standard Tortoise field when callers intentionally supply encoded
+    JSON strings. With this field, a string that looks like serialized JSON is
+    stored as a JSON string rather than interpreted as an object or list.
+    """
+
+    def to_db_value(self, value: Any, instance: Any) -> Any:
+        """Encode Python strings as JSON string values."""
+        if isinstance(value, str):
+            self.validate(value)
+            return self.encoder(value)
+        return super().to_db_value(value, instance)
+
+    def to_python_value(self, value: Any) -> Any:
+        """Accept string scalars already decoded by a database driver."""
+        try:
+            return super().to_python_value(value)
+        except FieldError:
+            if isinstance(value, str):
+                return value
+            raise
 
 
 class PasswordField(_fields.CharField):

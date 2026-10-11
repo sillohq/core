@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `sillo.record.AnyJSONField` stores ordinary JSON-compatible Python values,
+  including bare strings, without requiring callers to pre-encode them (#460).
+
 ## [1.2.0] - 2026-10-08
 
 Faster JSON and routing with no change in behaviour, middleware on routes in

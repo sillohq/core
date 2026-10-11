@@ -25,8 +25,8 @@ class Post(Model):
     published_at = fields.DatetimeField(null=True)
 ```
 
-Plus the [six Record adds](/v1.0/orm/fields/): `PasswordField`, `SlugField`,
-`ULIDField` and the three timestamp fields.
+Plus the [seven Record adds](/v1.0/orm/fields/): `AnyJSONField`,
+`PasswordField`, `SlugField`, `ULIDField` and the three timestamp fields.
 
 ## Arguments every field takes
 
@@ -198,6 +198,18 @@ table slower, including the ones that do not select the column.
 metadata = fields.JSONField(default=dict)
 ```
 
+Use `AnyJSONField` when the top-level value can be a bare Python string:
+
+```python
+from sillo.record import AnyJSONField
+
+policy = AnyJSONField()
+await Rule.create(policy="authenticated")
+```
+
+The standard Tortoise field treats strings as JSON that is already encoded;
+`AnyJSONField` encodes them as JSON string values.
+
 Native `JSONB` on PostgreSQL, `JSON` on MySQL, `TEXT` on SQLite.
 
 It has its own lookups (`contains`, `contained_by`, `filter`) rather than the
@@ -299,7 +311,7 @@ lighter. It is configured per model rather than declared as a type.
 
 ## See also
 
-- [Record's own fields](/v1.0/orm/fields/): `PasswordField`, `SlugField`,
-  `ULIDField`
+- [Record's own fields](/v1.0/orm/fields/): `AnyJSONField`, `PasswordField`,
+  `SlugField`, `ULIDField`
 - [Relationships](/v1.0/orm/relationships/): the relational field types
 - [Meta and indexes](/v1.0/orm/meta/): constraints, indexes, table options

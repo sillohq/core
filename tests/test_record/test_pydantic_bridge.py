@@ -10,7 +10,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 from tortoise import fields
 
-from sillo.record import Model
+from sillo.record import AnyJSONField, Model
 from sillo.record.pydantic import (
     _tortoise_to_python_type,
     pydantic_model_from_tortoise,
@@ -28,6 +28,14 @@ class Article(Model):
 
     class Meta:
         table = "pydantic_bridge_articles"
+
+
+class Document(Model):
+    id = fields.IntField(pk=True)
+    content = AnyJSONField()
+
+    class Meta:
+        table = "pydantic_bridge_documents"
 
 
 class TestGeneratedModel:
@@ -121,6 +129,21 @@ class TestTypeMapping:
             """Not a Tortoise field at all, so no mapping entry matches."""
 
         assert _tortoise_to_python_type(Exotic()) is str
+
+    @pytest.mark.parametrize(
+        "value",
+        ["authenticated", {"role": "authenticated"}, ["authenticated"], True, 1],
+    )
+    def test_any_json_field_accepts_each_json_value_shape(self, value):
+        schema = pydantic_model_from_tortoise(Document, include=["content"])
+
+        assert schema(content=value).content == value
+
+    def test_any_json_field_rejects_a_non_json_value(self):
+        schema = pydantic_model_from_tortoise(Document, include=["content"])
+
+        with pytest.raises(ValidationError):
+            schema(content={"not", "json"})
 
     def test_the_generated_model_carries_the_mapped_types(self):
         schema = pydantic_model_from_tortoise(
