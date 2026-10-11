@@ -109,17 +109,11 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
                     raise ValueError(
                         f"{key} is non nullable field, but null was passed"
                     )
-                # Tortoise normally converts constructor values through
-                # ``to_python_value``. For JSON fields that makes a Python
-                # string which also happens to be valid JSON (``"true"``,
-                # ``'{"role":"admin"}'``) indistinguishable from encoded data
-                # read from the database. AnyJSONField's contract is that
-                # constructor strings are values, so leave them untouched on
-                # input; _init_from_db still calls its decoder for stored data.
-                if key not in casts and not (
-                    isinstance(field_object, AnyJSONField) and isinstance(value, str)
-                ):
-                    value = field_object.to_python_value(value)
+                if key not in casts:
+                    is_any_json = isinstance(field_object, AnyJSONField)
+                    preserve_string = is_any_json and isinstance(value, str)
+                    if not preserve_string:
+                        value = field_object.to_python_value(value)
                 setattr(self, key, value)
             elif key in meta.backward_fk_fields:
                 raise ConfigurationError(

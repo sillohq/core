@@ -44,6 +44,13 @@ async def record_db():
 
 
 class TestAnyJSONField:
+    @pytest.mark.parametrize(
+        "value",
+        ["authenticated", '{"role":"authenticated"}', "true", "null", "42"],
+    )
+    def test_model_constructor_preserves_every_python_string(self, value: str):
+        assert JSONValue(value=value).value == value
+
     async def test_bare_string_round_trips_through_the_database(self):
         created = await JSONValue.create(value="authenticated")
 
