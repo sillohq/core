@@ -1,6 +1,6 @@
 ---
 title: Fields
-description: "The field types sillo.record adds on top of Tortoise (PasswordField, the timestamp fields, SlugField and ULIDField) and exactly what each does and does not do."
+description: "The field types sillo.record adds on top of Tortoise (AnyJSONField, PasswordField, the timestamp fields, SlugField and ULIDField) and exactly what each does and does not do."
 head:
   - tag: meta
     attrs:
@@ -9,19 +9,61 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: PasswordField, CreatedAtField, UpdatedAtField, SoftDeleteField, SlugField and ULIDField.
+      content: AnyJSONField, PasswordField, CreatedAtField, UpdatedAtField, SoftDeleteField, SlugField and ULIDField.
 ---
 
 Every [Tortoise field type](https://tortoise.github.io/fields.html) works:
 `IntField`, `CharField`, `TextField`, `JSONField`, `ForeignKeyField` and the
-rest. Record adds six.
+rest. Record adds seven.
 
 ```python
 from sillo.record.fields import (
-    PasswordField, CreatedAtField, UpdatedAtField,
+    AnyJSONField, PasswordField, CreatedAtField, UpdatedAtField,
     SoftDeleteField, SlugField, ULIDField,
 )
 ```
+
+## `AnyJSONField`
+
+```python
+from tortoise import fields
+
+from sillo.record import AnyJSONField, Model
+
+
+class Route(Model):
+    policy = AnyJSONField()
+```
+
+Tortoise's `JSONField` treats a Python string as JSON that has already been
+encoded. A bare string therefore fails unless the caller adds JSON quotes:
+
+```python
+class TortoiseRoute(Model):
+    policy = fields.JSONField()
+
+
+await TortoiseRoute.create(policy="authenticated")       # rejected
+await TortoiseRoute.create(policy='"authenticated"')     # accepted
+```
+
+`AnyJSONField` treats strings as ordinary values, just as it treats dictionaries,
+lists, numbers and booleans:
+
+```python
+route = await Route.create(policy="authenticated")
+route.policy  # "authenticated"
+```
+
+A string that looks like encoded JSON remains a string. Use Tortoise's standard
+`JSONField` instead when callers intentionally provide serialized JSON:
+
+```python
+route = await Route.create(policy='{"role":"admin"}')
+route.policy  # '{"role":"admin"}', not {"role": "admin"}
+```
+
+The database column type and JSON query operators are the same as `JSONField`.
 
 ## `PasswordField`
 

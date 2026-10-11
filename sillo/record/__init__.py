@@ -23,6 +23,7 @@ from .events import HasEvents, ModelObserver
 from .exceptions import register_db_exception_handlers
 from .factories import Factory, FactoryBuilder
 from .fields import (
+    AnyJSONField,
     CreatedAtField,
     SlugField,
     SoftDeleteField,
@@ -48,6 +49,7 @@ from .scopes import HasScopes, RecordManager, RecordQuerySet, ScopeRegistry
 from .transactions import TransactionContext, begin, commit, rollback, transaction
 
 __all__ = [
+    "AnyJSONField",
     "CascadesDeletesMixin",
     "Collection",
     "CreatedAtField",

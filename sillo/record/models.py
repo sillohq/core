@@ -27,7 +27,7 @@ from tortoise.exceptions import ConfigurationError, OperationalError
 from typing_extensions import Doc, Self
 
 from .casting import HasCasts
-from .fields import CreatedAtField, SoftDeleteField, UpdatedAtField
+from .fields import AnyJSONField, CreatedAtField, SoftDeleteField, UpdatedAtField
 from .scopes import HasScopes, RecordManager
 from .serialization import model_to_dict
 
@@ -110,7 +110,10 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
                         f"{key} is non nullable field, but null was passed"
                     )
                 if key not in casts:
-                    value = field_object.to_python_value(value)
+                    is_any_json = isinstance(field_object, AnyJSONField)
+                    preserve_string = is_any_json and isinstance(value, str)
+                    if not preserve_string:
+                        value = field_object.to_python_value(value)
                 setattr(self, key, value)
             elif key in meta.backward_fk_fields:
                 raise ConfigurationError(
