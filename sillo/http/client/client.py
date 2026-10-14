@@ -277,6 +277,12 @@ class HTTPClient:
                 )
             state.stats.cache_misses += 1
 
+        effective_follow_redirects = (
+            follow_redirects
+            if follow_redirects is not None
+            else self._config.follow_redirects
+        )
+
         # The middleware chain consumes every link -- including the terminal
         # one -- with `async for`, so the terminal call must return an async
         # iterator. httpx's `AsyncClient.send` is a coroutine function, so it
@@ -284,7 +290,11 @@ class HTTPClient:
         async def _terminal_send(
             req: httpx.Request,
         ) -> typing.AsyncGenerator[httpx.Response, None]:
-            yield await self._http_client.send(req)
+            yield await self._http_client.send(
+                req,
+                auth=auth,
+                follow_redirects=effective_follow_redirects,
+            )
 
         # Middleware chain (only when middlewares are registered)
         mw_chain = state.middleware_chain
@@ -305,11 +315,7 @@ class HTTPClient:
                 response = await self._http_client.send(
                     request,
                     auth=auth,
-                    follow_redirects=(
-                        follow_redirects
-                        if follow_redirects is not None
-                        else self._config.follow_redirects
-                    ),
+                    follow_redirects=effective_follow_redirects,
                 )
         except httpx.TimeoutException as exc:
             state.stats.requests_failed += 1
