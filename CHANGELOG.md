@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sillo.record.AnyJSONField` stores ordinary JSON-compatible Python values,
   including bare strings, without requiring callers to pre-encode them (#460).
 
+### Fixed
+
+- `HTTPClient` with configured middleware no longer fails every request. The
+  middleware chain consumes each link with `async for`, but the terminal call
+  was `httpx.AsyncClient.send` -- a coroutine function -- passed in directly,
+  so any `middlewares=` entry raised `TypeError: 'async for' requires an object
+  with __aiter__` before a request left the process. The terminal call is now
+  adapted to the chain's async-iterator contract (#455).
+
 ## [1.2.0] - 2026-10-08
 
 Faster JSON and routing with no change in behaviour, middleware on routes in

@@ -277,13 +277,22 @@ class HTTPClient:
                 )
             state.stats.cache_misses += 1
 
+        # The middleware chain consumes every link -- including the terminal
+        # one -- with `async for`, so the terminal call must return an async
+        # iterator. httpx's `AsyncClient.send` is a coroutine function, so it
+        # is adapted to the chain's contract here rather than passed directly.
+        async def _terminal_send(
+            req: httpx.Request,
+        ) -> typing.AsyncGenerator[httpx.Response, None]:
+            yield await self._http_client.send(req)
+
         # Middleware chain (only when middlewares are registered)
         mw_chain = state.middleware_chain
 
         try:
             if mw_chain and mw_chain._middlewares:
                 response = None
-                async for r in mw_chain.run(request, self._http_client.send):  # ty: ignore[invalid-argument-type]
+                async for r in mw_chain.run(request, _terminal_send):
                     response = r
                 if response is None:
                     raise HTTPStatusError(
