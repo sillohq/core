@@ -705,6 +705,71 @@ class TestHTTPClientSend:
     """Test _send directly with a local mock HTTP server (httpbin)."""
 
 
+class TestHTTPClientMiddleware:
+    """Middleware configured on the client must wrap the real httpx send (#455)."""
+
+    @staticmethod
+    def _client(middleware, **overrides):
+        from sillo.http.client.client import HTTPClient
+
+        config = HTTPClientConfig(
+            base_url="https://api.example.com",
+            middlewares=[middleware],
+            **overrides,
+        )
+        return HTTPClient(config=config)
+
+    async def test_middleware_runs_against_a_real_client_send(self):
+        """Before #455 the chain iterated a coroutine and raised TypeError."""
+        seen: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            return httpx.Response(200, json={"ok": True})
+
+        mw = HeaderInjectionMiddleware({"X-Custom": "test-value"})
+        async with self._client(mw) as client:
+            client._http_client._transport = httpx.MockTransport(handler)
+            result = await client.get("/users/1")
+
+        assert result == {"ok": True}
+        assert len(seen) == 1
+        assert seen[0].headers["X-Custom"] == "test-value"
+
+    async def test_middleware_forwards_explicit_auth_and_redirects(self):
+        mw = HeaderInjectionMiddleware({"X-Test": "1"})
+        client = self._client(mw)
+        await client.start()
+        request = client._http_client.build_request("GET", "https://api.example.com/x")
+        response = httpx.Response(200, json={}, request=request)
+        with patch.object(
+            client._http_client, "send", new=AsyncMock(return_value=response)
+        ) as mock_send:
+            await client._send(
+                "GET", "/x", auth=("user", "pass"), follow_redirects=False
+            )
+        await client.stop()
+
+        _, kwargs = mock_send.call_args
+        assert kwargs["auth"] == ("user", "pass")
+        assert kwargs["follow_redirects"] is False
+
+    async def test_middleware_falls_back_to_config_follow_redirects(self):
+        mw = HeaderInjectionMiddleware({"X-Test": "1"})
+        client = self._client(mw, follow_redirects=False)
+        await client.start()
+        request = client._http_client.build_request("GET", "https://api.example.com/x")
+        response = httpx.Response(200, json={}, request=request)
+        with patch.object(
+            client._http_client, "send", new=AsyncMock(return_value=response)
+        ) as mock_send:
+            await client._send("GET", "/x")
+        await client.stop()
+
+        _, kwargs = mock_send.call_args
+        assert kwargs["follow_redirects"] is False
+
+
 class TestHTTPClientCaching:
     """Test caching integration within HTTPClient using mocked sends."""
 
