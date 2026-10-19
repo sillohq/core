@@ -78,7 +78,9 @@ class S3Driver(Driver):
             raise ValueError("the s3 driver needs a bucket")
         self.bucket = bucket
         self.region = region or "us-east-1"
-        self.endpoint = (endpoint or f"https://s3.{self.region}.amazonaws.com").rstrip("/")
+        self.endpoint = (endpoint or f"https://s3.{self.region}.amazonaws.com").rstrip(
+            "/"
+        )
         self.access_key = access_key
         self.secret_key = secret_key
         self.prefix = prefix.strip("/") + "/" if prefix.strip("/") else ""
@@ -120,7 +122,7 @@ class S3Driver(Driver):
         payload_hash: str = EMPTY_SHA256,
         extra: dict[str, str] | None = None,
     ) -> dict[str, str]:
-        now = dt.datetime.now(dt.UTC)
+        now = dt.datetime.now(dt.timezone.utc)
         stamp = now.strftime("%Y%m%dT%H%M%SZ")
         day = now.strftime("%Y%m%d")
         host = urlparse(url).netloc
@@ -131,8 +133,12 @@ class S3Driver(Driver):
             **{k.lower(): v for k, v in (extra or {}).items()},
         }
         signed = ";".join(sorted(headers))
-        canonical_headers = "".join(f"{name}:{headers[name].strip()}\n" for name in sorted(headers))
-        canonical_query = urlencode(sorted((query or {}).items()), quote_via=quote, safe="~")
+        canonical_headers = "".join(
+            f"{name}:{headers[name].strip()}\n" for name in sorted(headers)
+        )
+        canonical_query = urlencode(
+            sorted((query or {}).items()), quote_via=quote, safe="~"
+        )
         canonical = (
             f"{method}\n"
             f"{path}\n"
@@ -148,7 +154,9 @@ class S3Driver(Driver):
             f"{scope}\n"
             f"{hashlib.sha256(canonical.encode()).hexdigest()}"
         )
-        signature = hmac.new(self._signing_key(day), to_sign.encode(), hashlib.sha256).hexdigest()
+        signature = hmac.new(
+            self._signing_key(day), to_sign.encode(), hashlib.sha256
+        ).hexdigest()
         headers["authorization"] = (
             f"AWS4-HMAC-SHA256 Credential={self.access_key}/{scope}, SignedHeaders={signed}, Signature={signature}"
         )
@@ -166,7 +174,9 @@ class S3Driver(Driver):
         extra: dict[str, str] | None = None,
     ) -> httpx.Response:
         url, path = self._url(key)
-        headers = self._headers(method, url, path, query, payload_hash=payload_hash, extra=extra)
+        headers = self._headers(
+            method, url, path, query, payload_hash=payload_hash, extra=extra
+        )
         return await self._client.request(
             method, url, params=query, content=content, headers=headers
         )
@@ -235,7 +245,11 @@ class S3Driver(Driver):
             if response.status_code == 404 and "NoSuchBucket" in response.text:
                 await self.ensure_bucket()
                 response = await self._request(
-                    "PUT", key, content=body, payload_hash=digest.hexdigest(), extra=extra
+                    "PUT",
+                    key,
+                    content=body,
+                    payload_hash=digest.hexdigest(),
+                    extra=extra,
                 )
         if response.status_code >= 300:
             raise StorageError(
@@ -257,7 +271,9 @@ class S3Driver(Driver):
     async def read_range(self, key: str, start: int, end: int) -> AsyncIterator[bytes]:
         """Stream bytes ``start``..``end`` (inclusive)."""
         url, path = self._url(key)
-        headers = self._headers("GET", url, path, extra={"range": f"bytes={start}-{end}"})
+        headers = self._headers(
+            "GET", url, path, extra={"range": f"bytes={start}-{end}"}
+        )
         async with self._client.stream("GET", url, headers=headers) as response:
             if response.status_code == 404:
                 raise FileNotFound(key)
@@ -278,7 +294,7 @@ class S3Driver(Driver):
             try:
                 timestamp = (
                     dt.datetime.strptime(modified, "%a, %d %b %Y %H:%M:%S %Z")
-                    .replace(tzinfo=dt.UTC)
+                    .replace(tzinfo=dt.timezone.utc)
                     .timestamp()
                 )
             except ValueError:
@@ -286,7 +302,9 @@ class S3Driver(Driver):
         return FileInfo(
             key=key,
             size=int(response.headers.get("content-length", 0)),
-            content_type=response.headers.get("content-type", "application/octet-stream"),
+            content_type=response.headers.get(
+                "content-type", "application/octet-stream"
+            ),
             modified=timestamp,
             etag=response.headers.get("etag", "").strip('"'),
             declared_type=response.headers.get("x-amz-meta-declared-type", ""),
@@ -300,7 +318,9 @@ class S3Driver(Driver):
             raise StorageError(f"s3 refused the delete ({response.status_code})")
         return True
 
-    async def page(self, prefix: str = "", *, cursor: str = "", limit: int = 100) -> Page:
+    async def page(
+        self, prefix: str = "", *, cursor: str = "", limit: int = 100
+    ) -> Page:
         query = {
             "list-type": "2",
             "prefix": self.prefix + prefix,
@@ -326,7 +346,9 @@ class S3Driver(Driver):
             keys.append(key)
             modified = item.findtext(f"{ns}LastModified", "")
             try:
-                timestamp = dt.datetime.fromisoformat(modified.replace("Z", "+00:00")).timestamp()
+                timestamp = dt.datetime.fromisoformat(
+                    modified.replace("Z", "+00:00")
+                ).timestamp()
             except ValueError:
                 timestamp = 0.0
             files.append(
@@ -338,7 +360,8 @@ class S3Driver(Driver):
                 )
             )
         prefixes_set = {
-            p.findtext(f"{ns}Prefix", "")[strip:] for p in root.findall(f"{ns}CommonPrefixes")
+            p.findtext(f"{ns}Prefix", "")[strip:]
+            for p in root.findall(f"{ns}CommonPrefixes")
         }
         prefixes_set.update(_prefixes(keys, prefix))
         prefixes = tuple(sorted(p for p in prefixes_set if p))
@@ -363,7 +386,7 @@ class S3Driver(Driver):
         max_bytes: int = 0,
     ) -> str:
         url, path = self._url(key, public=True)
-        now = dt.datetime.now(dt.UTC)
+        now = dt.datetime.now(dt.timezone.utc)
         stamp = now.strftime("%Y%m%dT%H%M%SZ")
         day = now.strftime("%Y%m%d")
         scope = f"{day}/{self.region}/s3/aws4_request"
@@ -396,7 +419,9 @@ class S3Driver(Driver):
             f"{scope}\n"
             f"{hashlib.sha256(canonical.encode()).hexdigest()}"
         )
-        signature = hmac.new(self._signing_key(day), to_sign.encode(), hashlib.sha256).hexdigest()
+        signature = hmac.new(
+            self._signing_key(day), to_sign.encode(), hashlib.sha256
+        ).hexdigest()
         return f"{url}?{canonical_query}&X-Amz-Signature={signature}"
 
     async def capabilities(self) -> dict[str, object]:

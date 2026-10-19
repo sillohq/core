@@ -12,7 +12,7 @@ import pytest
 
 from sillo.storage.base import chunks, collect
 from sillo.storage.drivers.s3 import S3Driver
-from sillo.storage.errors import StorageError
+from sillo.storage.errors import FileNotFound, StorageError
 
 from .contract import DriverContract
 
@@ -87,7 +87,7 @@ class MockS3Handler:
                     xml_parts.append(
                         f"<Contents><Key>{escape(k)}</Key>"
                         f"<LastModified>{mod_str}</LastModified>"
-                        f"<ETag>\"{item['etag']}\"</ETag>"
+                        f'<ETag>"{item["etag"]}"</ETag>'
                         f"<Size>{len(item['body'])}</Size></Contents>"
                     )
                 for cp in sorted(common_prefixes):
@@ -112,7 +112,9 @@ class MockS3Handler:
         if request.method == "PUT":
             body = request.read()
             etag = hashlib.md5(body).hexdigest()
-            content_type = request.headers.get("content-type", "application/octet-stream")
+            content_type = request.headers.get(
+                "content-type", "application/octet-stream"
+            )
             declared_type = request.headers.get("x-amz-meta-declared-type", "")
             self.objects[key] = {
                 "body": body,
@@ -298,3 +300,156 @@ def test_url_virtual_hosted_style():
     url, path = driver._url("photo.jpg")
     assert url == "https://mybucket.s3.eu-west-1.amazonaws.com/photo.jpg"
     assert path == "/photo.jpg"
+
+
+# ── failure and fallback branches ───────────────────────────────────────
+
+
+async def test_ensure_bucket_creation_refused_raises():
+    def handler(request):
+        if request.method == "HEAD":
+            return httpx.Response(404)
+        return httpx.Response(500, text="<Error>nope</Error>")
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="broken", client=client)
+        with pytest.raises(StorageError, match="could not create bucket"):
+            await driver.ensure_bucket()
+
+
+async def test_write_keeps_the_declared_type():
+    handler = MockS3Handler("declared-bucket")
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="declared-bucket", client=client)
+        await driver.write("a.txt", chunks(b"x"), declared_type="text/csv")
+        assert (await driver.stat("a.txt")).declared_type == "text/csv"
+
+
+async def test_write_refused_raises():
+    def handler(request):
+        return httpx.Response(500, text="<Error>nope</Error>")
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="broken", client=client)
+        with pytest.raises(StorageError, match="refused the write"):
+            await driver.write("a.txt", chunks(b"x"))
+
+
+async def test_read_refused_raises():
+    def handler(request):
+        return httpx.Response(500)
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="broken", client=client)
+        with pytest.raises(StorageError, match="refused the read"):
+            await collect(driver.read("a.txt"))
+
+
+async def test_read_range_missing_raises():
+    handler = MockS3Handler("range-bucket")
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="range-bucket", client=client)
+        with pytest.raises(FileNotFound):
+            await collect(driver.read_range("nope.bin", 0, 1))
+
+
+async def test_read_range_refused_raises():
+    def handler(request):
+        return httpx.Response(500)
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="broken", client=client)
+        with pytest.raises(StorageError, match="refused the read"):
+            await collect(driver.read_range("a.bin", 0, 1))
+
+
+async def test_stat_refused_raises():
+    def handler(request):
+        return httpx.Response(500)
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="broken", client=client)
+        with pytest.raises(StorageError, match="refused the stat"):
+            await driver.stat("a.txt")
+
+
+async def test_stat_without_a_usable_date_reports_zero():
+    def handler(request):
+        return httpx.Response(
+            200,
+            headers={"last-modified": "not a date", "content-length": "1"},
+        )
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="dated-bucket", client=client)
+        info = await driver.stat("a.txt")
+        assert info.modified == 0.0
+
+
+async def test_delete_refused_raises():
+    def handler(request):
+        if request.method == "HEAD":
+            return httpx.Response(200, headers={"content-length": "0"})
+        return httpx.Response(500)
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="locked", client=client)
+        with pytest.raises(StorageError, match="refused the delete"):
+            await driver.delete("a.txt")
+
+
+async def test_page_refused_raises():
+    def handler(request):
+        return httpx.Response(500)
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="broken", client=client)
+        with pytest.raises(StorageError, match="refused the listing"):
+            await driver.page()
+
+
+async def test_page_without_a_namespace_still_lists():
+    def handler(request):
+        return httpx.Response(
+            200,
+            content=(
+                b"<ListBucketResult>"
+                b"<Contents><Key>plain.txt</Key><Size>1</Size></Contents>"
+                b"</ListBucketResult>"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="plain-bucket", client=client)
+        page = await driver.page()
+        assert [info.key for info in page.files] == ["plain.txt"]
+
+
+async def test_page_with_an_unusable_date_reports_zero():
+    def handler(request):
+        return httpx.Response(
+            200,
+            content=(
+                b'<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+                b"<Contents><Key>a.txt</Key>"
+                b"<LastModified>not a date</LastModified><Size>1</Size></Contents>"
+                b"</ListBucketResult>"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        driver = S3Driver(bucket="dated-bucket", client=client)
+        page = await driver.page()
+        assert page.files[0].modified == 0.0

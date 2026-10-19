@@ -308,6 +308,8 @@ class RedisConnection(QueueConnection):
         """R"""
         if self._redis is not None:
             return self._redis
+        if aioredis is None:
+            raise RuntimeError("Redis queue requires redis: pip install sillo[events]")
         self._redis = aioredis.from_url(self.url, decode_responses=True)
         return self._redis
 
