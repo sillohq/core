@@ -83,12 +83,31 @@ class TestWiring:
                 StorageConfig(buckets={"x": BucketConfig(driver="local")}),
             )
 
-    def test_asking_for_s3_without_the_extra_says_so(self):
+    def test_asking_for_s3_without_the_extra_says_so(self, monkeypatch):
+        import sys
+
+        monkeypatch.setitem(sys.modules, "httpx", None)
+        monkeypatch.delitem(sys.modules, "sillo.storage.drivers.s3", raising=False)
         with pytest.raises(ValueError, match="storage-s3"):
             setup_storage(
                 SilloApp(title="broken"),
                 StorageConfig(buckets={"x": BucketConfig(driver="s3", bucket="b")}),
             )
+
+    def test_asking_for_s3_without_bucket_says_so(self):
+        with pytest.raises(ValueError, match="no bucket"):
+            setup_storage(
+                SilloApp(title="broken"),
+                StorageConfig(buckets={"x": BucketConfig(driver="s3")}),
+            )
+
+    def test_asking_for_s3_with_the_extra_builds_s3_driver(self):
+        app = SilloApp(title="s3")
+        setup_storage(
+            app,
+            StorageConfig(buckets={"x": BucketConfig(driver="s3", bucket="my-bucket")}),
+        )
+        assert app.state["storage"].bucket("x").driver.name == "s3"
 
     def test_an_unknown_driver_lists_the_known_ones(self):
         with pytest.raises(ValueError, match="memory, local, s3"):

@@ -34,6 +34,8 @@ Five properties this package is built around, each of which forces something:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .base import Action, Driver, FileInfo, Page, StorageEvent, Stored, chunks, collect
 from .bucket import Bucket
 from .config import BucketConfig, StorageConfig
@@ -52,6 +54,9 @@ from .signing import SignedGrant, Signer
 from .storage import Storage, StorageInstallable, bucket, setup_storage
 from .uploads import stream_upload
 
+if TYPE_CHECKING:
+    from .drivers.s3 import S3Driver
+
 __all__ = [
     "Action",
     "Bucket",
@@ -68,6 +73,7 @@ __all__ = [
     "Private",
     "Public",
     "ReadOnly",
+    "S3Driver",
     "SignatureInvalid",
     "Signed",
     "SignedGrant",
@@ -87,3 +93,11 @@ __all__ = [
     "setup_storage",
     "stream_upload",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name == "S3Driver":
+        from .drivers.s3 import S3Driver
+
+        return S3Driver
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -54,3 +54,11 @@ async def test_pop_with_timeout_uses_blmove_and_claims_the_job():
 async def test_pop_with_timeout_returns_none_when_nothing_is_ready():
     conn = RedisConnection(visibility_timeout=30.0)
     assert await conn.pop("emails", timeout=0.1) is None
+
+
+async def test_r_reports_a_missing_redis_client(monkeypatch):
+    monkeypatch.setattr(connection_module, "aioredis", None)
+    conn = RedisConnection()
+
+    with pytest.raises(RuntimeError, match="pip install sillo\\[events\\]"):
+        await conn._r()

@@ -131,9 +131,26 @@ def _build(name: str, settings: BucketConfig, secret: str, route: str) -> Any:
         )
 
     if settings.driver == "s3":
-        raise ValueError(
-            f"bucket {name!r} asks for the s3 driver, which needs "
-            "sillo-framework[storage-s3]"
+        try:
+            from .drivers.s3 import S3Driver
+        except ImportError:
+            raise ValueError(
+                f"bucket {name!r} asks for the s3 driver, which needs "
+                "sillo-framework[storage-s3]"
+            )
+
+        if not settings.bucket:
+            raise ValueError(f"bucket {name!r} uses the s3 driver and has no bucket")
+
+        return S3Driver(
+            bucket=settings.bucket,
+            endpoint=settings.endpoint,
+            region=settings.region,
+            access_key=settings.access_key,
+            secret_key=settings.secret_key,
+            prefix=settings.prefix,
+            path_style=settings.path_style,
+            public_endpoint=settings.public_endpoint,
         )
 
     raise ValueError(

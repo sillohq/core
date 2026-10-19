@@ -28,6 +28,9 @@ class BucketConfig:
         region: The S3 region.
         access_key: The S3 access key. Read from the environment in practice.
         secret_key: The S3 secret key.
+        prefix: A key prefix for S3, so multiple buckets can share a remote bucket.
+        path_style: Address the S3 bucket in the path (MinIO, Ceph) instead of host.
+        public_endpoint: S3 origin reachable by browsers for presigned URLs.
         max_bytes: Largest object this bucket accepts. Zero for no limit.
         accepts: Content types this bucket accepts, after sniffing. Empty for
             anything. Stated as what the *sniffer* decided, so declaring
@@ -43,6 +46,9 @@ class BucketConfig:
     region: str = "us-east-1"
     access_key: str = ""
     secret_key: str = ""
+    prefix: str = ""
+    path_style: bool = True
+    public_endpoint: str = ""
     max_bytes: int = 0
     accepts: tuple[str, ...] = ()
 
