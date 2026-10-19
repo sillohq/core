@@ -5,10 +5,20 @@ All notable changes to Sillo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.1] - 2026-10-19
 
 ### Added
 
+- The `s3` storage driver the documentation and the `storage-s3` extra already
+  described now ships (#458, #485). `sillo.storage.drivers.s3.S3Driver`
+  implements the same `Driver` contract as the local and memory drivers,
+  signing requests with AWS Signature Version 4 in pure Python over `httpx`
+  rather than depending on boto3. It works with AWS S3, MinIO, Cloudflare R2,
+  Backblaze B2, DigitalOcean Spaces, Wasabi and Ceph, supports path-style and
+  virtual-hosted addressing, a key prefix, a separate public endpoint for
+  presigned URLs, streaming writes and range reads, paged listings, and
+  creating a missing bucket on first write. Install it with
+  `sillo[storage-s3]`.
 - `sillo.record.AnyJSONField` stores ordinary JSON-compatible Python values,
   including bare strings, without requiring callers to pre-encode them (#460).
 
