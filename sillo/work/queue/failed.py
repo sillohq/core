@@ -77,8 +77,14 @@ class FailedJobRepository(ABC):
 class MemoryFailedRepository(FailedJobRepository):
     """In-memory failed job repository — for development."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        max_failures: Annotated[int, Doc("Maximum failed jobs to retain.")] = 1000,
+    ):
         """Init"""
+        if max_failures < 1:
+            raise ValueError("max_failures must be at least 1")
+        self.max_failures = max_failures
         self._failed: list[FailedJob] = []
 
     async def log(
@@ -94,6 +100,8 @@ class MemoryFailedRepository(FailedJobRepository):
                 exception=exception,
             )
         )
+        if len(self._failed) > self.max_failures:
+            self._failed.pop(0)
 
     async def all(self, limit: int = 50, offset: int = 0) -> list[FailedJob]:
         """All"""

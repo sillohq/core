@@ -338,3 +338,18 @@ def test_memory_failed_repository_store_and_clear():
     assert asyncio.run(repo.all())[0].id == "j1"
     asyncio.run(repo.flush())
     assert len(asyncio.run(repo.all())) == 0
+
+
+async def test_memory_failed_repository_retains_only_recent_failures():
+    repo = MemoryFailedRepository(max_failures=2)
+    for job_id in ("j1", "j2", "j3"):
+        await repo.log("default", job_id, "MyJob", "{}", "boom")
+
+    assert [job.id for job in await repo.all()] == ["j3", "j2"]
+    assert await repo.find("j1") is None
+
+
+def test_memory_failed_repository_default_is_bounded():
+    assert MemoryFailedRepository().max_failures == 1000
+    with pytest.raises(ValueError, match="max_failures must be at least 1"):
+        MemoryFailedRepository(max_failures=0)
