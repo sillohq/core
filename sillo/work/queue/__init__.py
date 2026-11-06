@@ -8,7 +8,12 @@ from .connection import (
     SyncConnection,
 )
 from .events import Event, EventDispatcher, listen
-from .failed import FailedJob, FailedJobRepository, MemoryFailedRepository
+from .failed import (
+    FailedJob,
+    FailedJobRepository,
+    MemoryFailedRepository,
+    RedisFailedRepository,
+)
 from .job import Dispatchable, Job, dispatch
 from .listener import EventListener, ListenerRegistry, WildcardListener
 from .middleware import (
@@ -48,6 +53,7 @@ __all__ = [
     "QueueConnection",
     "QueueWorker",
     "RedisConnection",
+    "RedisFailedRepository",
     "SyncConnection",
     "WildcardListener",
     "WorkerOptions",

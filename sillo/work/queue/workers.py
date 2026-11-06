@@ -144,7 +144,12 @@ class QueueWorker:
 
             try:
                 for qname in self.options.queues:
-                    conn = self.manager.connection(qname)
+                    try:
+                        conn = self.manager.connection(qname)
+                    except KeyError:
+                        # Queue names need not also be connection names. The
+                        # standard worker binds its broker as "default".
+                        conn = self.manager.connection("default")
                     popped = await conn.pop(qname, timeout=self.options.sleep)
                     if popped:
                         job_id, payload_str = popped
@@ -234,37 +239,39 @@ class QueueWorker:
                     )
 
             try:
-                await self.failed_repo.log(
+                from .connection import RedisConnection
+                from .failed import RedisFailedRepository
+
+                payload = json.dumps(
+                    {key: value for key, value in job_data.items() if key != "_job_id"}
+                )
+                repo = self.failed_repo
+                if (
+                    isinstance(conn, RedisConnection)
+                    and isinstance(repo, RedisFailedRepository)
+                    and repo.connection.url == conn.url
+                    and repo.connection.prefix == conn.prefix
+                ):
+                    recorded = await repo.fail_claim(
+                        conn, queue_name, job_id, job_class_name, payload, tb
+                    )
+                    if not recorded:
+                        logger.warning("Lost claim for failed job %s", job_id)
+                    return
+                await repo.log(
                     queue=queue_name,
                     job_id=job_id,
                     job_class=job_class_name,
-                    payload=json.dumps(
-                        {
-                            key: value
-                            for key, value in job_data.items()
-                            if key != "_job_id"
-                        }
-                    ),
+                    payload=payload,
                     exception=tb,
                 )
             except Exception:
                 logger.exception("Failed to log failed job")
-            finally:
-                try:
-                    await conn.fail(
-                        queue_name,
-                        job_id,
-                        json.dumps(
-                            {
-                                key: value
-                                for key, value in job_data.items()
-                                if key != "_job_id"
-                            }
-                        ),
-                        tb,
-                    )
-                except Exception:
-                    logger.exception("Failed to settle failed job")
+                return
+            try:
+                await conn.fail(queue_name, job_id, payload, tb)
+            except Exception:
+                logger.exception("Failed to settle failed job")
 
     @staticmethod
     def _build_job(job_cls: type, job_data: dict[str, Any]) -> Any:

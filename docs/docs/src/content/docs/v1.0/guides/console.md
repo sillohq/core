@@ -430,6 +430,7 @@ prompt nobody can answer.
 | `queue:work [-q] [-c] [--timeout] [--max-jobs]` | Run the worker until stopped |
 | `queue:list [-q]` | Show how much work is waiting on each queue |
 | `queue:failed [-l] [--offset]` | List jobs that exhausted their retries |
+| `queue:retry <id>` | Requeue one failed job |
 | `queue:forget <id>` | Drop one failed job from the record |
 | `queue:flush [-f]` | Drop every failed job from the record |
 | `schedule:run` | Run scheduled tasks until stopped |
@@ -444,10 +445,10 @@ Two things these commands tell you that a bare number would not:
 worker's own process, so nothing a web process dispatches ever reaches it.
 `queue:work` and `queue:list` say so instead of sitting at zero looking healthy.
 
-**Failures may not be durable.** The failed-job repository defaults to the
-in-memory one, which is empty in a fresh process. `queue:failed` reports that
-distinction rather than printing "no failures" at somebody about to stop
-looking. Bind a durable repository with `failed=` to read the worker's.
+**Failures may not be durable.** Redis queues default to a shared Redis
+failed-job repository; configure Redis persistence to meet your needs. Without
+a Redis URL, the default is in-memory and empty in a fresh process. Bind a
+durable repository with `failed=` to override the default.
 
 The `schedule:` commands need a manager, which `setup_scheduler(app)` puts on
 `app.state`. Without one they say so rather than reporting an empty schedule.

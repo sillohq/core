@@ -98,18 +98,28 @@ def build_worker(
         MemoryFailedRepository,
         PayloadSerializer,
         QueueWorker,
+        RedisConnection,
+        RedisFailedRepository,
         WorkerOptions,
     )
 
     manager = ConnectionManager()
     # `add`, not `register` — the latter does not exist, and calling it fails
     # after the database has already connected, which reads as a database fault.
-    manager.add("default", connection or connection_for(url, prefix=prefix))
+    queue_connection = connection or connection_for(url, prefix=prefix)
+    manager.add("default", queue_connection)
+
+    if failed_repository is None:
+        failed_repository = (
+            RedisFailedRepository(connection=queue_connection)
+            if isinstance(queue_connection, RedisConnection)
+            else MemoryFailedRepository()
+        )
 
     return QueueWorker(
         manager,
         PayloadSerializer(),
-        failed_repository or MemoryFailedRepository(),
+        failed_repository,
         options=WorkerOptions(
             concurrency=concurrency,
             timeout=timeout,

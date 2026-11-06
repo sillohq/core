@@ -22,13 +22,13 @@ Without a ``redis://`` URL the queue is a :class:`SyncConnection`, which lives
 in the worker's own process. Nothing dispatched from a web process reaches it,
 so ``queue:work`` says so rather than sitting at zero and looking healthy.
 
-The failed-job repository defaults to the in-memory one, which is empty in a
-fresh process. ``queue:failed`` reports that distinction instead of printing
-"no failures" at somebody about to go home.
+Redis queues default to a shared Redis failed-job repository. In-process
+queues use an in-memory repository, which is empty in a fresh process.
 """
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from typing import Any, ClassVar, Union
 
@@ -146,9 +146,14 @@ class WorkCommand(Command):
         Returns:
             The bound repository, or a fresh in-memory one.
         """
-        from .queue import MemoryFailedRepository
+        from .queue import MemoryFailedRepository, RedisFailedRepository
 
-        return _resolve(self.settings.failed) or MemoryFailedRepository()
+        repository = _resolve(self.settings.failed)
+        if repository is not None:
+            return repository
+        if self.settings.url:
+            return RedisFailedRepository(connection=self.connection())
+        return MemoryFailedRepository()
 
     def manager(self) -> Any:
         """The scheduler this console was bound to.
@@ -232,6 +237,7 @@ class Work(WorkCommand):
             timeout=self.option("timeout"),
             max_jobs=self.option("max_jobs"),
             prefix=self.settings.prefix,
+            failed_repository=_resolve(self.settings.failed),
         )
 
 
@@ -289,7 +295,7 @@ class QueueFailed(WorkCommand):
 
         if not jobs:
             self.muted("No failed jobs recorded.")
-            if _resolve(self.settings.failed) is None:
+            if _resolve(self.settings.failed) is None and not self.settings.url:
                 self.blank()
                 self.warn("Failures are only kept in memory.")
                 self.muted(
@@ -312,6 +318,39 @@ class QueueFailed(WorkCommand):
                 for job in jobs
             ],
         )
+
+
+class QueueRetry(WorkCommand):
+    """Requeue a failed job on its original queue."""
+
+    name = "queue:retry"
+    help = "Retry a failed job"
+    arguments: ClassVar[list] = [Argument("id", help="The failed job's id")]
+
+    async def handle(self) -> None:
+        from .queue import RedisFailedRepository
+
+        repository = self.repository()
+        job_id = self.argument("id")
+        connection = self.connection()
+        if (
+            isinstance(repository, RedisFailedRepository)
+            and getattr(connection, "url", None) == repository.connection.url
+            and getattr(connection, "prefix", None) == repository.connection.prefix
+        ):
+            new_id = await repository.retry(job_id)
+        else:
+            job = await repository.find(job_id)
+            if job is None:
+                self.fail(f"No failed job with id {job_id!r}.")
+            payload = json.loads(job.payload)
+            payload.pop("attempts", None)
+            payload.pop("_job_id", None)
+            new_id = await connection.push(job.queue, json.dumps(payload))
+            await repository.forget(job_id)
+        if new_id is None:
+            self.fail(f"No failed job with id {job_id!r}.")
+        self.success(f"Requeued as {new_id}.")
 
 
 class QueueForget(WorkCommand):
@@ -470,6 +509,7 @@ COMMANDS: list[type[WorkCommand]] = [
     Work,
     QueueList,
     QueueFailed,
+    QueueRetry,
     QueueForget,
     QueueFlush,
     ScheduleRun,
@@ -499,7 +539,7 @@ def work_commands(
         scheduler: The project's :class:`SchedulerManager`, or a callable
             returning one. Required by the ``schedule:`` commands.
         failed: A failed-job repository, or a callable returning one. Defaults
-            to the in-memory one, which is empty in a fresh process.
+            to Redis when a broker URL is configured, otherwise in-memory.
         context: An async context manager, or a callable returning one, opened
             around every command — a job that touches models needs the database.
         only: Names to include. Omit it for all of them.
