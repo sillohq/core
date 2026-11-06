@@ -140,7 +140,8 @@ console.add_many(work_commands(
 | `failed` | A durable failed-job repository, or a callable returning one. |
 | `context` | Opened around every command. |
 
-Pass `failed=` if you want `queue:failed` to show anything. Without it the
+With a Redis URL, failures use a Redis repository shared by worker and console.
+Pass `failed=` to override it. Without a Redis URL or an explicit repository,
 commands use a fresh in-memory repository, which is empty in every new process,
 and they say so rather than reporting "no failures" at someone about to go
 home.

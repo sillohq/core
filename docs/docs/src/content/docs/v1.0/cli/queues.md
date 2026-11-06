@@ -139,9 +139,12 @@ failure this is, not to be the whole traceback.
 
 ### An empty list is not always good news
 
-The failed-job repository defaults to an in-memory one, which is empty in every
-fresh process, including this one. So "no failures" from a console that was
-never given a durable repository means nothing at all, and the command says so:
+With a Redis queue URL, failed jobs default to Redis using the same URL and
+prefix. Worker and console must use the same configuration. Redis persistence
+must be configured to meet your durability needs.
+
+Without a Redis URL the repository defaults to an in-memory one, which is
+empty in every fresh process. The command warns when no repository was bound:
 
 ```
 No failed jobs recorded.
@@ -153,6 +156,19 @@ No failed jobs recorded.
 
 If you see that warning, the answer is a durable repository. See [Building a
 console](/v1.0/cli/standalone-consoles/).
+
+## `queue:retry`
+
+```bash
+sillo queue:retry 0f0c1e2a-6b3d-4a1e-9c77-2b5a8e4d1f30
+```
+
+Requeues the stored payload on its original queue with a fresh job ID and a
+reset attempt count, then removes the failed record. With the default Redis
+store and queue this operation is atomic. Custom repositories or separate
+backends cannot make that guarantee: a crash between enqueue and removal can
+produce a duplicate. Jobs should be idempotent. Retry errors leave the record
+available for another attempt.
 
 ## `queue:forget`
 

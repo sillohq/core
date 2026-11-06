@@ -258,10 +258,10 @@ $ uv run sillo queue:list
  default         0
 ```
 
-`queue:failed` lists jobs that exhausted their retries, `queue:forget <id>`
-drops one, and `queue:flush` drops them all. The failed-job record is in memory
-unless you bind a durable one, and `queue:failed` reports that distinction
-rather than printing "no failures" at somebody about to stop looking.
+`queue:failed` lists jobs that exhausted their retries, `queue:retry <id>`
+requeues one, `queue:forget <id>` drops one, and `queue:flush` drops them all.
+Redis queues use a shared Redis failure store by default. In-process queues
+use an in-memory store unless you bind a durable repository.
 
 ###  `schedule:run` and `schedule:list`
 
