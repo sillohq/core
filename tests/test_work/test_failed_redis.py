@@ -9,8 +9,12 @@ fakeredis = pytest.importorskip("fakeredis.aioredis")
 
 from sillo.console import Console
 from sillo.work.commands import build_worker
-from sillo.work.console import work_commands
-from sillo.work.queue import RedisConnection, RedisFailedRepository
+from sillo.work.console import WorkCommand, work_commands
+from sillo.work.queue import (
+    MemoryFailedRepository,
+    RedisConnection,
+    RedisFailedRepository,
+)
 from sillo.work.queue.payloads import PayloadSerializer
 from sillo.work.queue.workers import QueueWorker, WorkerOptions
 
@@ -78,6 +82,88 @@ async def test_retry_enqueue_error_preserves_failure(connection):
     await connection._redis.set(connection._keys("emails")[0], "wrong type")
     with pytest.raises(ResponseError):
         await repo.retry("failed-id")
+    assert await repo.find("failed-id") is not None
+
+
+@pytest.mark.asyncio
+async def test_failed_repository_pagination_forget_and_flush(connection):
+    repo = RedisFailedRepository(connection=connection)
+    await repo.log("emails", "one", "Job", "{}", "first")
+    await repo.log("emails", "two", "Job", "{}", "second")
+    assert await repo.all(limit=0) == []
+    assert len(await repo.all(limit=1, offset=1)) == 1
+    assert await repo.forget("one") is True
+    assert await repo.forget("one") is False
+    assert await repo.find("one") is None
+    assert [job.id for job in await repo.all()] == ["two"]
+    await repo.flush()
+    assert await repo.all() == []
+    assert await repo.find("two") is None
+
+
+@pytest.mark.asyncio
+async def test_worker_does_not_record_lost_claim(connection, caplog):
+    repo = RedisFailedRepository(connection=connection)
+    worker = QueueWorker(None, PayloadSerializer(), repo)
+    await worker._process_job(
+        connection,
+        "emails",
+        {"job": "tests.test_work.work_jobs.NoSuchJob", "_job_id": "lost"},
+        0,
+    )
+    assert await repo.find("lost") is None
+    assert "Lost claim for failed job lost" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_worker_logs_settlement_error_after_recording(
+    connection, monkeypatch, caplog
+):
+    repo = MemoryFailedRepository()
+    worker = QueueWorker(None, PayloadSerializer(), repo)
+
+    async def broken_fail(*args):
+        raise RuntimeError("settlement unavailable")
+
+    monkeypatch.setattr(connection, "fail", broken_fail)
+    await worker._process_job(
+        connection,
+        "emails",
+        {"job": "tests.test_work.work_jobs.NoSuchJob", "_job_id": "job"},
+        0,
+    )
+    assert (await repo.find("job")).id == "job"
+    assert "Failed to settle failed job" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_console_retry_with_custom_repository(connection, monkeypatch):
+    repo = MemoryFailedRepository()
+    await repo.log("emails", "failed-id", "Job", '{"job":"Job","attempts":2}', "error")
+    monkeypatch.setattr(WorkCommand, "connection", lambda self: connection)
+    output = io.StringIO()
+    console = Console(output=output, error=output, color=False, interactive=False)
+    console.add_many(work_commands(failed=repo))
+    assert await console.run_async(["queue:retry", "failed-id"]) == 0
+    assert await repo.find("failed-id") is None
+    _, payload = await connection.pop("emails")
+    assert json.loads(payload) == {"job": "Job"}
+    assert await console.run_async(["queue:retry", "failed-id"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_custom_repository_retry_keeps_failure_if_enqueue_fails(
+    connection, monkeypatch
+):
+    repo = MemoryFailedRepository()
+    await repo.log("emails", "failed-id", "Job", '{"job":"Job"}', "error")
+    monkeypatch.setattr(WorkCommand, "connection", lambda self: connection)
+    await connection._redis.set(connection._keys("emails")[0], "wrong type")
+    output = io.StringIO()
+    console = Console(output=output, error=output, color=False, interactive=False)
+    console.add_many(work_commands(failed=repo))
+    with pytest.raises(ResponseError):
+        await console.run_async(["queue:retry", "failed-id"])
     assert await repo.find("failed-id") is not None
 
 
