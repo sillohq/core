@@ -2,16 +2,17 @@
 
 ## Supported Versions
 
-Security fixes ship on the latest minor of the 1.x line. That line is 1.2.
-The current release is 1.2.1. It requires Python 3.10 or newer.
+Security fixes ship on the latest minor of the 1.x line. That line is 1.3.
+The current release is 1.3.1. It requires Python 3.10 or newer.
 
 | Version | Supported |
 | ------- | --------- |
-| 1.2.x   | Yes       |
+| 1.3.x   | Yes       |
+| 1.2.x   | No        |
 | 1.0.x   | No        |
 | < 1.0   | No        |
 
-1.0.x and the 0.x releases do not receive patches. Upgrade to 1.2.x.
+1.2.x, 1.0.x and the 0.x releases do not receive patches. Upgrade to 1.3.x.
 
 ## Reporting a Vulnerability
 

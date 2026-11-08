@@ -5,7 +5,13 @@ All notable changes to Sillo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.1] - 2026-11-08
+
+### Added
+
+- Failed Redis queue jobs persist in `RedisFailedRepository` and can be
+  inspected, retried, forgotten and flushed across worker restarts (#502).
+  Queue tooling selects the repository associated with the Redis connection.
 
 ### Fixed
 
@@ -17,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the scheduler. Work and standalone scheduler installations reuse one ticker.
   Local scheduling remains available without Redis; claims do not provide
   automatic retries or exactly-once business effects.
+
+- In-memory failed-job history is bounded to the most recent 1,000 records
+  by default, configurable through `max_failures`, so repeated failures do not
+  grow the repository indefinitely (#500).
+
+### Changed
+
+- Updated AnyIO from 4.14.1 to 4.16.0 (#501).
+- The security policy names 1.3.x as the supported minor release line. Python
+  3.10 or newer is required.
 
 ## [1.2.1] - 2026-10-19
 
