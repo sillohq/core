@@ -59,10 +59,10 @@ class Work:
     def install(self, app) -> dict:
         from .queue import SyncConnection
         from .queue.events import EventDispatcher
-        from .scheduler.manager import SchedulerManager
+        from .scheduler.manager import Scheduler
 
         conn = SyncConnection()
-        scheduler = SchedulerManager()
+        scheduler = app.install(Scheduler())
         dispatcher = EventDispatcher()
         # Keep every established state key: jobs and scheduler consumers use
         # them independently even though Work owns their shared setup.
@@ -70,8 +70,6 @@ class Work:
         app.state["scheduler"] = scheduler
         app.state["queue_connection"] = conn
         app.state["events"] = dispatcher
-        app.on_startup(scheduler.start)
-        app.on_shutdown(scheduler.stop)
         return app.state["work"]
 
 
