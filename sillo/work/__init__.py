@@ -62,7 +62,7 @@ class Work:
         from .scheduler.manager import Scheduler
 
         conn = SyncConnection()
-        scheduler = app.install(Scheduler())
+        scheduler = Scheduler().install(app)
         dispatcher = EventDispatcher()
         # Keep every established state key: jobs and scheduler consumers use
         # them independently even though Work owns their shared setup.
