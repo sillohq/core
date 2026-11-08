@@ -5,6 +5,19 @@ All notable changes to Sillo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Scheduled jobs coordinate across web workers through the configured Redis
+  cache (#497). Renewable owner-safe leases serialize execution, and retained
+  next-fire state prevents a late worker from repeating a completed occurrence.
+  Redis errors prevent execution; lease loss and shutdown cancel active work.
+  Explicit cache, lease, namespace and claim-retention settings are available on
+  the scheduler. Work and standalone scheduler installations reuse one ticker.
+  Local scheduling remains available without Redis; claims do not provide
+  automatic retries or exactly-once business effects.
+
 ## [1.2.1] - 2026-10-19
 
 ### Added

@@ -1,6 +1,6 @@
 ---
 title: Scheduler
-description: "Time-based execution: interval and cron triggers, the one-second tick, job lifecycle and overlap control, and the multi-process problem that makes nightly jobs run four times."
+description: "Time-based execution: interval and cron triggers, the one-second tick, job lifecycle and overlap control, and Redis coordination across multiple application workers."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: "Time-based execution: interval and cron triggers, the one-second tick, job lifecycle and overlap control, and the multi-process problem that makes nightly jobs run four times."
+      content: "Time-based execution: interval and cron triggers, the one-second tick, job lifecycle and overlap control, and Redis coordination across multiple application workers."
 ---
 
 import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
@@ -401,8 +401,9 @@ the expression is absolute. It matters only if you were counting ticks.
 
 ###  The schedule is in memory and is rebuilt every start
 
-`_jobs` is a dictionary on the manager instance. Nothing is persisted.
-Two consequences:
+`_jobs` is a dictionary on the manager instance. Job definitions are rebuilt
+from application code; Redis coordination stores the next eligible fire time,
+not the callable or its arguments. Two consequences:
 
 Restarting the process reloads the schedule from your source code, which is
 usually what you want. Your code is the source of truth.
@@ -424,50 +425,93 @@ Jobs added at runtime through `schedule()` are also lost on restart. They exist
 only in that process's memory. Anything a user can create from a UI needs its
 definition in the database and a startup hook that re-registers it.
 
-<Aside type="danger" title="Every process runs its own scheduler">
+### Multiple workers with Redis
 
-`setup_work` starts a `SchedulerManager` in whatever process calls it. Run
-`uvicorn --workers 4` and you have four tickers, four copies of the
-schedule, and every "nightly" job running four times a night.
-
-The failure is not obvious: four identical report emails look like a mail
-problem, four billing runs look like a billing bug. Nothing in the logs
-says "this ran on four workers".
-
-Three ways out:
-
-**A dedicated scheduler process.** Run one instance with the scheduler
-enabled and no HTTP traffic, and leave it out of the web deployment. The
-simplest option and the easiest to reason about.
-
-**A distributed lock per run.** Each tick tries to acquire a lock keyed by
-job name and the scheduled minute; the loser skips. Sillo's `RedisCache` lock
-coordinates all scheduler processes that share Redis. Its lease must outlive
-the job (or be renewed while the job runs).
+Configure a shared `RedisCache` before application startup. Both
+`setup_work(app)` / `Work()` and `setup_scheduler(app)` / `Scheduler()` select
+that default Redis backend when the scheduler starts:
 
 ```python
-from sillo.cache import LockNotAcquiredError, RedisCache
+from sillo import SilloApp
+from sillo.cache import RedisCache, configure_cache
+from sillo.work.scheduler import CronTrigger, setup_scheduler
 
-locks = RedisCache(url="redis://localhost:6379/0", namespace="myapp")
+configure_cache(RedisCache(
+    url="redis://localhost:6379/0",
+    namespace="billing-production",
+))
+app = SilloApp()
+scheduler = setup_scheduler(app)
 
-async def run_once(job_name: str, when: str, coro):
-    try:
-        async with locks.lock(f"scheduler:{job_name}:{when}", lease=3600):
-            await coro()
-    except LockNotAcquiredError:
-        return  # another process got there first
+async def close_invoices():
+    ...  # close invoices using a unique business key for each invoice/day
+
+scheduler.schedule(
+    close_invoices,
+    CronTrigger("0 2 * * *", timezone="Africa/Lagos"),
+    name="close-invoices",
+)
 ```
 
-See [distributed locks](/v1.0/guides/cache/#distributed-locks) for waiting,
-renewing a long-running lease, and the difference between Redis and in-memory
-locks.
+Each process still registers its own jobs and runs a ticker. Before execution,
+the scheduler tries a non-blocking, owner-safe lease on the shared cache. Only
+one worker can execute a job at a time. The scheduler records its next eligible
+fire time **before** calling the job, so a worker arriving after a fast job
+finishes also skips that occurrence. Workers with independently computed interval
+or jitter times adopt the shared next fire time. A skipped cron advances beyond
+the current time instead of replaying old occurrences.
 
-**Leader election.** One process holds a renewable lease and runs the
-scheduler; the others idle. More moving parts than most applications
-need.
+Job identity is the explicit `id`, then the explicit `name`, then the callable's
+module and qualified name. Generated UUIDs remain local management IDs. Use the
+same identity, trigger, Redis database, cache namespace and scheduler namespace
+on every worker. Give separate registrations of the same callable distinct IDs
+or names. Separate applications and environments must use distinct namespaces.
 
-Whichever you choose, make it explicit in your deployment configuration
-rather than relying on "we only run one worker" staying true.
+An explicit backend and coordination settings can also be supplied:
+
+```python
+scheduler = setup_scheduler(
+    app,
+    cache=RedisCache(url="redis://localhost:6379/0", namespace="billing-production"),
+    namespace="invoices-v1",
+    lease=60,
+    claim_ttl=604800,
+)
+```
+
+`Scheduler(...)` and `SchedulerManager(...)` accept the same settings. Configure
+an existing scheduler before installing `Work()`; both installation orders reuse
+one scheduler and one pair of lifecycle hooks. Call `await manager.start()` for
+a manually constructed manager. Calling `job.run()` directly bypasses scheduler
+coordination.
+
+- `lease` defaults to 60 seconds and renews every third of that duration.
+  An unavailable lease skips the fire without waiting. A crashed process stops
+  renewing, so its lease expires and future fires can proceed.
+- `claim_ttl` defaults to seven days. Shared state lives until the next eligible
+  fire plus this retention period; completed one-shot jobs are remembered for
+  this period. This overrides the cache's ordinary default TTL. After retention
+  expires, or if Redis keys are deleted or evicted, an old one-shot registration
+  can execute again. Use a dedicated Redis namespace and suitable persistence
+  and eviction settings. Bump the scheduler namespace when intentionally
+  resetting a schedule; an existing claim otherwise preserves its next time.
+- Redis acquisition, read and write failures are logged and prevent execution.
+  A failed renewal or lost lease cancels the running task. Shutdown cancels
+  running tasks, waits for cleanup and releases owned leases.
+- Shared mode serializes each job globally, including when `max_instances`
+  permits more local concurrency. Without a configured Redis backend, the
+  default scheduler remains local. An explicitly passed `MemoryCache` only
+  coordinates managers sharing that object in one process.
+
+<Aside type="caution" title="Coordination is not exactly-once delivery">
+
+A claim consumes the occurrence even if execution fails or its worker crashes;
+there is no automatic retry or durable execution queue. Jobs must cooperate with
+asyncio cancellation. A paused event loop can outlive its lease, and cancellation
+cannot undo a ledger write or an email already sent. Keep business operations
+idempotent and reconcile missed work when needed. Redis outages, restarts and
+failover require the same care. A dedicated scheduler process remains an option
+when you do not want Redis coordination.
 
 </Aside>
 
