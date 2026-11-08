@@ -80,6 +80,7 @@ jobs:
       - name: The Redis tests must not have skipped
         run: |
           uv run pytest tests/test_redis tests/test_cache/test_redis_backend.py \
+            tests/test_work/test_scheduler_distributed.py \
             -q --tb=short -p no:randomly -rs > redis.log 2>&1 || (cat redis.log; exit 1)
           cat redis.log
           if grep -qi "no Redis" redis.log; then
