@@ -414,6 +414,12 @@ if await lock.acquire():
 
 ##  The failure modes worth designing for
 
+The scheduler automatically uses a default `RedisCache` configured before
+startup to coordinate jobs across application workers. It renews leases and
+retains next-fire claims; see [multiple scheduler workers](/v1.0/guides/work/scheduler/#multiple-workers-with-redis).
+Scheduler coordination treats Redis as a dependency: acquisition or claim
+errors prevent execution rather than allowing duplicate work during an outage.
+
 **Stampede.** A popular key expires and a thousand concurrent requests
 all miss and all recompute. Use a distributed lock so one request recomputes
 while the others wait or serve stale.

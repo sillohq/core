@@ -74,6 +74,8 @@ class ScheduledJob:
     ):
         """Init"""
         self.id = id or str(uuid4())
+        qualname = getattr(func, "__qualname__", type(func).__qualname__)
+        self.coordination_id = id or name or f"{func.__module__}.{qualname}"
         self.name = name or func.__name__  # ty: ignore[unresolved-attribute]
         self.func = func
         self.trigger = trigger
@@ -92,7 +94,7 @@ class ScheduledJob:
 
     def compute_next(self, now: float | None = None) -> None:
         """Calculate and store the next fire timestamp."""
-        result = self.trigger.next_fire(self.last_run_time)
+        result = self.trigger.next_fire(self.last_run_time if now is None else now)
         if result is None:
             self.status = JobStatus.COMPLETED
             self.next_run_time = None

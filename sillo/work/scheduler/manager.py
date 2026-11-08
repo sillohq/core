@@ -11,11 +11,14 @@ from __future__ import annotations
 import asyncio
 import builtins
 import logging
+import math
 import time
 from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
 from typing_extensions import Doc
+
+from sillo.cache import MISSING, BaseCache, RedisCache, get_default_backend
 
 from .jobs import JobStatus, ScheduledJob
 from .triggers import CronTrigger, IntervalTrigger
@@ -63,9 +66,31 @@ class SchedulerManager:
         sched.pause("job-id")
     """
 
-    def __init__(self):
-        """Init"""
+    def __init__(
+        self,
+        *,
+        cache: BaseCache | None = None,
+        lease: float = 60,
+        namespace: str = "scheduler",
+        claim_ttl: int = 604800,
+    ):
+        """Coordinate through an explicit cache or the configured Redis cache.
+
+        Without Redis, the default remains an independent local scheduler.
+        ``claim_ttl`` retains consumed occurrences beyond their next fire time.
+        """
+        if not math.isfinite(lease) or lease <= 0:
+            raise ValueError("lease must be finite and greater than zero")
+        if not namespace:
+            raise ValueError("namespace must not be empty")
+        if claim_ttl <= 0:
+            raise ValueError("claim_ttl must be greater than zero")
+        self.cache = cache
+        self.lease = lease
+        self.namespace = namespace
+        self.claim_ttl = claim_ttl
         self._jobs: dict[str, ScheduledJob] = {}
+        self._tasks: set[asyncio.Task] = set()
         self._running = False
         self._ticker: asyncio.Task | None = None
         self._started_at: float = 0.0
@@ -97,9 +122,7 @@ class SchedulerManager:
 
         def decorator(func):
             """Decorator"""
-            return self.schedule(
-                func, IntervalTrigger(seconds), name=name or func.__name__
-            )
+            return self.schedule(func, IntervalTrigger(seconds), name=name)
 
         return decorator
 
@@ -113,9 +136,7 @@ class SchedulerManager:
 
         def decorator(func):
             """Decorator"""
-            return self.schedule(
-                func, CronTrigger(expression), name=name or func.__name__
-            )
+            return self.schedule(func, CronTrigger(expression), name=name)
 
         return decorator
 
@@ -176,6 +197,10 @@ class SchedulerManager:
 
     async def start(self) -> None:
         """Begin the ticker loop."""
+        if self.cache is None:
+            backend = get_default_backend()
+            if isinstance(backend, RedisCache):
+                self.cache = backend
         self._running = True
         self._started_at = time.time()
         self._ticker = asyncio.create_task(self._loop())
@@ -192,6 +217,9 @@ class SchedulerManager:
                 pass
         for j in self._jobs.values():
             j.cancel()
+        for task in self._tasks:
+            task.cancel()
+        await asyncio.gather(*self._tasks, return_exceptions=True)
         logger.info("Scheduler stopped")
 
     async def _loop(self) -> None:
@@ -211,7 +239,9 @@ class SchedulerManager:
                         if job.coalesce and job.current_instances > 0:
                             continue
                         job.compute_next(now)
-                        asyncio.create_task(self._execute(job))
+                        task = asyncio.create_task(self._execute(job))
+                        self._tasks.add(task)
+                        task.add_done_callback(self._tasks.discard)
                 await asyncio.sleep(1)
             except asyncio.CancelledError:
                 break
@@ -222,17 +252,73 @@ class SchedulerManager:
     async def _execute(self, job: ScheduledJob) -> None:
         """Execute"""
         try:
-            await job.run()
+            if self.cache is None:
+                await job.run()
+            else:
+                await self._execute_shared(job)
         except asyncio.CancelledError:
             pass
         except Exception:
             logger.exception("Job %s failed", job.name)
+
+    async def _execute_shared(self, job: ScheduledJob) -> None:
+        """Claim a fire under a renewable, non-blocking per-job lease."""
+        cache = self.cache
+        assert cache is not None
+        key = cache.make_key(self.namespace, job.coordination_id)
+        lock = cache.lock(key, lease=self.lease)
+        if not await lock.acquire():
+            # Advance even on contention: this worker must leave this fire alone.
+            job.compute_next(time.time())
+            return
+        owner = asyncio.current_task()
+        assert owner is not None
+        renewal = asyncio.create_task(self._renew(lock, owner))
+        try:
+            now = time.time()
+            next_fire = await cache.get(key)
+            if next_fire is not MISSING and (next_fire is None or next_fire > now):
+                job.next_run_time = next_fire
+                if next_fire is None:
+                    job.status = JobStatus.COMPLETED
+                return
+            job.compute_next(now)
+            # Persist before executing. A late worker must not repeat a fast job
+            # merely because its execution lease has already been released.
+            ttl = max(
+                self.claim_ttl,
+                math.ceil((job.next_run_time or now) - now) + self.claim_ttl,
+            )
+            await cache.set(key, job.next_run_time, ttl=ttl)
+            await job.run()
+        finally:
+            renewal.cancel()
+            await asyncio.gather(renewal, return_exceptions=True)
+            await lock.release()
+
+    async def _renew(self, lock, owner: asyncio.Task) -> None:
+        """Cancel execution if renewing ownership fails or Redis is unavailable."""
+        try:
+            while True:
+                await asyncio.sleep(self.lease / 3)
+                if not await lock.extend():
+                    logger.error("Scheduler lease lost: %s", lock.name)
+                    owner.cancel()
+                    return
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Scheduler lease renewal failed: %s", lock.name)
+            owner.cancel()
 
 
 class Scheduler:
     """Install a scheduler when an application does not already have one."""
 
     name = "scheduler"
+
+    def __init__(self, **kwargs) -> None:
+        self._kwargs = kwargs
 
     def install(self, app) -> SchedulerManager:
         # Work installs a scheduler as part of its larger subsystem.  Reuse it
@@ -241,14 +327,14 @@ class Scheduler:
         if "scheduler" in app.state:
             return app.state["scheduler"]
 
-        scheduler = SchedulerManager()
+        scheduler = SchedulerManager(**self._kwargs)
         app.state["scheduler"] = scheduler
         app.on_startup(scheduler.start)
         app.on_shutdown(scheduler.stop)
         return scheduler
 
 
-def setup_scheduler(app) -> SchedulerManager:
+def setup_scheduler(app, **kwargs) -> SchedulerManager:
     """Install :class:`Scheduler`; kept as the compatible functional API.
 
     Stores in ``app.state["scheduler"]``.  Call ``scheduler.start()``
@@ -260,4 +346,4 @@ def setup_scheduler(app) -> SchedulerManager:
         scheduler = setup_scheduler(app)
         scheduler.every(3600)(my_cleanup_task)
     """
-    return app.install(Scheduler())
+    return app.install(Scheduler(**kwargs))
