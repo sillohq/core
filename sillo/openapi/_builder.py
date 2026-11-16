@@ -317,9 +317,9 @@ class APIDocumentation:
                     schema_dict = first_val.model_json_schema()
                 else:
                     return None
-            elif isinstance(request_model, type) and issubclass(
-                request_model, BaseModel
-            ):
+            elif isinstance(request_model, type):
+                if not issubclass(request_model, BaseModel):
+                    return None
                 schema_dict = request_model.model_json_schema()
             else:
                 return None

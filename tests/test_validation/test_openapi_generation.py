@@ -94,6 +94,15 @@ def test_documentation_only_request_model_does_not_change_runtime_validation(
     assert "title" in body.content["application/json"].spec.properties
 
 
+def test_documentation_only_request_model_rejects_a_non_model_class():
+    async def handler(ctx):
+        return json({})
+
+    route = Route("/published", handler, methods=["post"])
+    route.openapi_request_model = str
+    assert APIDocumentation()._build_request_body_spec(route, "post") is None
+
+
 def test_multipart_body_documents_binary_file(app, client):
     @app.post("/upload")
     async def handler(ctx, title=Form(type=str), avatar=File(...)):
