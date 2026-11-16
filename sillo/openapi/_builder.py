@@ -285,9 +285,8 @@ class APIDocumentation:
         Build request body specification for the route.
 
         Form and multipart bodies are documented from the models compiled to
-        validate them. JSON bodies come from ``request_model``, which is the
-        single way to declare one, so its schema is likewise the schema that is
-        enforced at runtime.
+        validate them. JSON bodies come from ``request_model`` or a
+        documentation-only ``openapi_request_model`` override.
         """
         marker_body = self._build_marker_body_spec(route)
         if marker_body is not None:

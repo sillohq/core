@@ -343,7 +343,6 @@ class QueueRetry(WorkCommand):
             job = await repository.find(job_id)
             if job is None:
                 self.fail(f"No failed job with id {job_id!r}.")
-                return
             payload = json.loads(job.payload)
             payload.pop("attempts", None)
             payload.pop("_job_id", None)
@@ -351,7 +350,6 @@ class QueueRetry(WorkCommand):
             await repository.forget(job_id)
         if new_id is None:
             self.fail(f"No failed job with id {job_id!r}.")
-            return
         self.success(f"Requeued as {new_id}.")
 
 
