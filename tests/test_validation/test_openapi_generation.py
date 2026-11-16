@@ -3,10 +3,12 @@ The OpenAPI document is generated from the same Pydantic schemas that perform
 validation, so what is published is exactly what is enforced.
 """
 
-from typing import List
+import pytest
+from pydantic import BaseModel
 
-from sillo import File, Form, Path, Query
-from sillo import json
+from sillo import File, Form, Path, Query, json
+from sillo.core.routing import Route
+from sillo.openapi._builder import APIDocumentation
 
 from .conftest import UserCreate, UserOut
 
@@ -51,7 +53,7 @@ def test_path_marker_types_the_path_param(app, client):
 
 def test_list_query_param_is_an_array(app, client):
     @app.get("/items")
-    async def handler(ctx, tags=Query([], type=List[str])):
+    async def handler(ctx, tags=Query([], type=list[str])):
         return json({})
 
     param = next(p for p in _op(client, "/items")["parameters"] if p["name"] == "tags")
@@ -68,6 +70,28 @@ def test_body_model_schema(app, client):
     schema = body["content"]["application/json"]["schema"]
     assert set(schema["properties"]) == {"name", "age"}
     assert schema["properties"]["age"]["type"] == "integer"
+
+
+@pytest.mark.parametrize("shape", ["model", "mapping", "nested"])
+def test_documentation_only_request_model_does_not_change_runtime_validation(
+    shape,
+):
+    class PublishedBody(BaseModel):
+        title: str
+
+    async def handler(ctx):
+        return json({})
+
+    route = Route("/published", handler, methods=["post"])
+    route.openapi_request_model = {
+        "model": PublishedBody,
+        "mapping": {"post": PublishedBody},
+        "nested": {"post": {"application/json": PublishedBody}},
+    }[shape]
+    body = APIDocumentation()._build_request_body_spec(route, "post")
+
+    assert route.request_model is None
+    assert "title" in body.content["application/json"].spec.properties
 
 
 def test_multipart_body_documents_binary_file(app, client):

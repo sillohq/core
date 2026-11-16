@@ -285,18 +285,23 @@ class APIDocumentation:
         Build request body specification for the route.
 
         Form and multipart bodies are documented from the models compiled to
-        validate them. JSON bodies come from ``request_model``, which is the
-        single way to declare one, so its schema is likewise the schema that is
-        enforced at runtime.
+        validate them. JSON bodies come from ``request_model`` or a
+        documentation-only ``openapi_request_model`` override.
         """
         marker_body = self._build_marker_body_spec(route)
         if marker_body is not None:
             return marker_body
 
-        if route.request_model:
-            if isinstance(route.request_model, dict):
+        # A route may publish a documentation-only model without making it a
+        # runtime ``request_model``.  That matters for established handlers
+        # that parse a dynamic JSON payload themselves: attaching the model to
+        # ``request_model`` would change their validation behaviour just to
+        # improve their OpenAPI contract.
+        request_model = getattr(route, "openapi_request_model", route.request_model)
+        if request_model:
+            if isinstance(request_model, dict):
                 # Extract the first model from the dict for schema generation
-                first_val = next(iter(route.request_model.values()), None)
+                first_val = next(iter(request_model.values()), None)
                 if isinstance(first_val, dict):
                     # Nested dict — use the first inner dict value
                     inner_first = next(iter(first_val.values()), None)
@@ -312,10 +317,10 @@ class APIDocumentation:
                     schema_dict = first_val.model_json_schema()
                 else:
                     return None
-            elif isinstance(route.request_model, type) and issubclass(
-                route.request_model, BaseModel
+            elif isinstance(request_model, type) and issubclass(
+                request_model, BaseModel
             ):
-                schema_dict = route.request_model.model_json_schema()
+                schema_dict = request_model.model_json_schema()
             else:
                 return None
             processed_schema = self._extract_and_add_nested_schemas(schema_dict)
